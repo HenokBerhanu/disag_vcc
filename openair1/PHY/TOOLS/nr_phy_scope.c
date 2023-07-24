@@ -786,14 +786,14 @@ static void ueTimeResponse  (OAIgraph_t *graph, PHY_VARS_NR_UE *phy_vars_ue, int
 */
 
 static void ueChannelResponse  (scopeGraphData_t **data, OAIgraph_t *graph, PHY_VARS_NR_UE *phy_vars_ue, int eNB_id, int UE_id) {
+  enum scopeDataType typ = (phy_vars_ue->sl_mode) ? psbchDlChEstimateTime : pbchDlChEstimateTime;
+
   // Channel Impulse Response
-  if (!data[pbchDlChEstimateTime])
+  if (!data[typ])
     return;
 
-  const scopeSample_t *tmp=(scopeSample_t *)(data[pbchDlChEstimateTime]+1);
-  genericPowerPerAntena(graph, data[pbchDlChEstimateTime]->colSz,
-                        &tmp,
-                        data[pbchDlChEstimateTime]->lineSz);
+  const scopeSample_t *tmp = (scopeSample_t *)(data[typ] + 1);
+  genericPowerPerAntena(graph, data[typ]->colSz, &tmp, data[typ]->lineSz);
 }
 
 static void ueFreqWaterFall (scopeGraphData_t **data, OAIgraph_t *graph,PHY_VARS_NR_UE *phy_vars_ue, int eNB_id, int UE_id ) {
@@ -847,14 +847,16 @@ static void uePbchFrequencyResp  (OAIgraph_t *graph, PHY_VARS_NR_UE *phy_vars_ue
 }
 */
 static void uePbchLLR  (scopeGraphData_t **data, OAIgraph_t *graph, PHY_VARS_NR_UE *phy_vars_ue, int eNB_id, int UE_id) {
+  enum scopeDataType typ = (phy_vars_ue->sl_mode) ? psbchLlr : pbchLlr;
+
   // PBCH LLRs
-  if ( !data[pbchLlr])
+  if (!data[typ])
     return;
 
-  const int sz=data[pbchLlr]->lineSz;
-  //const int antennas=data[pbchLlr]->colSz;
+  const int sz = data[typ]->lineSz;
+  // const int antennas=data[typ]->colSz;
   // We take the first antenna only for now
-  int16_t *llrs = (int16_t *) (data[pbchLlr]+1);
+  int16_t *llrs = (int16_t *)(data[typ] + 1);
   float *llr_pbch=NULL, *bit_pbch=NULL;
   int nx = sz;
 #ifdef WEBSRVSCOPE
@@ -870,12 +872,14 @@ static void uePbchLLR  (scopeGraphData_t **data, OAIgraph_t *graph, PHY_VARS_NR_
 }
 
 static void uePbchIQ  (scopeGraphData_t **data, OAIgraph_t *graph, PHY_VARS_NR_UE *phy_vars_ue, int eNB_id, int UE_id) {
+  enum scopeDataType typ = (phy_vars_ue->sl_mode) ? psbchRxdataF_comp : pbchRxdataF_comp;
+
   // PBCH I/Q of MF Output
-  if (!data[pbchRxdataF_comp])
+  if (!data[typ])
     return;
 
-  scopeSample_t *pbch_comp = (scopeSample_t *) (data[pbchRxdataF_comp]+1);
-  const int sz=data[pbchRxdataF_comp]->lineSz;
+  scopeSample_t *pbch_comp = (scopeSample_t *)(data[typ] + 1);
+  const int sz = data[typ]->lineSz;
   int newsz = sz;
   float *I=NULL, *Q=NULL;
 #ifdef WEBSRVSCOPE

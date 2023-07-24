@@ -81,7 +81,10 @@ enum class PlotTypeUE {
   pdschRBs,
   frequencyOffset,
   timingAdvance,
-  config
+  config,
+  psbchLLR,
+  psbchIQ,
+  psbchRSRP,
 };
 
 /// This abstract class defines an interface how the KPIPlot class can access values for the different KPI plot types

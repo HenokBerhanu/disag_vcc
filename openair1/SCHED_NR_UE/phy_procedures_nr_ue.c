@@ -288,7 +288,12 @@ void phy_procedures_nrUE_TX(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, n
   pucch_procedures_ue_nr(ue, proc, phy_data, (c16_t **)&txdataF);
 
   LOG_D(PHY, "Sending Uplink data \n");
-  nr_ue_pusch_common_procedures(ue, proc->nr_slot_tx, &ue->frame_parms, ue->frame_parms.nb_antennas_tx, (c16_t **)txdataF);
+  nr_ue_pusch_common_procedures(ue,
+                                proc->nr_slot_tx,
+                                &ue->frame_parms,
+                                ue->frame_parms.nb_antennas_tx,
+                                (c16_t **)txdataF,
+                                link_type_ul);
 
   nr_ue_prach_procedures(ue, proc);
 

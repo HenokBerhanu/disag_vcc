@@ -89,6 +89,12 @@ uint8_t check_if_ue_is_sl_syncsource()
 {
   return 0;
 }
+void nr_rrc_mac_config_req_sl_mib(module_id_t module_id,
+                                  NR_SL_SSB_TimeAllocation_r16_t *ssb_ta,
+                                  uint16_t rx_slss_id,
+                                  uint8_t *sl_mib)
+{
+}
 //////////////////////////////////////////////////////////////////////////
 static void prepare_mib_bits(uint8_t *buf, uint32_t frame_tx, uint32_t slot_tx)
 {
@@ -178,7 +184,8 @@ static void sl_init_frame_parameters(PHY_VARS_NR_UE *UE)
   sl_fp->att_tx = 1;
   sl_fp->att_rx = 1;
   // band47 //UL freq will be set to Sidelink freq
-  sl_fp->ul_CarrierFreq = 5880000000;
+  sl_fp->sl_CarrierFreq = 5880000000;
+  sl_fp->N_RB_SL = sl_fp->N_RB_DL;
 
   sl_fp->ssb_start_subcarrier = UE->SL_UE_PHY_PARAMS.sl_config.sl_bwp_config.sl_ssb_offset_point_a;
   sl_fp->Nid_cell = UE->SL_UE_PHY_PARAMS.sl_config.sl_sync_source.rx_slss_id;
@@ -202,7 +209,7 @@ static void configure_SL_UE(PHY_VARS_NR_UE *UE, int mu, int N_RB, int ssb_offset
 
   sl_init_frame_parameters(UE);
   sl_ue_phy_init(UE);
-  init_symbol_rotation(fp);
+  perform_symbol_rotation(fp, fp->sl_CarrierFreq, fp->symbol_rotation[link_type_sl]);
   init_timeshift_rotation(fp);
   LOG_I(PHY, "Dumping Sidelink Frame Parameters\n");
   nr_dump_frame_parms(fp);

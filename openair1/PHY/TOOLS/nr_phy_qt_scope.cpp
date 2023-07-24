@@ -64,10 +64,11 @@ float Limits_KPI_gNB[4][2] = {
 @UE: These are the (default) lower and upper threshold values for BLER and Throughput at the UE side.
 These threshold values can be further updated in run-time through the option 'Configs' in the drop-down list
 */
-float Limits_KPI_ue[2][2] = {
+float Limits_KPI_ue[3][2] = {
     // {lower Limit, Upper Limit}
     {0.0, 0.8}, // DL BLER
-    {0.2, 10} // Throughput in Mbs
+    {0.2, 10}, // Throughput in Mbs
+    {0, 60} // psbch RSRP db/RE
 };
 
 // Plot updater
@@ -192,6 +193,9 @@ KPIListSelectUE::KPIListSelectUE(QWidget *parent) : QComboBox(parent)
   this->addItem("Time Adv.", static_cast<int>(PlotTypeUE::timingAdvance));
 
   this->addItem("Configs", static_cast<int>(PlotTypeUE::config));
+  this->addItem("LLR PSBCH", static_cast<int>(PlotTypeUE::psbchLLR));
+  this->addItem("I/Q PSBCH", static_cast<int>(PlotTypeUE::psbchIQ));
+  this->addItem("PSBCH RSRP dB/RE", static_cast<int>(PlotTypeUE::psbchRSRP));
 }
 
 WaterFall::WaterFall(complex16 *values, NR_DL_FRAME_PARMS *frame_parms, QWidget *parent)
@@ -951,6 +955,9 @@ float PainterWidgetUE::getValue()
     case PlotTypeUE::timingAdvance:
       return (float)this->ue->timing_advance;
 
+    case PlotTypeUE::psbchRSRP:
+      return (float)this->ue->SL_UE_PHY_PARAMS.psbch.rsrp_dB_per_RE;
+
     default:
       return 0;
   }
@@ -960,14 +967,21 @@ scopeGraphData_t *PainterWidgetUE::getPlotValue()
 {
   scopeData_t *scope = (scopeData_t *)this->ue->scopeData;
   scopeGraphData_t **data = (scopeGraphData_t **)scope->liveData;
+  bool is_sl = this->ue->sl_mode;
+
   switch (this->plotType) {
     case PlotTypeUE::CIR:
-      return data[pbchDlChEstimateTime];
+      return (is_sl ? data[psbchDlChEstimateTime] : data[pbchDlChEstimateTime]);
 
     case PlotTypeUE::pbchLLR:
       return data[pbchLlr];
     case PlotTypeUE::pbchIQ:
       return data[pbchRxdataF_comp];
+
+    case PlotTypeUE::psbchLLR:
+      return data[psbchLlr];
+    case PlotTypeUE::psbchIQ:
+      return data[psbchRxdataF_comp];
 
     case PlotTypeUE::pdcchLLR:
       return data[pdcchLlr];
@@ -1039,13 +1053,14 @@ void PainterWidgetUE::makeConnections(int type)
       break;
     }
     case PlotTypeUE::CIR: {
-      if (!data[pbchDlChEstimateTime]) {
+      enum scopeDataType typ = (this->ue->sl_mode) ? psbchDlChEstimateTime : pbchDlChEstimateTime;
+      if (!data[typ]) {
         newChart = new QChart();
         this->plotType = PlotTypeUE::empty;
         this->comboBox->setCurrentIndex(static_cast<int>(PlotTypeUE::empty));
         break;
       }
-      newChart = new CIRPlot((complex16 *)(data[pbchDlChEstimateTime] + 1), data[pbchDlChEstimateTime]->lineSz);
+      newChart = new CIRPlot((complex16 *)(data[typ] + 1), data[typ]->lineSz);
       break;
     }
 
@@ -1067,6 +1082,26 @@ void PainterWidgetUE::makeConnections(int type)
         break;
       }
       newChart = new IQPlotUE((complex16 *)(data[pbchRxdataF_comp] + 1), data[pbchRxdataF_comp]->lineSz, this);
+      break;
+    }
+    case PlotTypeUE::psbchLLR: {
+      if (!data[psbchLlr]) {
+        newChart = new QChart();
+        this->plotType = PlotTypeUE::empty;
+        this->comboBox->setCurrentIndex(static_cast<int>(PlotTypeUE::empty));
+        break;
+      }
+      newChart = new LLRPlotUE((int16_t *)(data[psbchLlr] + 1), data[psbchLlr]->lineSz, this);
+      break;
+    }
+    case PlotTypeUE::psbchIQ: {
+      if (!data[psbchRxdataF_comp]) {
+        newChart = new QChart();
+        this->plotType = PlotTypeUE::empty;
+        this->comboBox->setCurrentIndex(static_cast<int>(PlotTypeUE::empty));
+        break;
+      }
+      newChart = new IQPlotUE((complex16 *)(data[psbchRxdataF_comp] + 1), data[psbchRxdataF_comp]->lineSz, this);
       break;
     }
     case PlotTypeUE::pdcchLLR: {
@@ -1138,7 +1173,10 @@ void PainterWidgetUE::makeConnections(int type)
       newChart = new KPIPlot(this);
       break;
     }
-
+    case PlotTypeUE::psbchRSRP: {
+      newChart = new KPIPlot(this, Limits_KPI_ue[2]);
+      break;
+    }
     default:
       break;
   }
@@ -1223,6 +1261,7 @@ void *nrgNBQtscopeThread(void *arg)
 void *nrUEQtscopeThread(void *arg)
 {
   PHY_VARS_NR_UE *ue = (PHY_VARS_NR_UE *)arg;
+  bool is_sl = ue->sl_mode;
 
   sleep(1);
 
@@ -1256,14 +1295,20 @@ void *nrUEQtscopeThread(void *arg)
   mainLayout.addWidget(&pwidgetueCombo2, 1, 1);
 
   KPIListSelectUE combo3;
-  combo3.setCurrentIndex(static_cast<int>(PlotTypeUE::pbchLLR));
+  if (is_sl)
+    combo3.setCurrentIndex(static_cast<int>(PlotTypeUE::psbchLLR));
+  else
+    combo3.setCurrentIndex(static_cast<int>(PlotTypeUE::psbchLLR));
   PainterWidgetUE pwidgetueCombo3(&config, &combo3, ue);
 
   mainLayout.addWidget(&combo3, 2, 0);
   mainLayout.addWidget(&pwidgetueCombo3, 3, 0);
 
   KPIListSelectUE combo4;
-  combo4.setCurrentIndex(static_cast<int>(PlotTypeUE::pbchIQ));
+  if (is_sl)
+    combo4.setCurrentIndex(static_cast<int>(PlotTypeUE::psbchIQ));
+  else
+    combo4.setCurrentIndex(static_cast<int>(PlotTypeUE::psbchIQ));
   PainterWidgetUE pwidgetueCombo4(&config, &combo4, ue);
 
   mainLayout.addWidget(&combo4, 2, 1);

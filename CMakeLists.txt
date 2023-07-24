@@ -1411,6 +1411,7 @@ set (MAC_NR_SRC_UE
   ${NR_UE_MAC_DIR}/nr_ue_procedures.c
   ${NR_UE_MAC_DIR}/nr_ue_procedures_sl.c
   ${NR_UE_MAC_DIR}/nr_ue_scheduler.c
+  ${NR_UE_MAC_DIR}/nr_ue_scheduler_sl.c
   ${NR_UE_MAC_DIR}/nr_ue_dci_configuration.c
   ${NR_UE_MAC_DIR}/nr_ra_procedures.c
   ${NR_UE_MAC_DIR}/nr_ue_power_procedures.c

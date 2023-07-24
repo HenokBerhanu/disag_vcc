@@ -1296,6 +1296,10 @@ nr_ue_if_module_t *nr_ue_if_module_init(uint32_t module_id)
     nr_ue_if_module_inst[module_id]->current_slot = 0;
     nr_ue_if_module_inst[module_id]->phy_config_request = nr_ue_phy_config_request;
     nr_ue_if_module_inst[module_id]->synch_request = nr_ue_synch_request;
+    if (get_softmodem_params()->sl_mode) {
+      nr_ue_if_module_inst[module_id]->sl_phy_config_request = nr_ue_sl_phy_config_request;
+      nr_ue_if_module_inst[module_id]->sl_indication = nr_ue_sl_indication;
+    }
     if (get_softmodem_params()->emulate_l1)
       nr_ue_if_module_inst[module_id]->scheduled_response = nr_ue_scheduled_response_stub;
     else
@@ -1334,4 +1338,118 @@ void RCconfig_nr_ue_macrlc(void) {
       }
     }
   }
+}
+
+static void handle_sl_bch(int ue_id,
+                          sl_nr_ue_mac_params_t *sl_mac,
+                          uint8_t *const sl_mib,
+                          const uint8_t len,
+                          uint16_t frame_rx,
+                          uint16_t slot_rx,
+                          uint16_t rx_slss_id)
+{
+  LOG_D(NR_MAC, " decode SL-MIB %d\n", rx_slss_id);
+
+  uint8_t sl_tdd_config[2] = {0, 0};
+
+  sl_tdd_config[0] = sl_mib[0];
+  sl_tdd_config[1] = sl_mib[1] & 0xF0;
+  uint8_t incov = sl_mib[1] & 0x08;
+  uint16_t frame_0 = (sl_mib[2] & 0xFE) >> 1;
+  uint16_t frame_1 = sl_mib[1] & 0x07;
+  frame_0 |= (frame_1 & 0x01) << 7;
+  frame_1 = ((frame_1 & 0x06) >> 1) << 8;
+  uint16_t frame = frame_1 | frame_0;
+  uint8_t slot = ((sl_mib[2] & 0x01) << 6) | ((sl_mib[3] & 0xFC) >> 2);
+
+  LOG_D(NR_MAC,
+        "[UE%d]In %d:%d Received SL-MIB:%x .Contents- SL-TDD config:%x, Incov:%d, FN:%d, Slot:%d\n",
+        ue_id,
+        frame_rx,
+        slot_rx,
+        *((uint32_t *)sl_mib),
+        *((uint16_t *)sl_tdd_config),
+        incov,
+        frame,
+        slot);
+
+  sl_mac->decoded_DFN = frame;
+  sl_mac->decoded_slot = slot;
+
+  nr_mac_rrc_data_ind_ue(ue_id, 0, 0, frame_rx, slot_rx, 0, rx_slss_id, 0, NR_SBCCH_SL_BCH, (uint8_t *)sl_mib, len);
+
+  return;
+}
+/*
+if PSBCH rx - handle_psbch()
+  - Extract FN, Slot
+  - Extract TDD configuration from the 12 bits
+  - SEND THE SL-MIB to RRC
+if PSSCH DATa rx - handle slsch()
+*/
+void sl_nr_process_rx_ind(int ue_id,
+                          uint32_t frame,
+                          uint32_t slot,
+                          sl_nr_ue_mac_params_t *sl_mac,
+                          sl_nr_rx_indication_t *rx_ind)
+{
+  uint8_t num_pdus = rx_ind->number_pdus;
+  uint8_t pdu_type = rx_ind->rx_indication_body[num_pdus - 1].pdu_type;
+
+  switch (pdu_type) {
+    case SL_NR_RX_PDU_TYPE_SSB:
+
+      if (rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.decode_status) {
+        LOG_D(NR_MAC,
+              "[UE%d]SL-MAC Received SL-SSB: RSRP:%d dBm/RE, rx_psbch_payload:%x, rx_slss_id:%d\n",
+              ue_id,
+              rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.rsrp_dbm,
+              *((uint32_t *)rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.psbch_payload),
+              rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.rx_slss_id);
+
+        handle_sl_bch(ue_id,
+                      sl_mac,
+                      rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.psbch_payload,
+                      4,
+                      frame,
+                      slot,
+                      rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.rx_slss_id);
+        sl_mac->ssb_rsrp_dBm = rx_ind->rx_indication_body[num_pdus - 1].ssb_pdu.rsrp_dbm;
+      } else {
+        LOG_I(NR_MAC, "[UE%d]SL-MAC - NO SL-SSB Received\n", ue_id);
+      }
+
+      break;
+    case SL_NR_RX_PDU_TYPE_SLSCH:
+      break;
+
+    default:
+      AssertFatal(1 == 0, "Incorrect type received. %s\n", __FUNCTION__);
+      break;
+  }
+}
+
+/*
+ * Sidelink indication is sent from PHY->MAC.
+ * This interface function handles these
+ *  - rx_ind (SSB on PSBCH/SLSCH on PSSCH).
+ *  - sci_ind (received scis during rxpool reception/txpool sensing)
+ */
+void nr_ue_sl_indication(nr_sidelink_indication_t *sl_indication)
+{
+  // NR_UE_L2_STATE_t ret;
+  int ue_id = sl_indication->module_id;
+  NR_UE_MAC_INST_t *mac = get_mac_inst(ue_id);
+
+  uint16_t slot = sl_indication->slot_rx;
+  uint16_t frame = sl_indication->frame_rx;
+
+  sl_nr_ue_mac_params_t *sl_mac = mac->SL_MAC_PARAMS;
+
+  if (sl_indication->rx_ind) {
+    sl_nr_process_rx_ind(ue_id, frame, slot, sl_mac, sl_indication->rx_ind);
+  } else {
+    nr_ue_sidelink_scheduler(sl_indication, mac);
+  }
+
 }

@@ -315,13 +315,17 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
 
 }
 
-void init_openair0(void) {
+void init_openair0()
+{
   int card;
   int freq_off = 0;
   NR_DL_FRAME_PARMS *frame_parms = &PHY_vars_UE_g[0][0]->frame_parms;
+  bool is_sidelink = (get_softmodem_params()->sl_mode) ? true : false;
+  if (is_sidelink)
+    frame_parms = &PHY_vars_UE_g[0][0]->SL_UE_PHY_PARAMS.sl_frame_params;
 
   for (card=0; card<MAX_CARDS; card++) {
-    uint64_t dl_carrier, ul_carrier, sl_carrier;
+    uint64_t dl_carrier, ul_carrier;
     openair0_cfg[card].configFilename    = NULL;
     openair0_cfg[card].threequarter_fs   = frame_parms->threequarter_fs;
     openair0_cfg[card].sample_rate       = frame_parms->samples_per_subframe * 1e3;
@@ -347,14 +351,13 @@ void init_openair0(void) {
       openair0_cfg[card].rx_num_channels,
       duplex_mode[openair0_cfg[card].duplex_mode]);
 
-    nr_get_carrier_frequencies(PHY_vars_UE_g[0][0], &dl_carrier, &ul_carrier);
+    if (is_sidelink) {
+      dl_carrier = frame_parms->dl_CarrierFreq;
+      ul_carrier = frame_parms->ul_CarrierFreq;
+    } else
+      nr_get_carrier_frequencies(PHY_vars_UE_g[0][0], &dl_carrier, &ul_carrier);
 
     nr_rf_card_config_freq(&openair0_cfg[card], ul_carrier, dl_carrier, freq_off);
-
-    if (get_softmodem_params()->sl_mode == 2) {
-      nr_get_carrier_frequencies_sl(PHY_vars_UE_g[0][0], &sl_carrier);
-      nr_rf_card_config_freq(&openair0_cfg[card], sl_carrier, sl_carrier, freq_off);
-    }
 
     nr_rf_card_config_gain(&openair0_cfg[card], rx_gain_off);
 
@@ -511,7 +514,7 @@ int main(int argc, char **argv)
   ue_id_g = (node_number == 0) ? 0 : node_number - 2;
   AssertFatal(ue_id_g >= 0, "UE id is expected to be nonnegative.\n");
 
-  if(node_number == 0)
+  if (node_number == 0)
     init_pdcp(0);
   else
     init_pdcp(mode_offset + ue_id_g);
@@ -540,7 +543,8 @@ int main(int argc, char **argv)
       set_options(CC_id, UE[CC_id]);
       NR_UE_MAC_INST_t *mac = get_mac_inst(0);
 
-      if (get_softmodem_params()->sa) { // set frame config to initial values from command line and assume that the SSB is centered on the grid
+      if (get_softmodem_params()->sa || get_softmodem_params()->sl_mode) { // set frame config to initial values from command line
+                                                                           // and assume that the SSB is centered on the grid
         uint16_t nr_band = get_softmodem_params()->band;
         mac->nr_band = nr_band;
         mac->ssb_start_subcarrier = UE[CC_id]->frame_parms.ssb_start_subcarrier;
@@ -549,8 +553,7 @@ int main(int argc, char **argv)
                                   uplink_frequency_offset[CC_id][0],
                                   get_softmodem_params()->numerology,
                                   nr_band);
-      }
-      else{
+      } else {
         DevAssert(mac->if_module != NULL && mac->if_module->phy_config_request != NULL);
         mac->if_module->phy_config_request(&mac->phy_config);
         mac->phy_config_request_sent = true;
@@ -559,7 +562,24 @@ int main(int argc, char **argv)
         nr_init_frame_parms_ue(&UE[CC_id]->frame_parms, nrUE_config, mac->nr_band);
       }
 
+      UE[CC_id]->sl_mode = get_softmodem_params()->sl_mode;
       init_nr_ue_vars(UE[CC_id], 0, abstraction_flag);
+
+      if (UE[CC_id]->sl_mode) {
+        AssertFatal(UE[CC_id]->sl_mode == 2, "Only Sidelink mode 2 supported. Mode 1 not yet supported\n");
+        DevAssert(mac->if_module != NULL && mac->if_module->sl_phy_config_request != NULL);
+        nr_sl_phy_config_t *phycfg = &mac->SL_MAC_PARAMS->sl_phy_config;
+        phycfg->sl_config_req.sl_carrier_config.sl_num_rx_ant = get_nrUE_params()->nb_antennas_rx;
+        phycfg->sl_config_req.sl_carrier_config.sl_num_tx_ant = get_nrUE_params()->nb_antennas_tx;
+        mac->if_module->sl_phy_config_request(phycfg);
+        mac->phy_config_request_sent = true;
+        sl_nr_ue_phy_params_t *sl_phy = &UE[CC_id]->SL_UE_PHY_PARAMS;
+        nr_init_frame_parms_ue_sl(&sl_phy->sl_frame_params,
+                                  &sl_phy->sl_config,
+                                  get_softmodem_params()->threequarter_fs,
+                                  get_nrUE_params()->ofdm_offset_divisor);
+        sl_ue_phy_init(UE[CC_id]);
+      }
     }
 
     init_openair0();
