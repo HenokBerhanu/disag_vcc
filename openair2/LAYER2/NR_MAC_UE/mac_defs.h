@@ -482,6 +482,19 @@ typedef struct {
   A_SEQUENCE_OF(NR_SearchSpace_t) list_SS;
 } NR_BWP_PDCCH_t;
 
+typedef struct csi_payload {
+  uint32_t part1_payload;
+  uint32_t part2_payload;
+  int p1_bits;
+  int p2_bits;
+} csi_payload_t;
+
+typedef enum {
+  WIDEBAND_ON_PUCCH,
+  SUBBAND_ON_PUCCH,
+  ON_PUSCH
+} CSI_mapping_t;
+
 /*!\brief Top level UE MAC structure */
 typedef struct NR_UE_MAC_INST_s {
   module_id_t ue_id;

@@ -515,6 +515,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
                         NR_tda_info_t *tda_info,
                         nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu,
                         dci_pdu_rel15_t *dci,
+                        csi_payload_t *csi_report,
                         RAR_grant_t *rar_grant,
                         uint16_t rnti,
                         int ss_type,
@@ -631,6 +632,38 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     pusch_config_pdu->tbslbrm = 0;
 
   } else if (dci) {
+
+    if (dci->csi_request.nbits > 0 && dci->csi_request.val > 0) {
+      AssertFatal(csi_report, "CSI report needs to be present in case of CSI request\n");
+      pusch_config_pdu->pusch_uci.csi_part1_bit_length = csi_report->p1_bits;
+      pusch_config_pdu->pusch_uci.csi_part1_payload = csi_report->part1_payload;
+      pusch_config_pdu->pusch_uci.csi_part2_bit_length = csi_report->p2_bits;
+      pusch_config_pdu->pusch_uci.csi_part2_payload = csi_report->part2_payload;
+      AssertFatal(pusch_Config && pusch_Config->uci_OnPUSCH,
+                  "UCI on PUSCH need to be configured\n");
+      pusch_config_pdu->pusch_uci.alpha_scaling = pusch_Config->uci_OnPUSCH->choice.setup->scaling;
+      AssertFatal(pusch_Config->uci_OnPUSCH->choice.setup->betaOffsets &&
+                  pusch_Config->uci_OnPUSCH->choice.setup->betaOffsets->present == NR_UCI_OnPUSCH__betaOffsets_PR_semiStatic,
+                  "Only semistatic beta offset is supported\n");
+      NR_BetaOffsets_t *beta_offsets = pusch_Config->uci_OnPUSCH->choice.setup->betaOffsets->choice.semiStatic;
+      pusch_config_pdu->pusch_uci.beta_offset_harq_ack = pusch_config_pdu->pusch_uci.harq_ack_bit_length > 2 ?
+                                                         (pusch_config_pdu->pusch_uci.harq_ack_bit_length < 12 ? *beta_offsets->betaOffsetACK_Index2 :
+                                                         *beta_offsets->betaOffsetACK_Index3) :
+                                                         *beta_offsets->betaOffsetACK_Index1;
+      pusch_config_pdu->pusch_uci.beta_offset_csi1 = pusch_config_pdu->pusch_uci.csi_part1_bit_length < 12 ?
+                                                     *beta_offsets->betaOffsetCSI_Part1_Index1 :
+                                                     *beta_offsets->betaOffsetCSI_Part1_Index2;
+      pusch_config_pdu->pusch_uci.beta_offset_csi2 = pusch_config_pdu->pusch_uci.csi_part2_bit_length < 12 ?
+                                                     *beta_offsets->betaOffsetCSI_Part2_Index1 :
+                                                     *beta_offsets->betaOffsetCSI_Part2_Index2;
+    }
+    else {
+      pusch_config_pdu->pusch_uci.csi_part1_bit_length = 0;
+      pusch_config_pdu->pusch_uci.csi_part2_bit_length = 0;
+    }
+
+    pusch_config_pdu->pusch_uci.harq_ack_bit_length = 0;
+
     pusch_config_pdu->bwp_start = current_UL_BWP->BWPStart;
     pusch_config_pdu->bwp_size = current_UL_BWP->BWPSize;
 
@@ -889,6 +922,47 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
   }
 
   return 0;
+}
+
+csi_payload_t nr_ue_aperiodic_csi_reporting(NR_UE_MAC_INST_t *mac, dci_field_t csi_request, int tda, long *k2)
+{
+  NR_CSI_AperiodicTriggerStateList_t *aperiodicTriggerStateList = mac->sc_info.aperiodicTriggerStateList;
+  AssertFatal(aperiodicTriggerStateList, "Received CSI request via DCI but aperiodicTriggerStateList is not present\n");
+  int n_states = aperiodicTriggerStateList->list.count;
+  int n_ts = csi_request.nbits;
+  csi_payload_t csi = {0};
+  AssertFatal(n_states <= ((1 << n_ts) - 1), "Case of subselection indication of trigger states not supported yet\n");
+  int num_trig = 0;
+  for (int i = 0; i < n_ts; i++) {
+    // A non-zero codepoint of the CSI request field in the DCI is mapped to a CSI triggering state
+    // according to the order of the associated positions of the up to (2^n_ts -1) trigger states
+    // in CSI-AperiodicTriggerStateList with codepoint 1 mapped to the triggering state in the first position
+    if (csi_request.val & (1 << i)) {
+      AssertFatal(num_trig == 0, "Multiplexing more than 1 CSI report is not supported\n");
+      NR_CSI_AperiodicTriggerState_t *trigger_state = aperiodicTriggerStateList->list.array[i];
+      AssertFatal(trigger_state->associatedReportConfigInfoList.list.count == 1,
+                  "Cannot handle more than 1 report configuration per state\n");
+      NR_CSI_AssociatedReportConfigInfo_t *reportconfig = trigger_state->associatedReportConfigInfoList.list.array[0];
+      NR_CSI_ReportConfigId_t id = reportconfig->reportConfigId;
+      NR_CSI_MeasConfig_t *csi_measconfig = mac->sc_info.csi_MeasConfig;
+      int found = -1;
+      for (int c = 0; c < csi_measconfig->csi_ReportConfigToAddModList->list.count; c++) {
+        NR_CSI_ReportConfig_t *report_config = csi_measconfig->csi_ReportConfigToAddModList->list.array[c];
+        if (report_config->reportConfigId == id) {
+          struct NR_CSI_ReportConfig__reportConfigType__aperiodic__reportSlotOffsetList *offset_list = &report_config->reportConfigType.choice.aperiodic->reportSlotOffsetList;
+          AssertFatal(tda < offset_list->list.count, "TDA index from DCI %d exceeds slot offset list %d\n", tda, offset_list->list.count);
+          if (k2 == NULL || *k2 < *offset_list->list.array[tda])
+            k2 = offset_list->list.array[tda];
+          found = c;
+          break;
+        }
+      }
+      AssertFatal(found >= 0, "Couldn't find csi-ReportConfig with ID %ld\n", id);
+      num_trig++;
+      csi = nr_get_csi_payload(mac, found, ON_PUSCH, csi_measconfig);
+    }
+  }
+  return csi;
 }
 
 int configure_srs_pdu(NR_UE_MAC_INST_t *mac,
@@ -2185,7 +2259,7 @@ uint8_t set_csirs_measurement_bitmap(NR_CSI_MeasConfig_t *csi_measconfig, NR_CSI
   if (csi_res_id > NR_maxNrofCSI_ResourceConfigurations)
     return meas_bitmap; // CSI-RS for tracking
   for(int i = 0; i < csi_measconfig->csi_ReportConfigToAddModList->list.count; i++) {
-    struct NR_CSI_ReportConfig *report_config = csi_measconfig->csi_ReportConfigToAddModList->list.array[i];
+    NR_CSI_ReportConfig_t *report_config = csi_measconfig->csi_ReportConfigToAddModList->list.array[i];
     if(report_config->resourcesForChannelMeasurement != csi_res_id)
       continue;
     // bit 0 RSRP bit 1 RI bit 2 LI bit 3 PMI bit 4 CQI bit 5 i1

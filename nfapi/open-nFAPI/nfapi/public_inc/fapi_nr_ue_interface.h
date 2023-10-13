@@ -37,18 +37,6 @@
   typedef signed char		   int8_t;
 */
 
-
-typedef struct {
-  uint8_t uci_format;
-  uint8_t uci_channel;
-  uint8_t harq_ack_bits;
-  uint32_t harq_ack;
-  uint8_t csi_bits;
-  uint32_t csi;
-  uint8_t sr_bits;
-  uint32_t sr;
-} fapi_nr_uci_pdu_rel15_t;
-
 typedef enum {
  RLM_no_monitoring = 0,
  RLM_out_of_sync = 1,
@@ -257,10 +245,16 @@ typedef struct
 
 typedef struct
 {
+  // payloads with fixed array size
+  // no place to free the dinamically allocated
+  // vector without L1 implementation
   uint16_t harq_ack_bit_length;
+  uint64_t harq_payload;
   uint16_t csi_part1_bit_length;
+  uint64_t csi_part1_payload;
   uint16_t csi_part2_bit_length;
-  uint8_t  alpha_scaling;
+  uint64_t csi_part2_payload;
+  uint8_t  alpha_scaling; // 0 = 0.5, 1 = 0.65, 2 = 0.8, 3 = 1
   uint8_t  beta_offset_harq_ack;
   uint8_t  beta_offset_csi1;
   uint8_t  beta_offset_csi2;

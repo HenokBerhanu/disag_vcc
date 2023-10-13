@@ -561,6 +561,7 @@ typedef struct NR_UE_UL_BWP {
   NR_PUSCH_TimeDomainResourceAllocationList_t *tdaList_Common;
   NR_ConfiguredGrantConfig_t *configuredGrantConfig;
   NR_PUSCH_Config_t *pusch_Config;
+  NR_UCI_OnPUSCH_t *uci_onPusch;
   NR_PUCCH_Config_t *pucch_Config;
   NR_PUCCH_ConfigCommon_t *pucch_ConfigCommon;
   NR_SRS_Config_t *srs_Config;
