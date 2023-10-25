@@ -632,7 +632,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     pusch_config_pdu->tbslbrm = 0;
 
   } else if (dci) {
-
+    pusch_config_pdu->ulsch_indicator = dci->ulsch_indicator;
     if (dci->csi_request.nbits > 0 && dci->csi_request.val > 0) {
       AssertFatal(csi_report, "CSI report needs to be present in case of CSI request\n");
       pusch_config_pdu->pusch_uci.csi_part1_bit_length = csi_report->p1_bits;
@@ -1421,6 +1421,10 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
     ulcfg_pdu++;
   }
   release_ul_config(ulcfg_pdu, false);
+
+  if(mac->state >= UE_PERFORMING_RA && mac->state < UE_DETACHING)
+    nr_ue_pucch_scheduler(mac, frame_tx, slot_tx);
+
   if (mac->if_module != NULL && mac->if_module->scheduled_response != NULL) {
     LOG_D(NR_MAC, "3# scheduled_response transmitted,%d, %d\n", frame_tx, slot_tx);
     nr_scheduled_response_t scheduled_response = {.ul_config = mac->ul_config_request + slot_tx,
@@ -1459,9 +1463,6 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
       nr_timer_start(&sched_info->Bj_timer);
     }
   }
-
-  if(mac->state >= UE_PERFORMING_RA && mac->state < UE_DETACHING)
-    nr_ue_pucch_scheduler(mac, frame_tx, slot_tx, ul_info->phy_data);
 }
 
 static uint8_t nr_locate_BsrIndexByBufferSize(const uint32_t *table, int size, int value)
@@ -2082,7 +2083,89 @@ void build_ssb_to_ro_map(NR_UE_MAC_INST_t *mac)
   LOG_D(NR_MAC,"Map SSB to RO done\n");
 }
 
-void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP, void *phy_data)
+static bool schedule_uci_on_pusch(NR_UE_MAC_INST_t *mac, frame_t frame_tx, int slot_tx, const PUCCH_sched_t *pucch)
+{
+  fapi_nr_ul_config_request_pdu_t *ulcfg_pdu = lockGet_ul_iterator(mac, frame_tx, slot_tx);
+  if (!ulcfg_pdu)
+    return NULL;
+
+  nfapi_nr_ue_pusch_pdu_t *pusch_pdu = NULL;
+  while (ulcfg_pdu->pdu_type != FAPI_NR_END) {
+    if (ulcfg_pdu->pdu_type == FAPI_NR_UL_CONFIG_TYPE_PUSCH) {
+      int start_pusch = ulcfg_pdu->pusch_config_pdu.start_symbol_index;
+      int nsymb_pusch = ulcfg_pdu->pusch_config_pdu.nr_of_symbols;
+      int end_pusch = start_pusch + nsymb_pusch;
+      NR_PUCCH_Resource_t *pucchres = pucch->pucch_resource;
+      int nr_of_symbols = 0;
+      int start_symbol_index = 0;
+      switch(pucchres->format.present) {
+        case NR_PUCCH_Resource__format_PR_format0 :
+          nr_of_symbols = pucchres->format.choice.format0->nrofSymbols;
+          start_symbol_index = pucchres->format.choice.format0->startingSymbolIndex;
+          break;
+        case NR_PUCCH_Resource__format_PR_format1 :
+          nr_of_symbols = pucchres->format.choice.format1->nrofSymbols;
+          start_symbol_index = pucchres->format.choice.format1->startingSymbolIndex;
+          break;
+        case NR_PUCCH_Resource__format_PR_format2 :
+          nr_of_symbols = pucchres->format.choice.format2->nrofSymbols;
+          start_symbol_index = pucchres->format.choice.format2->startingSymbolIndex;
+          break;
+        case NR_PUCCH_Resource__format_PR_format3 :
+          nr_of_symbols = pucchres->format.choice.format3->nrofSymbols;
+          start_symbol_index = pucchres->format.choice.format3->startingSymbolIndex;
+          break;
+        case NR_PUCCH_Resource__format_PR_format4 :
+          nr_of_symbols = pucchres->format.choice.format4->nrofSymbols;
+          start_symbol_index = pucchres->format.choice.format4->startingSymbolIndex;
+          break;
+        default :
+          AssertFatal(false, "Undefined PUCCH format \n");
+      }
+      int final_symbol = nr_of_symbols + start_symbol_index;
+      // PUCCH overlapping in time with PUSCH
+      if (start_symbol_index < end_pusch && final_symbol > start_pusch) {
+        pusch_pdu = &ulcfg_pdu->pusch_config_pdu;
+        break;
+      }
+    }
+    ulcfg_pdu++;
+  }
+
+  if (!pusch_pdu) {
+    release_ul_config(ulcfg_pdu, false);
+    return false;
+  }
+
+  // If a UE would transmit on a serving cell a PUSCH without UL-SCH that overlaps with a PUCCH transmission
+  // on a serving cell that includes positive SR information, the UE does not transmit the PUSCH.
+  if (pusch_pdu && pusch_pdu->ulsch_indicator == 0 && pucch->sr_payload == 1) {
+    release_ul_config(ulcfg_pdu, false);
+    return false;
+  }
+
+  // - UE multiplexes only HARQ-ACK information, if any, from the UCI in the PUSCH transmission
+  // and does not transmit the PUCCH if the UE multiplexes aperiodic or semi-persistent CSI reports in the PUSCH
+
+  // - UE multiplexes only HARQ-ACK information and CSI reports, if any, from the UCI in the PUSCH transmission
+  // and does not transmit the PUCCH if the UE does not multiplex aperiodic or semi-persistent CSI reports in the PUSCH
+  bool mux_done = false;
+  if (pucch->n_harq > 0) {
+    pusch_pdu->pusch_uci.harq_ack_bit_length = pucch->n_harq;
+    pusch_pdu->pusch_uci.harq_payload = pucch->ack_payload;
+    mux_done = true;
+  }
+  if (pusch_pdu->pusch_uci.csi_part1_bit_length == 0 && pusch_pdu->pusch_uci.csi_part2_bit_length == 0) {
+    // To support this we would need to shift some bits into CSI part2 -> need to change the logic
+    AssertFatal(pucch->n_csi == 0, "Multiplexing periodic CSI on PUSCH not supported\n");
+  }
+
+  release_ul_config(ulcfg_pdu, false);
+  // only use PUSCH if any mux is done otherwise send PUCCH
+  return mux_done;
+}
+
+void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP)
 {
   PUCCH_sched_t pucch[3] = {0}; // TODO the size might change in the future in case of multiple SR or multiple CSI in a slot
 
@@ -2118,6 +2201,7 @@ void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP, voi
 
   if (num_res > 1)
     multiplex_pucch_resource(mac, pucch, num_res);
+
   for (int j = 0; j < num_res; j++) {
     if (pucch[j].n_harq + pucch[j].n_sr + pucch[j].n_csi != 0) {
       LOG_D(NR_MAC,
@@ -2130,6 +2214,11 @@ void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP, voi
       mac->nr_ue_emul_l1.num_srs = pucch[j].n_sr;
       mac->nr_ue_emul_l1.num_harqs = pucch[j].n_harq;
       mac->nr_ue_emul_l1.num_csi_reports = pucch[j].n_csi;
+
+      // checking if we need to schedule pucch[j] on PUSCH
+      if (schedule_uci_on_pusch(mac, frameP, slotP, &pucch[j]))
+        continue;
+
       fapi_nr_ul_config_request_pdu_t *pdu = lockGet_ul_config(mac, frameP, slotP, FAPI_NR_UL_CONFIG_TYPE_PUCCH);
       if (!pdu) {
         LOG_E(NR_MAC, "Error in pucch allocation\n");
@@ -2144,14 +2233,6 @@ void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP, voi
       if (ret != 0)
         remove_ul_config_last_item(pdu);
       release_ul_config(pdu, false);
-    }
-    if (mac->if_module != NULL && mac->if_module->scheduled_response != NULL) {
-      nr_scheduled_response_t scheduled_response = {.ul_config = mac->ul_config_request + slotP,
-                                                    .mac = mac,
-                                                    .module_id = mac->ue_id,
-                                                    .CC_id = 0 /*TBR fix*/,
-                                                    .phy_data = phy_data};
-      mac->if_module->scheduled_response(&scheduled_response);
     }
   }
 }

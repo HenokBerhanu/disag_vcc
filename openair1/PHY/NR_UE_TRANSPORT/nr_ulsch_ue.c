@@ -126,7 +126,7 @@ void nr_ue_ulsch_procedures(PHY_VARS_NR_UE *UE,
   AssertFatal(pusch_pdu->pusch_uci.harq_ack_bit_length == 0 &&
               pusch_pdu->pusch_uci.csi_part1_bit_length == 0 &&
               pusch_pdu->pusch_uci.csi_part2_bit_length == 0,
-              "UCI on PUSCH not supported\n");
+              "UCI on PUSCH not supported at PHY\n");
 
   int start_symbol          = pusch_pdu->start_symbol_index;
   uint16_t ul_dmrs_symb_pos = pusch_pdu->ul_dmrs_symb_pos;

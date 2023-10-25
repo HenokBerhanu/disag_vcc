@@ -349,6 +349,7 @@ typedef struct
   uint8_t  nr_of_symbols;
   uint32_t tbslbrm;
   uint8_t ldpcBaseGraph;
+  uint8_t ulsch_indicator;
   //Optional Data only included if indicated in pduBitmap
   nfapi_nr_ue_pusch_data_t pusch_data;
   nfapi_nr_ue_pusch_uci_t  pusch_uci;
