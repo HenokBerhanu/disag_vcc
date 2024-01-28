@@ -2667,9 +2667,12 @@ void mac_remove_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rnti)
   delete_nr_ue_data(UE, nr_mac->common_channels, &UE_info->uid_allocator);
 }
 
-uint8_t nr_get_tpc(int target, int snrx10, int incr)
+// all values passed to this function are in dB x10
+uint8_t nr_get_tpc(int target, uint8_t cqi, int incr, int tx_power)
 {
-  // all values passed to this function are in dB x10
+  // al values passed to this function are x10
+  int snrx10 = (cqi * 5) - 640 - (tx_power * 10);
+  LOG_D(NR_MAC, "tpc : target %d, cqi %d, snrx10 %d, tx_power %d\n", target, ((int)cqi * 5) - 640, snrx10, tx_power);
   if (snrx10 > target + incr) return 0; // decrease 1dB
   if (snrx10 < target - (3*incr)) return 3; // increase 3dB
   if (snrx10 < target - incr) return 2; // increase 1dB
