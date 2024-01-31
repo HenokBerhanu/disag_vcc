@@ -15,7 +15,7 @@ export CUDA_MPS_PIPE_DIRECTORY=/var
 export CUDA_MPS_LOG_DIRECTORY=/var
 
 # Stop existing MPS
-echo quit | nvidia-cuda-mps-control
+sudo -E echo quit | sudo -E nvidia-cuda-mps-control
 
 # Start MPS
 sudo -E nvidia-cuda-mps-control -d
