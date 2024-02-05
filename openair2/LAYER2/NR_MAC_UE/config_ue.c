@@ -1964,10 +1964,13 @@ static void configure_csiconfig(NR_UE_ServingCell_Info_t *sc_info, struct NR_Set
   }
 }
 
-static void configure_servingcell_info(NR_UE_ServingCell_Info_t *sc_info, NR_ServingCellConfig_t *scd)
+static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConfig_t *scd)
 {
-  if (scd->csi_MeasConfig)
+  NR_UE_ServingCell_Info_t *sc_info = &mac->sc_info;
+  if (scd->csi_MeasConfig) {
     configure_csiconfig(sc_info, scd->csi_MeasConfig);
+    compute_csi_bitlen(sc_info->csi_MeasConfig, mac->csi_report_template);
+  }
 
   if (scd->supplementaryUplink)
     UPDATE_IE(sc_info->supplementaryUplink, scd->supplementaryUplink, NR_UplinkConfig_t);
@@ -2228,7 +2231,7 @@ void nr_rrc_mac_config_req_cg(module_id_t module_id,
       handle_reconfiguration_with_sync(mac, cc_idP, spCellConfig->reconfigurationWithSync);
     }
     if (scd) {
-      configure_servingcell_info(&mac->sc_info, scd);
+      configure_servingcell_info(mac, scd);
       configure_BWPs(mac, scd);
     }
   }

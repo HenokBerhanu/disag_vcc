@@ -2805,9 +2805,14 @@ csi_payload_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
         if (csi_MeasConfig->nzp_CSI_RS_ResourceSetToAddModList->list.array[csi_idx]->nzp_CSI_ResourceSetId ==
             *(csi_resourceconfig->csi_RS_ResourceSetList.choice.nzp_CSI_RS_SSB->nzp_CSI_RS_ResourceSetList->list.array[0])) {
 
-          nr_csi_report_t *csi_report = &mac->csi_report_template[csi_idx];
-          compute_csi_bitlen(csi_MeasConfig, mac->csi_report_template);
-
+          nr_csi_report_t *csi_report = NULL;
+          for (int i = 0; i < MAX_CSI_REPORTCONFIG; i++) {
+            if (mac->csi_report_template[i].reportConfigId == csi_reportconfig->reportConfigId) {
+              csi_report = &mac->csi_report_template[i];
+              break;
+            }
+          }
+          AssertFatal(csi_report, "Couldn't find CSI report with ID %ld\n", csi_reportconfig->reportConfigId);
           int cri_bitlen = csi_report->csi_meas_bitlen.cri_bitlen;
           int ri_bitlen = csi_report->csi_meas_bitlen.ri_bitlen;
           int pmi_x1_bitlen = csi_report->csi_meas_bitlen.pmi_x1_bitlen[mac->csirs_measurements.rank_indicator];
@@ -2837,7 +2842,7 @@ csi_payload_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
                              mac->csirs_measurements.i2;
           }
           else {
-            p1_bits = nr_get_csi_bitlen(mac->csi_report_template, csi_idx);
+            p1_bits = nr_get_csi_bitlen(csi_report);
             padding_bitlen = p1_bits - (cri_bitlen + ri_bitlen + pmi_x1_bitlen + pmi_x2_bitlen + cqi_bitlen);
             temp_payload_1 = (0/*mac->csi_measurements.cri*/ << (cqi_bitlen + pmi_x2_bitlen + pmi_x1_bitlen + padding_bitlen + ri_bitlen)) |
                              (mac->csirs_measurements.rank_indicator << (cqi_bitlen + pmi_x2_bitlen + pmi_x1_bitlen + padding_bitlen)) |
@@ -2884,10 +2889,15 @@ csi_payload_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
         if (csi_MeasConfig->nzp_CSI_RS_ResourceSetToAddModList->list.array[csi_idx]->nzp_CSI_ResourceSetId ==
             *(csi_resourceconfig->csi_RS_ResourceSetList.choice.nzp_CSI_RS_SSB->nzp_CSI_RS_ResourceSetList->list.array[0])) {
 
-          nr_csi_report_t *csi_report = &mac->csi_report_template[csi_idx];
-          compute_csi_bitlen(csi_MeasConfig, mac->csi_report_template);
-          n_bits = nr_get_csi_bitlen(mac->csi_report_template, csi_idx);
-
+          nr_csi_report_t *csi_report = NULL;
+          for (int i = 0; i < MAX_CSI_REPORTCONFIG; i++) {
+            if (mac->csi_report_template[i].reportConfigId == csi_reportconfig->reportConfigId) {
+              csi_report = &mac->csi_report_template[i];
+              break;
+            }
+          }
+          AssertFatal(csi_report, "Couldn't find CSI report with ID %ld\n", csi_reportconfig->reportConfigId);
+          n_bits = nr_get_csi_bitlen(csi_report);
           int cri_ssbri_bitlen = csi_report->CSI_report_bitlen.cri_ssbri_bitlen;
           int rsrp_bitlen = csi_report->CSI_report_bitlen.rsrp_bitlen;
           int diff_rsrp_bitlen = csi_report->CSI_report_bitlen.diff_rsrp_bitlen;

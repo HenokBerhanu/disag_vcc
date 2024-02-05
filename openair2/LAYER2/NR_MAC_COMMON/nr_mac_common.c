@@ -5028,7 +5028,7 @@ void compute_csi_bitlen(const NR_CSI_MeasConfig_t *csi_MeasConfig, nr_csi_report
 
   // for each CSI measurement report configuration (list of CSI-ReportConfig)
   LOG_D(NR_MAC,"Searching %d csi_reports\n",csi_MeasConfig->csi_ReportConfigToAddModList->list.count);
-  for (csi_report_id=0; csi_report_id < csi_MeasConfig->csi_ReportConfigToAddModList->list.count; csi_report_id++){
+  for (csi_report_id = 0; csi_report_id < csi_MeasConfig->csi_ReportConfigToAddModList->list.count; csi_report_id++) {
     struct NR_CSI_ReportConfig *csi_reportconfig = csi_MeasConfig->csi_ReportConfigToAddModList->list.array[csi_report_id];
     // MAC structure for CSI measurement reports (per UE and per report)
     nr_csi_report_t *csi_report = &csi_report_template[csi_report_id];
@@ -5051,6 +5051,7 @@ void compute_csi_bitlen(const NR_CSI_MeasConfig_t *csi_MeasConfig, nr_csi_report
 
     reportQuantity_type = csi_reportconfig->reportQuantity.present;
     csi_report->reportQuantity_type = reportQuantity_type;
+    csi_report->reportConfigId = csi_reportconfig->reportConfigId;
 
     // setting the CSI or SSB index list
     if (NR_CSI_ReportConfig__reportQuantity_PR_ssb_Index_RSRP == csi_report->reportQuantity_type) {
@@ -5115,21 +5116,21 @@ void compute_csi_bitlen(const NR_CSI_MeasConfig_t *csi_MeasConfig, nr_csi_report
   }
 }
 
-uint16_t nr_get_csi_bitlen(nr_csi_report_t *csi_report_template, uint8_t csi_report_id) {
-
+uint16_t nr_get_csi_bitlen(nr_csi_report_t *csi_report)
+{
   uint16_t csi_bitlen = 0;
   uint16_t max_bitlen = 0;
   L1_RSRP_bitlen_t *CSI_report_bitlen = NULL;
   CSI_Meas_bitlen_t *csi_meas_bitlen = NULL;
 
-  if (csi_report_template[csi_report_id].reportQuantity_type == NR_CSI_ReportConfig__reportQuantity_PR_ssb_Index_RSRP ||
-      csi_report_template[csi_report_id].reportQuantity_type == NR_CSI_ReportConfig__reportQuantity_PR_cri_RSRP) {
-    CSI_report_bitlen = &(csi_report_template[csi_report_id].CSI_report_bitlen); // This might need to be moodif for Aperiodic CSI-RS measurements
+  if (csi_report->reportQuantity_type == NR_CSI_ReportConfig__reportQuantity_PR_ssb_Index_RSRP ||
+      csi_report->reportQuantity_type == NR_CSI_ReportConfig__reportQuantity_PR_cri_RSRP) {
+    CSI_report_bitlen = &(csi_report->CSI_report_bitlen); // This might need to be moodif for Aperiodic CSI-RS measurements
     csi_bitlen += ((CSI_report_bitlen->cri_ssbri_bitlen * CSI_report_bitlen->nb_ssbri_cri) +
                    CSI_report_bitlen->rsrp_bitlen +(CSI_report_bitlen->diff_rsrp_bitlen *
                                                     (CSI_report_bitlen->nb_ssbri_cri -1 )));
   } else {
-    csi_meas_bitlen = &(csi_report_template[csi_report_id].csi_meas_bitlen); //This might need to be moodif for Aperiodic CSI-RS measurements
+    csi_meas_bitlen = &(csi_report->csi_meas_bitlen); //This might need to be moodif for Aperiodic CSI-RS measurements
     uint16_t temp_bitlen;
     for (int i = 0; i < 8; i++) {
       temp_bitlen = (csi_meas_bitlen->cri_bitlen+
@@ -5143,7 +5144,6 @@ uint16_t nr_get_csi_bitlen(nr_csi_report_t *csi_report_template, uint8_t csi_rep
     }
     csi_bitlen += max_bitlen;
   }
-
   return csi_bitlen;
 }
 
