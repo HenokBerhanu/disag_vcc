@@ -1836,22 +1836,25 @@ static void configure_csiconfig(NR_UE_ServingCell_Info_t *sc_info, struct NR_Set
   switch (csi_MeasConfig_sr->present) {
     case NR_SetupRelease_CSI_MeasConfig_PR_NOTHING:
       break;
-    case NR_SetupRelease_CSI_MeasConfig_PR_release :
+    case NR_SetupRelease_CSI_MeasConfig_PR_release:
       asn1cFreeStruc(asn_DEF_NR_CSI_MeasConfig, sc_info->csi_MeasConfig);
+      asn1cFreeStruc(asn_DEF_NR_CSI_AperiodicTriggerStateList, sc_info->aperiodicTriggerStateList);
       break;
-    case NR_SetupRelease_CSI_MeasConfig_PR_setup:
+    case NR_SetupRelease_CSI_MeasConfig_PR_setup: {
+      NR_CSI_MeasConfig_t *csi_MeasConfig = csi_MeasConfig_sr->choice.setup;
+      // separately handling aperiodicTriggerStateList
+      // because it is set directly into sc_info structure
+      if (csi_MeasConfig->aperiodicTriggerStateList)
+        HANDLE_SETUPRELEASE_DIRECT(sc_info->aperiodicTriggerStateList,
+                                   csi_MeasConfig->aperiodicTriggerStateList,
+                                   NR_CSI_AperiodicTriggerStateList_t,
+                                   asn_DEF_NR_CSI_AperiodicTriggerStateList);
       if (!sc_info->csi_MeasConfig) { // setup
-        UPDATE_IE(sc_info->csi_MeasConfig, csi_MeasConfig_sr->choice.setup, NR_CSI_MeasConfig_t);
+        UPDATE_IE(sc_info->csi_MeasConfig, csi_MeasConfig, NR_CSI_MeasConfig_t);
       } else { // modification
         NR_CSI_MeasConfig_t *target = sc_info->csi_MeasConfig;
-        NR_CSI_MeasConfig_t *csi_MeasConfig = csi_MeasConfig_sr->choice.setup;
         if (csi_MeasConfig->reportTriggerSize)
           UPDATE_IE(target->reportTriggerSize, csi_MeasConfig->reportTriggerSize, long);
-        if (csi_MeasConfig->aperiodicTriggerStateList)
-          HANDLE_SETUPRELEASE_DIRECT(sc_info->aperiodicTriggerStateList,
-                                     csi_MeasConfig->aperiodicTriggerStateList,
-                                     NR_CSI_AperiodicTriggerStateList_t,
-                                     asn_DEF_NR_CSI_AperiodicTriggerStateList);
         if (csi_MeasConfig->semiPersistentOnPUSCH_TriggerStateList)
           HANDLE_SETUPRELEASE_IE(target->semiPersistentOnPUSCH_TriggerStateList,
                                  csi_MeasConfig->semiPersistentOnPUSCH_TriggerStateList,
@@ -1959,6 +1962,7 @@ static void configure_csiconfig(NR_UE_ServingCell_Info_t *sc_info, struct NR_Set
         }
       }
       break;
+    }
     default:
       AssertFatal(false, "Invalid case\n");
   }
