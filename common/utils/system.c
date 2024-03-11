@@ -95,17 +95,6 @@ static void read_pipe(int p, char *b, int size) {
     size -= ret;
   }
 }
-int checkIfFedoraDistribution(void) {
-  return !system("grep -iq 'ID_LIKE.*fedora' /etc/os-release ");
-}
-
-int checkIfGenericKernelOnFedora(void) {
-  return system("uname -a | grep -q rt");
-}
-
-int checkIfInsideContainer(void) {
-  return !system("egrep -q 'libpod|podman|kubepods'  /proc/self/cgroup");
-}
 
 /********************************************************************/
 /* background process                                               */
@@ -234,11 +223,6 @@ void threadCreate(pthread_t* t, void * (*func)(void*), void * param, char* name,
 
   LOG_I(UTIL,"Creating thread %s with affinity %d and priority %d\n",name,affinity,priority);
 
-  if (checkIfFedoraDistribution())
-    if (checkIfGenericKernelOnFedora())
-      if (checkIfInsideContainer())
-        settingPriority = 0;
-  
   if (settingPriority) {
     ret=pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
     AssertFatal(ret == 0, "Error in pthread_attr_setinheritsched(): ret: %d, errno: %d\n", ret, errno);
@@ -313,11 +297,6 @@ void thread_top_init(char *thread_name,
       strcat(cpu_affinity, temp);
     }
   }
-
-  if (checkIfFedoraDistribution())
-    if (checkIfGenericKernelOnFedora())
-      if (checkIfInsideContainer())
-        settingPriority = 0;
 
   if (settingPriority) {
     memset(&sparam, 0, sizeof(sparam));
