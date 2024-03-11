@@ -622,7 +622,7 @@ int main( int argc, char **argv ) {
   mode = normal_txrx;
   memset(tx_max_power,0,sizeof(int)*MAX_NUM_CCs);
   logInit();
-  set_latency_target();
+  lock_memory_to_ram();
   printf("Reading in command-line options\n");
   get_options(uniqCfg);
 
@@ -677,7 +677,6 @@ int main( int argc, char **argv ) {
     AssertFatal(ret == 0, "cannot create ITTI tasks\n");
   }
 
-  mlockall(MCL_CURRENT | MCL_FUTURE);
   pthread_cond_init(&sync_cond,NULL);
   pthread_mutex_init(&sync_mutex, NULL);
   usleep(1000);

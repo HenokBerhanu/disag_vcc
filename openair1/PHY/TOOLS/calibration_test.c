@@ -45,8 +45,7 @@ int main(int argc, char **argv) {
   get_common_options(uniqCfg, SOFTMODEM_GNB_BIT);
   config_process_cmdline(uniqCfg, cmdline_params, sizeofArray(cmdline_params), NULL);
   CONFIG_CLEARRTFLAG(CONFIG_NOEXITONHELP);
-  set_latency_target();
-
+  lock_memory_to_ram();
     
   int N_RB=50;
   int sampling_rate=30.72e6;

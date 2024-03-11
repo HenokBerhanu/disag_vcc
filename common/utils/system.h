@@ -42,7 +42,7 @@ int background_system(char *command);
 
 void start_background_system(void);
 
-void set_latency_target(void);
+void lock_memory_to_ram(void);
 
 void threadCreate(pthread_t *t, void *(*func)(void *), void *param, char *name, int affinity, int priority);
 
