@@ -343,7 +343,7 @@ typedef struct timer_elm_s {
     tasks[newQueue]= new task_list_t;
     tasks[newQueue]->task_parms = {0};
     pthread_mutex_unlock (&lock_nb_queues);
-    LOG_I(ITTI,"Starting itti queue: %s as task %d\n", taskInfo->name, newQueue);
+    LOG_D(ITTI, "Starting itti queue: %s as task %d\n", taskInfo->name, newQueue);
     pthread_mutex_init(&tasks[newQueue]->queue_cond_lock, NULL);
     memcpy(&tasks[newQueue]->admin, taskInfo, sizeof(task_info_t));
     AssertFatal( ( tasks[newQueue]->epoll_fd = epoll_create1(0) ) >=0, "");
