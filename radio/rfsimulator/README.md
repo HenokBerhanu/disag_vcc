@@ -189,3 +189,5 @@ to reduce the amount of transported samples:
 - Prefer smaller cell bandwidths
 
 A possible, unimplemented optimization would be to compress samples.
+
+You can further [tune your machine](../../doc/tuning_and_security.md)

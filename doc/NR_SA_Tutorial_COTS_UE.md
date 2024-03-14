@@ -163,6 +163,8 @@ docker exec -it oai-ext-dn iperf -u -t 86400 -i 1 -fk -B 192.168.70.135 -b 100M 
 
 # 6. Advanced configurations (optional)
 
+See also the [dedicated document on performance tuning](./tuning_and_security.md).
+
 ## 6.1 USRP N300 and X300 Ethernet Tuning
 
 Please also refer to the official [USRP Host Performance Tuning Tips and Tricks](https://kb.ettus.com/USRP_Host_Performance_Tuning_Tips_and_Tricks) tuning guide.

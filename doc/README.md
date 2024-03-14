@@ -24,6 +24,7 @@
 - [clang-format.md](./clang-format.md): how to format the code
 - [sanitizers.md](./dev_tools/sanitizers.md): how to run with ASan/UBSan/MemSAN/TSan
 - [environment-variables.md](./environment-variables.md): the environment variables used by OAI
+- [tuning_and_security.md](./tuning_and_security.md): performance and security considerations
 
 There is some general information in the [OpenAirInterface Gitlab Wiki](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/home)
 
