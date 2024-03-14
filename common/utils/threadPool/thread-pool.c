@@ -141,7 +141,6 @@ void initNamedTpool(char *params,tpool_t *pool, bool performanceMeas, char *name
         ptr=pool->allthreads;
         pool->allthreads=(struct one_thread *)malloc(sizeof(struct one_thread));
         pool->allthreads->next=ptr;
-        printf("create a thread for core %d\n", atoi(curptr));
         pool->allthreads->coreID=atoi(curptr);
         pool->allthreads->id=pool->nbThreads;
         pool->allthreads->pool=pool;
