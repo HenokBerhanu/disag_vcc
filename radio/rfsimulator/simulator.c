@@ -868,7 +868,7 @@ static int rfsimulator_read(openair0_device *device, openair0_timestamp *ptimest
   if (first_sock == MAX_FD_RFSIMU) {
     // no connected device (we are eNB, no UE is connected)
     if ( t->nextRxTstamp == 0)
-      LOG_W(HW, "No connected device, generating void samples...\n");
+      LOG_I(HW, "No connected device, generating void samples...\n");
 
     if (!flushInput(t, t->wait_timeout,  nsamps)) {
       for (int x=0; x < nbAnt; x++)
@@ -1019,7 +1019,6 @@ int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
   rfsimulator->sample_rate=openair0_cfg->sample_rate;
   rfsimulator->tx_bw=openair0_cfg->tx_bw;  
   rfsimulator_readconfig(rfsimulator);
-  LOG_W(HW, "sample_rate %f\n", rfsimulator->sample_rate);
   if (rfsimulator->prop_delay_ms > 0.0)
     rfsimulator->chan_offset = rfsimulator->sample_rate * rfsimulator->prop_delay_ms / 1000;
   if (rfsimulator->chan_offset != 0) {
