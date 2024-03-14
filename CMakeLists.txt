@@ -659,6 +659,12 @@ add_library(UTIL
   ${OPENAIR_DIR}/common/utils/time_meas.c
   ${OPENAIR_DIR}/common/utils/time_stat.c
 )
+pkg_check_modules(cap libcap)
+if (cap_FOUND)
+  # see system.c for more info
+  target_link_libraries(UTIL PRIVATE cap)
+  target_compile_definitions(UTIL PRIVATE HAVE_LIB_CAP)
+endif()
 target_link_libraries(UTIL PUBLIC ${T_LIB} pthread)
 
 set(SECURITY_SRC
