@@ -208,9 +208,11 @@ int config_cmdlineonly_get(configmodule_interface_t *cfg, paramdef_t *cfgoptions
     }
   } /* for loop on options */
 
-  printf("[CONFIG] %s: %i/%i parameters successfully set \n",
-         ((prefix == NULL)?"(root)":prefix),
-         numdefvals,numoptions );
+  printf_params(cfg,
+                "[CONFIG] %s: %i/%i parameters successfully set \n",
+                prefix == NULL ? "(root)" : prefix,
+                numdefvals,
+                numoptions);
 
   if (fatalerror == 1) {
     fprintf(stderr,"[CONFIG] fatal errors found when assigning %s parameters \n",
