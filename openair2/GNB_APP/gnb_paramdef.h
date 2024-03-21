@@ -208,8 +208,8 @@ typedef enum {
 #define GNB_FORCE256QAMOFF_IDX          24
 #define GNB_ENABLE_SDAP_IDX             25
 #define GNB_DRBS                        26
-#define GNB_GNB_DU_ID_IDX 27
-#define GNB_GNB_CU_UP_ID_IDX 28
+#define GNB_GNB_DU_ID_IDX               27
+#define GNB_GNB_CU_UP_ID_IDX            28
 #define GNB_USE_DELTA_MCS_IDX           29
 #define GNB_FORCEUL256QAMOFF_IDX        30
 
@@ -219,6 +219,22 @@ typedef enum {
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s2 = { config_check_intrange, TRACKING_AREA_CODE_OKRANGE } },\
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
+  { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
