@@ -3981,6 +3981,20 @@ int nfapi_p4_message_unpack(void *pMessageBuf, uint32_t messageBufLen, void *pUn
 int nfapi_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t* config);
 int nfapi_nr_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t* config);
 
+/*! \brief Packs a NFAPI P5 message body
+ *  \param header A pointer to the header of the P5 message
+ *  \param ppWritePackedMsg A pointer to the buffer where to pack the P5 message
+ *  \param end Pointer to the end of the packing buffer
+ *  \param config A pointer to the nfapi configuration structure
+ *  \return 0 means success, -1 means failure.
+ *
+ * The function will decode a byte stream pointed to by pMessageBuf into a nfapi p5 message structure pointer to by pUnpackedBuf
+ */
+uint8_t pack_nr_p5_message_body(nfapi_p4_p5_message_header_t* header,
+                                uint8_t** ppWritePackedMsg,
+                                uint8_t* end,
+                                nfapi_p4_p5_codec_config_t* config);
+
 /*! \brief Decodes an NFAPI P5 message header
  *  \param pMessageBuf A pointer to an encoded P5 message header
  *  \param messageBufLen The size of the encoded P5 message header
@@ -4106,5 +4120,9 @@ int pack_nr_srs_beamforming_report(void *pMessageBuf, void *pPackedBuf, uint32_t
  *  \return 0 means success, -1 means failure.
  */
 int unpack_nr_srs_beamforming_report(void *pMessageBuf, uint32_t messageBufLen, void *pUnpackedBuf, uint32_t unpackedBufLen);
+
+uint8_t unpack_nr_param_response(uint8_t** ppReadPackedMsg, uint8_t* end, void* msg, nfapi_p4_p5_codec_config_t* config);
+
+uint8_t unpack_nr_config_response(uint8_t** ppReadPackedMsg, uint8_t* end, void* msg, nfapi_p4_p5_codec_config_t* config);
 
 #endif /* _NFAPI_INTERFACE_H_ */

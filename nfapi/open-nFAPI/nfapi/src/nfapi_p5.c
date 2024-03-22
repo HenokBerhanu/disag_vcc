@@ -1908,7 +1908,11 @@ static uint8_t pack_measurement_response(void *msg, uint8_t **ppWritePackedMsg, 
           pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config));
 }
 
-static uint8_t pack_nr_p5_message_body(nfapi_p4_p5_message_header_t *header, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config) {
+uint8_t pack_nr_p5_message_body(nfapi_p4_p5_message_header_t *header,
+                                uint8_t **ppWritePackedMsg,
+                                uint8_t *end,
+                                nfapi_p4_p5_codec_config_t *config)
+{
   uint8_t result = 0;
 
   // look for the specific message
@@ -1978,9 +1982,8 @@ static uint8_t pack_nr_p5_message_body(nfapi_p4_p5_message_header_t *header, uin
       break;
 
     default: {
-      if(header->message_id >= NFAPI_VENDOR_EXT_MSG_MIN &&
-          header->message_id <= NFAPI_VENDOR_EXT_MSG_MAX) {
-        if(config && config->pack_p4_p5_vendor_extension) {
+      if (header->message_id >= NFAPI_VENDOR_EXT_MSG_MIN && header->message_id <= NFAPI_VENDOR_EXT_MSG_MAX) {
+        if (config && config->pack_p4_p5_vendor_extension) {
           result = (config->pack_p4_p5_vendor_extension)(header, ppWritePackedMsg, end, config);
         } else {
           NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s VE NFAPI message ID %d. No ve ecoder provided\n", __FUNCTION__, header->message_id);
@@ -1988,8 +1991,7 @@ static uint8_t pack_nr_p5_message_body(nfapi_p4_p5_message_header_t *header, uin
       } else {
         NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s NFAPI Unknown message ID %d\n", __FUNCTION__, header->message_id);
       }
-    }
-    break;
+    } break;
   }
 
   return result;
@@ -2568,7 +2570,7 @@ static uint8_t unpack_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, vo
                              &pNfapiMsg->vendor_extension));
 }
 
-static uint8_t unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
+uint8_t unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
   nfapi_nr_param_response_scf_t *pNfapiMsg = (nfapi_nr_param_response_scf_t *)msg;
   unpack_tlv_t unpack_fns[] = {
@@ -3215,7 +3217,7 @@ static uint8_t unpack_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, v
            unpack_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(pNfapiMsg->vendor_extension)));
 }
 
-static uint8_t unpack_nr_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
+uint8_t unpack_nr_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
   nfapi_nr_config_response_scf_t *pNfapiMsg = (nfapi_nr_config_response_scf_t *)msg;
   uint8_t invalid_unsupported_TLVs, invalidTLVsIdle, InvalidTLVsRunning, missingTLVS;
