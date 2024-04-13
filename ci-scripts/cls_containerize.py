@@ -668,7 +668,7 @@ class Containerize():
 				cmd.run(f'git diff HEAD..origin/develop -- cmake_targets/build_oai cmake_targets/tools/build_helper docker/Dockerfile.base{self.dockerfileprefix} | grep --colour=never -i INDEX')
 				result = re.search('index', cmd.getBefore())
 				if result is not None:
-					baseTag = 'develop'
+					baseTag = 'ci-temp'
 		ret = cmd.run(f"docker image inspect --format=\'Size = {{{{.Size}}}} bytes\' {baseImage}:{baseTag}")
 		if ret.returncode != 0:
 			logging.error(f'No {baseImage} image present, cannot build tests')
@@ -688,8 +688,8 @@ class Containerize():
 		HTML.CreateHtmlTestRowQueue("Build unit tests", 'OK', [dockerfile])
 
 		# it worked, build and execute tests, and close connection
-		ret = cmd.run(f'docker run -a STDOUT --rm ran-unittests:develop ctest --output-on-failure --no-label-summary -j$(nproc)')
-		cmd.run(f'docker rmi ran-unittests:develop')
+		ret = cmd.run(f'docker run -a STDOUT --rm ran-unittests:{baseTag} ctest --output-on-failure --no-label-summary -j$(nproc)')
+		cmd.run(f'docker rmi ran-unittests:{baseTag}')
 		build_log_name = f'build_log_{self.testCase_id}'
 		CopyLogsToExecutor(cmd, lSourcePath, build_log_name)
 		cmd.close()
