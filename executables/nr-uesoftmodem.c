@@ -456,10 +456,6 @@ ldpc_interface_t ldpc_interface = {0}, ldpc_interface_offload = {0};
 
 int main(int argc, char **argv)
 {
-  int set_exe_prio = 1;
-  if (set_exe_prio)
-    set_priority(79);
-
   start_background_system();
 
   if ((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) == NULL) {
@@ -483,6 +479,10 @@ int main(int argc, char **argv)
   initTpool(get_softmodem_params()->threadPoolConfig, &(nrUE_params.Tpool), cpumeas(CPUMEAS_GETSTATE));
   //randominit (0);
   set_taus_seed (0);
+
+  if (!has_cap_sys_nice())
+    LOG_W(UTIL,
+          "no SYS_NICE capability: cannot set thread priority and affinity, consider running with sudo for optimum performance\n");
 
   cpuf=get_cpu_freq_GHz();
   itti_init(TASK_MAX, tasks_info);
