@@ -576,8 +576,10 @@ int config_libconfig_init(configmodule_interface_t *cfg)
    config_set_auto_convert (&(libconfig_privdata.cfg), CONFIG_TRUE);
   /* Read the file. If there is an error, report it and exit. */
   if( config_read_file(&(libconfig_privdata.cfg), libconfig_privdata.configfile) == CONFIG_FALSE) {
-    fprintf(stderr,"[LIBCONFIG] %s %d file %s - line %d: %s\n",__FILE__, __LINE__,
-            libconfig_privdata.configfile, config_error_line(&(libconfig_privdata.cfg)),
+    fprintf(stderr,
+            "[LIBCONFIG] file %s - line %d: %s\n",
+            libconfig_privdata.configfile,
+            config_error_line(&(libconfig_privdata.cfg)),
             config_error_text(&(libconfig_privdata.cfg)));
     config_destroy(&(libconfig_privdata.cfg));
     printf( "\n");
