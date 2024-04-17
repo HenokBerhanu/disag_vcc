@@ -173,7 +173,7 @@ void nr_fill_rx_indication(fapi_nr_rx_indication_t *rx_ind,
       }
     } break;
     case FAPI_NR_CSIRS_IND:
-      memcpy(&rx->csirs_measurements, (fapi_nr_csirs_measurements_t *)typeSpecific, sizeof(fapi_nr_csirs_measurements_t));
+      memcpy(&rx->csirs_measurements, typeSpecific, sizeof(fapi_nr_csirs_measurements_t));
       break;
     default:
     break;
