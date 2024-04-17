@@ -116,7 +116,6 @@ static uint32_t get_ssb_arfcn(NR_DL_FRAME_PARMS *frame_parms)
   uint64_t ssb_freq = frame_parms->dl_CarrierFreq - (band_size_hz / 2) + frame_parms->subcarrier_spacing * ssb_center_sc;
   return to_nrarfcn(frame_parms->nr_band, ssb_freq, frame_parms->numerology_index, band_size_hz);
 }
-
 void nr_fill_rx_indication(fapi_nr_rx_indication_t *rx_ind,
                            uint8_t pdu_type,
                            PHY_VARS_NR_UE *ue,
@@ -130,72 +129,57 @@ void nr_fill_rx_indication(fapi_nr_rx_indication_t *rx_ind,
   if (n_pdus > 1){
     LOG_E(PHY, "In %s: multiple number of DL PDUs not supported yet...\n", __FUNCTION__);
   }
-
-  NR_DL_UE_HARQ_t *dl_harq0 = NULL;
-
-  if ((pdu_type !=  FAPI_NR_RX_PDU_TYPE_SSB) && dlsch0) {
-    int t=WS_C_RNTI;
-    if (pdu_type == FAPI_NR_RX_PDU_TYPE_RAR)
-      t=WS_RA_RNTI;
-    if  (pdu_type == FAPI_NR_RX_PDU_TYPE_SIB)
-      t=WS_SI_RNTI;
-    dl_harq0 = &ue->dl_harq_processes[0][dlsch0->dlsch_config.harq_process_nbr];
-    trace_NRpdu(DIRECTION_DOWNLINK,
-		b,
-		dlsch0->dlsch_config.TBS / 8,
-		t,
-		dlsch0->rnti,
-		proc->frame_rx,
-		proc->nr_slot_rx,
-		0,0);
-  }
+  fapi_nr_rx_indication_body_t *rx = rx_ind->rx_indication_body + n_pdus - 1;
   switch (pdu_type){
     case FAPI_NR_RX_PDU_TYPE_SIB:
     case FAPI_NR_RX_PDU_TYPE_RAR:
     case FAPI_NR_RX_PDU_TYPE_DLSCH:
       if(dlsch0) {
-        dl_harq0 = &ue->dl_harq_processes[0][dlsch0->dlsch_config.harq_process_nbr];
-        rx_ind->rx_indication_body[n_pdus - 1].pdsch_pdu.harq_pid = dlsch0->dlsch_config.harq_process_nbr;
-        rx_ind->rx_indication_body[n_pdus - 1].pdsch_pdu.ack_nack = dl_harq0->ack;
-        rx_ind->rx_indication_body[n_pdus - 1].pdsch_pdu.pdu = b;
-        rx_ind->rx_indication_body[n_pdus - 1].pdsch_pdu.pdu_length = dlsch0->dlsch_config.TBS / 8;
+        NR_DL_UE_HARQ_t *dl_harq0 = &ue->dl_harq_processes[0][dlsch0->dlsch_config.harq_process_nbr];
+        rx->pdsch_pdu.harq_pid = dlsch0->dlsch_config.harq_process_nbr;
+        rx->pdsch_pdu.ack_nack = dl_harq0->ack;
+        rx->pdsch_pdu.pdu = b;
+        rx->pdsch_pdu.pdu_length = dlsch0->dlsch_config.TBS / 8;
+        if (dl_harq0->ack) {
+          int t = WS_C_RNTI;
+          if (pdu_type == FAPI_NR_RX_PDU_TYPE_RAR)
+            t = WS_RA_RNTI;
+          if (pdu_type == FAPI_NR_RX_PDU_TYPE_SIB)
+            t = WS_SI_RNTI;
+          trace_NRpdu(DIRECTION_DOWNLINK, b, rx->pdsch_pdu.pdu_length, t, dlsch0->rnti, proc->frame_rx, proc->nr_slot_rx, 0, 0);
+        }
       }
       if(dlsch1) {
         AssertFatal(1==0,"Second codeword currently not supported\n");
       }
       break;
     case FAPI_NR_RX_PDU_TYPE_SSB: {
-        fapi_nr_ssb_pdu_t *ssb_pdu = &rx_ind->rx_indication_body[n_pdus - 1].ssb_pdu;
-        if(typeSpecific) {
-          NR_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
-          fapiPbch_t *pbch = (fapiPbch_t *)typeSpecific;
-          memcpy(ssb_pdu->pdu, pbch->decoded_output, sizeof(pbch->decoded_output));
-          ssb_pdu->additional_bits = pbch->xtra_byte;
-          ssb_pdu->ssb_index = (frame_parms->ssb_index) & 0x7;
-          ssb_pdu->ssb_length = frame_parms->Lmax;
-          ssb_pdu->cell_id = frame_parms->Nid_cell;
-          ssb_pdu->ssb_start_subcarrier = frame_parms->ssb_start_subcarrier;
-          ssb_pdu->rsrp_dBm = ue->measurements.ssb_rsrp_dBm[frame_parms->ssb_index];
-          ssb_pdu->arfcn = get_ssb_arfcn(frame_parms);
-          ssb_pdu->radiolink_monitoring = RLM_in_sync; // TODO to be removed from here
-          ssb_pdu->decoded_pdu = true;
-        }
-        else {
-          ssb_pdu->radiolink_monitoring = RLM_out_of_sync; // TODO to be removed from here
-          ssb_pdu->decoded_pdu = false;
-        }
+      if (typeSpecific) {
+        NR_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
+        fapiPbch_t *pbch = (fapiPbch_t *)typeSpecific;
+        memcpy(rx->ssb_pdu.pdu, pbch->decoded_output, sizeof(pbch->decoded_output));
+        rx->ssb_pdu.additional_bits = pbch->xtra_byte;
+        rx->ssb_pdu.ssb_index = (frame_parms->ssb_index) & 0x7;
+        rx->ssb_pdu.ssb_length = frame_parms->Lmax;
+        rx->ssb_pdu.cell_id = frame_parms->Nid_cell;
+        rx->ssb_pdu.ssb_start_subcarrier = frame_parms->ssb_start_subcarrier;
+        rx->ssb_pdu.rsrp_dBm = ue->measurements.ssb_rsrp_dBm[frame_parms->ssb_index];
+        rx->ssb_pdu.arfcn = get_ssb_arfcn(frame_parms);
+        rx->ssb_pdu.radiolink_monitoring = RLM_in_sync; // TODO to be removed from here
+        rx->ssb_pdu.decoded_pdu = true;
+      } else {
+        rx->ssb_pdu.radiolink_monitoring = RLM_out_of_sync; // TODO to be removed from here
+        rx->ssb_pdu.decoded_pdu = false;
       }
-    break;
+    } break;
     case FAPI_NR_CSIRS_IND:
-      memcpy(&rx_ind->rx_indication_body[n_pdus - 1].csirs_measurements,
-             (fapi_nr_csirs_measurements_t*)typeSpecific,
-             sizeof(*(fapi_nr_csirs_measurements_t*)typeSpecific));
+      memcpy(&rx->csirs_measurements, (fapi_nr_csirs_measurements_t *)typeSpecific, sizeof(fapi_nr_csirs_measurements_t));
       break;
     default:
     break;
   }
 
-  rx_ind->rx_indication_body[n_pdus -1].pdu_type = pdu_type;
+  rx->pdu_type = pdu_type;
   rx_ind->number_pdus = n_pdus;
 
 }
