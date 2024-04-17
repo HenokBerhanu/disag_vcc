@@ -1087,7 +1087,7 @@ int main(int argc, char *argv[])
         ul_config0->pdu_type = FAPI_NR_UL_CONFIG_TYPE_PUSCH;
         nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu = &ul_config0->pusch_config_pdu;
         // Config UL TX PDU
-        pusch_config_pdu->tx_request_body.pdu = ulsch_input_buffer;
+        pusch_config_pdu->tx_request_body.fapiTxPdu = ulsch_input_buffer;
         pusch_config_pdu->tx_request_body.pdu_length = TBS / 8;
         pusch_config_pdu->rnti = n_rnti;
         pusch_config_pdu->pdu_bit_map = pdu_bit_map;

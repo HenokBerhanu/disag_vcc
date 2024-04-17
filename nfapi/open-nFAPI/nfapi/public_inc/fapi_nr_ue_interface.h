@@ -175,7 +175,7 @@ typedef struct {
 
 typedef struct {
   uint16_t pdu_length;
-  uint8_t* pdu;
+  uint8_t* fapiTxPdu;
 } fapi_nr_tx_request_body_t;
 
 ///
