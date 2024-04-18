@@ -237,12 +237,18 @@ Create the entry for the second UE in `docker-compose.yaml` file as follows:
 ```yaml
     oai-nr-ue2:
         image: oai-nr-ue:develop
-        privileged: true
         container_name: rfsim5g-oai-nr-ue2
+        cap_drop:
+            - ALL
+        cap_add:
+            - NET_ADMIN  # for interface bringup
+            - NET_RAW    # for ping
         environment:
             USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1 -C 3619200000 --rfsimulator.serveraddr 192.168.71.140 --log_config.global_log_options level,nocolor,time
         depends_on:
             - oai-gnb
+        devices:
+             - /dev/net/tun:/dev/net/tun
         volumes:
             - ../../conf_files/nrue.uicc.conf:/opt/oai-nr-ue/etc/nr-ue.conf
         networks:
