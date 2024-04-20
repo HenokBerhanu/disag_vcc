@@ -213,7 +213,9 @@ void nr_scan_ssb(void *arg)
                                         ssbInfo->foFlag,
                                         ssbInfo->targetNidCell,
                                         &nid2,
-                                        &freq_offset_pss);
+                                        &freq_offset_pss,
+                                        &ssbInfo->pssCorrPeakPower,
+                                        &ssbInfo->pssCorrAvgPower);
     if (sync_pos < fp->nb_prefix_samples)
       continue;
 
@@ -225,7 +227,7 @@ void nr_scan_ssb(void *arg)
 #endif
     /* check that SSS/PBCH block is continuous inside the received buffer */
     if (ssbInfo->ssbOffset + NR_N_SYMBOLS_SSB * (fp->ofdm_symbol_size + fp->nb_prefix_samples) >= fp->samples_per_frame) {
-      LOG_I(PHY, "Can't try to decode SSS from PSS position, will retry (PSS circular buffer wrapping): sync_pos %d\n", sync_pos);
+      LOG_D(PHY, "Can't try to decode SSS from PSS position, will retry (PSS circular buffer wrapping): sync_pos %d\n", sync_pos);
       continue;
     }
 
@@ -337,10 +339,12 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, i
     nr_ue_ssb_scan_t *ssbInfo = (nr_ue_ssb_scan_t *)NotifiedFifoData(req);
     if (ssbInfo->syncRes.cell_detected) {
       LOG_A(NR_PHY,
-            "Cell Detected with GSCN: %d, SSB SC offset: %d, SSB Ref: %lf\n",
+            "Cell Detected with GSCN: %d, SSB SC offset: %d, SSB Ref: %lf, PSS Corr peak: %d dB, PSS Corr Average: %d\n",
             ssbInfo->gscnInfo.gscn,
             ssbInfo->gscnInfo.ssbFirstSC,
-            ssbInfo->gscnInfo.ssRef);
+            ssbInfo->gscnInfo.ssRef,
+            ssbInfo->pssCorrPeakPower,
+            ssbInfo->pssCorrAvgPower);
       if (!res.syncRes.cell_detected) { // take the first cell detected
         res = *ssbInfo;
       }

@@ -642,6 +642,8 @@ typedef struct {
   int freqOffset;
   nr_initial_sync_t syncRes;
   fapiPbch_t pbchResult;
+  int pssCorrPeakPower;
+  int pssCorrAvgPower;
 } nr_ue_ssb_scan_t;
 
 typedef struct nr_phy_data_tx_s {

@@ -57,7 +57,9 @@ static int pss_search_time_nr(const c16_t **rxdata,
                               int is,
                               int target_Nid_cell,
                               int *nid2,
-                              int *f_off);
+                              int *f_off,
+                              int *pssPeak,
+                              int *pssAvg);
 
 static int16_t primary_synchro_nr2[NUMBER_PSS_SEQUENCE][LENGTH_PSS_NR] = {0};
 static c16_t primary_synchro[NUMBER_PSS_SEQUENCE][LENGTH_PSS_NR] = {0};
@@ -390,7 +392,9 @@ int pss_synchro_nr(const c16_t **rxdata,
                    bool fo_flag,
                    int target_Nid_cell,
                    int *nid2,
-                   int *f_off)
+                   int *f_off,
+                   int *pssPeak,
+                   int *pssAvg)
 {
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PSS_SYNCHRO_NR, VCD_FUNCTION_IN);
 #ifdef DBG_PSS_NR
@@ -415,7 +419,8 @@ int pss_synchro_nr(const c16_t **rxdata,
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PSS_SEARCH_TIME_NR, VCD_FUNCTION_IN);
 
-  int synchro_position = pss_search_time_nr(rxdata, frame_parms, pssTime, fo_flag, is, target_Nid_cell, nid2, f_off);
+  int synchro_position =
+      pss_search_time_nr(rxdata, frame_parms, pssTime, fo_flag, is, target_Nid_cell, nid2, f_off, pssPeak, pssAvg);
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PSS_SEARCH_TIME_NR, VCD_FUNCTION_OUT);
 
@@ -427,7 +432,7 @@ int pss_synchro_nr(const c16_t **rxdata,
 
   #ifndef NR_UNIT_TEST
 
-  LOG_I(PHY,"PSS execution duration %4d microseconds \n", duration_ms);
+  LOG_D(PHY,"PSS execution duration %4d microseconds \n", duration_ms);
 
   #endif
 
@@ -511,7 +516,9 @@ static int pss_search_time_nr(const c16_t **rxdata,
                               int is,
                               int target_Nid_cell,
                               int *nid2,
-                              int *f_off)
+                              int *f_off,
+                              int *pssPeak,
+                              int *pssAvg)
 {
   unsigned int n, ar, peak_position, pss_source;
   int64_t peak_value;
@@ -620,8 +627,10 @@ static int pss_search_time_nr(const c16_t **rxdata,
     avg[pss_index] /= (length / 4);
 
   *nid2 = pss_source;
+  *pssPeak = dB_fixed64(peak_value);
+  *pssAvg = dB_fixed64(avg[pss_source]);
 
-  LOG_I(PHY,
+  LOG_D(PHY,
         "[UE] nr_synchro_time: Sync source (nid2) = %d, Peak found at pos %d, val = %ld (%d dB power over signal avg %d dB), ffo "
         "%lf\n",
         pss_source,

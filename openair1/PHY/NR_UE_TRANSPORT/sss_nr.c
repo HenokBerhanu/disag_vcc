@@ -500,7 +500,7 @@ bool rx_sss_nr(const NR_DL_FRAME_PARMS *frame_parms,
   int re = 0;
   int im = 0;
   if (Nid1 == N_ID_1_NUMBER) {
-    LOG_W(PHY,
+    LOG_D(PHY,
           "Failed to detect SSS after PSS, metric of SSS %d, threshold to consider SSS valid %d, detected PCI: %d\n",
           *tot_metric,
           SSS_METRIC_FLOOR_NR,
@@ -516,7 +516,7 @@ bool rx_sss_nr(const NR_DL_FRAME_PARMS *frame_parms,
   *freq_offset_sss = (int)(ffo_sss*frame_parms->subcarrier_spacing);
 
   double ffo_pss = ((double)freq_offset_pss) / frame_parms->subcarrier_spacing;
-  LOG_W(NR_PHY,
+  LOG_D(NR_PHY,
         "SSS detected, PCI: %d, ffo_pss %f (%i Hz), ffo_sss %f (%i Hz),  ffo_pss+ffo_sss %f (%i Hz), nid1: %d, nid2: %d\n",
         *Nid_cell,
         ffo_pss,

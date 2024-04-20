@@ -83,7 +83,9 @@ int pss_synchro_nr(const c16_t **rxdata,
                    bool fo_flag,
                    int target_Nid_cell,
                    int *nid2,
-                   int *f_off);
+                   int *f_off,
+                   int *pssPeak,
+                   int *pssAvg);
 void generate_pss_nr_time(const NR_DL_FRAME_PARMS *fp, const int N_ID_2, int ssbFirstSCS, c16_t pssTime[fp->ofdm_symbol_size]);
 int16_t *get_primary_synchro_nr2(const int nid2);
 
