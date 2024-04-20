@@ -193,8 +193,9 @@ int psbch_pscch_processing(PHY_VARS_NR_UE *ue, UE_nr_rxtx_proc_t *proc, nr_phy_d
       nr_slot_fep(ue, fp, proc, sym, rxdataF, link_type_ul);
 
       start_meas(&sl_phy_params->channel_estimation_stats);
-      nr_pbch_channel_estimation(ue,
-                                 fp,
+      nr_pbch_channel_estimation(fp,
+                                 &ue->SL_UE_PHY_PARAMS,
+                                 ue->nr_gold_pbch,
                                  estimateSz,
                                  dl_ch_estimates,
                                  dl_ch_estimates_time,
@@ -203,10 +204,19 @@ int psbch_pscch_processing(PHY_VARS_NR_UE *ue, UE_nr_rxtx_proc_t *proc, nr_phy_d
                                  sym,
                                  0,
                                  0,
+                                 fp->ssb_start_subcarrier,
                                  rxdataF,
                                  true,
                                  sl_phy_params->sl_config.sl_sync_source.rx_slss_id);
       stop_meas(&sl_phy_params->channel_estimation_stats);
+      if (sym == 12)
+        UEscopeCopy(ue,
+                    pbchDlChEstimateTime,
+                    (void *)dl_ch_estimates_time,
+                    sizeof(c16_t),
+                    fp->nb_antennas_rx,
+                    fp->ofdm_symbol_size,
+                    0);
 
       // PSBCH present in symbols 0, 5-12 for normal cp
       sym = (sym == 0) ? 5 : sym + 1;

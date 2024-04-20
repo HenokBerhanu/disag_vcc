@@ -182,6 +182,123 @@ const nr_bandentry_t nr_bandtable[] = {
   {261,27500040,28350000,27500040,28350000,  2,2070833, 120}
 };
 
+// synchronization raster per band tables (Rel.15)
+// (38.101-1 Table 5.4.3.3-1 and 38.101-2 Table 5.4.3.3-1)
+// band nb, sub-carrier spacing index, Range of gscn (First, Step size, Last)
+// clang-format off
+const sync_raster_t sync_raster[] = {
+  {1, 0, 5279, 1, 5419},
+  {2, 0, 4829, 1, 4969},
+  {3, 0, 4517, 1, 4693},
+  {5, 0, 2177, 1, 2230},
+  {5, 1, 2183, 1, 2224},
+  {7, 0, 6554, 1, 6718},
+  {8, 0, 2318, 1, 2395},
+  {12, 0, 1828, 1, 1858},
+  {13, 0, 1871, 1, 1885},
+  {14, 0, 1901, 1, 1915},
+  {18, 0, 2156, 1, 2182},
+  {20, 0, 1982, 1, 2047},
+  {24, 0, 3818, 1, 3892},
+  {24, 1, 3824, 1, 3886},
+  {25, 0, 4829, 1, 4981},
+  {26, 0, 2153, 1, 2230},
+  {28, 0, 1901, 1, 2002},
+  {29, 0, 1798, 1, 1813},
+  {30, 0, 5879, 1, 5893},
+  {34, 0, 5030, 1, 5056},
+  {34, 1, 5036, 1, 5050},
+  {38, 0, 6431, 1, 6544},
+  {38, 1, 6437, 1, 6538},
+  {39, 0, 4706, 1, 4795},
+  {39, 1, 4712, 1, 4789},
+  {40, 1, 5762, 1, 5989},
+  {41, 0, 6246, 3, 6717},
+  {41, 1, 6252, 3, 6714},
+  {48, 1, 7884, 1, 7982},
+  {50, 0, 3584, 1, 3787},
+  {51, 0, 3572, 1, 3574},
+  {53, 0, 6215, 1, 6232},
+  {53, 1, 6221, 1, 6226},
+  {65, 0, 5279, 1, 5494},
+  {66, 0, 5279, 1, 5494},
+  {66, 1, 5285, 1, 5488},
+  {67, 0, 1850, 1, 1888},
+  {70, 0, 4993, 1, 5044},
+  {71, 0, 1547, 1, 1624},
+  {74, 0, 3692, 1, 3790},
+  {75, 0, 3584, 1, 3787},
+  {76, 0, 3572, 1, 3574},
+  {77, 1, 7711, 1, 8329},
+  {78, 1, 7711, 1, 8051},
+  {79, 1, 8480, 16, 8880},
+  {85, 0, 1826, 1, 1858},
+  {90, 1, 6252, 1, 6714},
+  {91, 0, 3572, 1, 3574},
+  {92, 0, 3584, 1, 3787},
+  {93, 0, 3572, 1, 3574},
+  {94, 0, 3584, 1, 3587},
+  {257, 3, 22388, 1, 22558},
+  {257, 4, 22390, 2, 22556},
+  {258, 3, 22257, 1, 22443},
+  {258, 4, 22258, 2, 22442},
+  {260, 3, 22995, 1, 23166},
+  {260, 4, 22996, 2, 23164},
+  {261, 3, 22446, 1, 22492},
+  {261, 4, 22446, 2, 22490},
+};
+// clang-format on
+
+// Section 5.4.3 of 38.101-1 and -2
+void check_ssb_raster(uint64_t freq, int band, int scs)
+{
+  int start_gscn = 0, step_gscn = 0, end_gscn = 0;
+  for (int i = 0; i < sizeof(sync_raster) / sizeof(sync_raster_t); i++) {
+    if (sync_raster[i].band == band && sync_raster[i].scs_index == scs) {
+      start_gscn = sync_raster[i].first_gscn;
+      step_gscn = sync_raster[i].step_gscn;
+      end_gscn = sync_raster[i].last_gscn;
+      break;
+    }
+  }
+  AssertFatal(start_gscn != 0, "Couldn't find band %d with SCS %d\n", band, scs);
+  int gscn;
+  if (freq < 3000000000) {
+    int N = 0;
+    int M = 0;
+    for (int k = 0; k < 3; k++) {
+      M = (k << 1) + 1;
+      if ((freq - M * 50000) % 1200000 == 0) {
+        N = (freq - M * 50000) / 1200000;
+        break;
+      }
+    }
+    AssertFatal(N != 0, "SSB frequency %lu Hz not on the synchronization raster (N * 1200kHz + M * 50 kHz)\n", freq);
+    gscn = (3 * N) + (M - 3) / 2;
+  } else if (freq < 24250000000) {
+    AssertFatal((freq - 3000000000) % 1440000 == 0,
+                "SSB frequency %lu Hz not on the synchronization raster (3000 MHz + N * 1.44 MHz)\n",
+                freq);
+    gscn = ((freq - 3000000000) / 1440000) + 7499;
+  } else {
+    AssertFatal((freq - 24250080000) % 17280000 == 0,
+                "SSB frequency %lu Hz not on the synchronization raster (24250.08 MHz + N * 17.28 MHz)\n",
+                freq);
+    gscn = ((freq - 24250080000) / 17280000) + 22256;
+  }
+  AssertFatal(gscn >= start_gscn && gscn <= end_gscn,
+              "GSCN %d corresponding to SSB frequency %lu does not belong to GSCN range for band %d\n",
+              gscn,
+              freq,
+              band);
+  int rel_gscn = gscn - start_gscn;
+  AssertFatal(rel_gscn % step_gscn == 0,
+              "GSCN %d corresponding to SSB frequency %lu not in accordance with GSCN step for band %d\n",
+              gscn,
+              freq,
+              band);
+}
+
 int get_supported_bw_mhz(frequency_range_t frequency_range, int scs, int nb_rb)
 {
   int bw_index = get_supported_band_index(scs, frequency_range, nb_rb);
@@ -908,6 +1025,129 @@ uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
   // Offset to point A needs to be divisible by scaling
   AssertFatal(ssb_offset_point_a % scaling == 0, "PRB offset %d not valid for scs %d\n", ssb_offset_point_a, ssbSubcarrierSpacing);
   return ssb_offset_point_a;
+}
+
+static double get_start_freq(const double fc, const int nbRB, const int mu)
+{
+  const int scs = MU_SCS(mu) * 1000;
+  return fc - (nbRB / 2 * NR_NB_SC_PER_RB * scs);
+}
+
+static double get_stop_freq(const double fc, const int nbRB, const int mu)
+{
+  int scs = MU_SCS(mu) * 1000;
+  return fc + (nbRB / 2 * NR_NB_SC_PER_RB * scs);
+}
+
+static void compute_M_and_N(const int gscn, int *rM, int *rN)
+{
+  if (gscn > 1 && gscn < 7499) {
+    for (int M = 1; M < 6; M += 2) {
+      /* GSCN = 3N + (M-3) / 2
+         N(int) = 2 * GSCN + 3 - M
+      */
+      if (((2 * gscn + 3 - M) % 6) == 0) {
+        *rM = M;
+        *rN = (2 * gscn + 3 - M) / 6;
+        break;
+      }
+    }
+  } else if (gscn > 7498 && gscn < 22256) {
+    *rN = gscn - 7499;
+  } else if (gscn > 22255 && gscn < 26638) {
+    *rN = gscn - 22256;
+  } else {
+    LOG_E(NR_PHY, "Invalid GSCN\n");
+    abort();
+  }
+}
+
+// Section 5.4.3 of 38.101-1 and -2
+static double get_ssref_from_gscn(const int gscn)
+{
+  int M, N = -1;
+  compute_M_and_N(gscn, &M, &N);
+  if (gscn > 1 && gscn < 7499) { // Sub 3GHz
+    AssertFatal(N > 0 && N < 2500, "Invalid N\n");
+    AssertFatal(M > 0 && M < 6 && (M & 0x1), "Invalid M\n");
+    return (N * 1200e3 + M * 50e3);
+  } else if (gscn > 7498 && gscn < 22256) {
+    AssertFatal(N > -1 && N < 14757, "Invalid N\n");
+    return (3000e6 + N * 1.44e6);
+  } else if (gscn > 22255 && gscn < 26638) {
+    AssertFatal(N > -1 && N < 4382, "Invalid N\n");
+    return (24250.08e6 + N * 17.28e6);
+  } else {
+    LOG_E(NR_PHY, "Invalid GSCN\n");
+    abort();
+  }
+}
+
+static void find_gscn_to_scan(const double startFreq,
+                              const double stopFreq,
+                              const sync_raster_t gscn,
+                              int *scanGscnStart,
+                              int *scanGscnStop)
+{
+  const double scs = MU_SCS(gscn.scs_index) * 1e3;
+  const double ssbBW = 20 * NR_NB_SC_PER_RB * scs;
+
+  for (int g = gscn.first_gscn; g < gscn.last_gscn; g += gscn.step_gscn) {
+    const double centerSSBFreq = get_ssref_from_gscn(g);
+    const double startSSBFreq = centerSSBFreq - ssbBW / 2;
+    if (startSSBFreq < startFreq)
+      continue;
+
+    *scanGscnStart = g;
+    break;
+  }
+
+  for (int g = gscn.last_gscn; g > gscn.first_gscn; g -= gscn.step_gscn) {
+    const double centerSSBFreq = get_ssref_from_gscn(g);
+    const double stopSSBFreq = centerSSBFreq + ssbBW / 2 - 1;
+    if (stopSSBFreq > stopFreq)
+      continue;
+
+    *scanGscnStop = g;
+    break;
+  }
+}
+
+static int get_ssb_first_sc(const double pointA, const double ssbCenter, const int mu)
+{
+  const double scs = MU_SCS(mu) * 1e3;
+  const int ssbRBs = 20;
+  return (int)((ssbCenter - pointA) / scs - (ssbRBs / 2 * NR_NB_SC_PER_RB));
+}
+
+/* Returns array of first SCS offset in the scanning window */
+int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, const int mu, nr_gscn_info_t ssbInfo[MAX_GSCN_BAND])
+{
+  const double startFreq = get_start_freq(fc, nbRB, mu);
+  const double stopFreq = get_stop_freq(fc, nbRB, mu);
+
+  int scanGscnStart = -1;
+  int scanGscnStop = -1;
+  sync_raster_t tmpRaster = {0};
+  for (const sync_raster_t *r = sync_raster; r < r + (sizeof(sync_raster) / sizeof(sync_raster_t)); r++) {
+    if (r->band == nrBand && r->scs_index == mu) {
+      tmpRaster = *r;
+      break;
+    }
+  }
+  find_gscn_to_scan(startFreq, stopFreq, tmpRaster, &scanGscnStart, &scanGscnStop);
+
+  const double scs = MU_SCS(mu) * 1e3;
+  const double pointA = fc - (nbRB / 2 * scs * NR_NB_SC_PER_RB);
+  int numGscn = 0;
+  for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster.step_gscn) {
+    ssbInfo[numGscn].ssRef = get_ssref_from_gscn(g);
+    ssbInfo[numGscn].ssbFirstSC = get_ssb_first_sc(pointA, ssbInfo[numGscn].ssRef, mu);
+    ssbInfo[numGscn].gscn = g;
+    numGscn++;
+  }
+
+  return numGscn;
 }
 
 int get_delay_idx(int delay, int max_delay_comp)

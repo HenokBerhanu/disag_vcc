@@ -109,9 +109,8 @@ void set_Lmax(NR_DL_FRAME_PARMS *fp) {
   }
 }
 
-
-int nr_get_ssb_start_symbol(NR_DL_FRAME_PARMS *fp,uint8_t i_ssb) {
-
+int nr_get_ssb_start_symbol(const NR_DL_FRAME_PARMS *fp, uint8_t i_ssb)
+{
   int mu = fp->numerology_index;
   int symbol = 0;
   uint8_t n, n_temp;

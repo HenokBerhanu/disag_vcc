@@ -202,7 +202,7 @@ int nr_pdcch_dmrs_rx(PHY_VARS_NR_UE *ue,
   return(0);
 }
 
-void nr_pbch_dmrs_rx(int symbol, unsigned int *nr_gold_pbch, c16_t *output, bool sidelink)
+void nr_pbch_dmrs_rx(int symbol, const unsigned int *nr_gold_pbch, c16_t *output, bool sidelink)
 {
   int m,m0,m1;
   uint8_t idx=0;

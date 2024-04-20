@@ -203,31 +203,19 @@ int nr_slot_fep(PHY_VARS_NR_UE *ue,
   return 0;
 }
 
-int nr_slot_fep_init_sync(PHY_VARS_NR_UE *ue,
-                          const UE_nr_rxtx_proc_t *proc,
+int nr_slot_fep_init_sync(const NR_DL_FRAME_PARMS *frame_parms,
                           unsigned char symbol,
                           int sample_offset,
-                          bool pbch_decoded,
-                          c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP],
+                          const c16_t **rxdata,
+                          c16_t rxdataF[][frame_parms->samples_per_slot_wCP],
                           int link_type)
 {
-  NR_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
-  NR_UE_COMMON *common_vars   = &ue->common_vars;
-  int Ns = proc->nr_slot_rx;
+  int Ns = 0;
 
   AssertFatal(symbol < frame_parms->symbols_per_slot, "slot_fep: symbol must be between 0 and %d\n", frame_parms->symbols_per_slot-1);
   AssertFatal(Ns < frame_parms->slots_per_frame, "slot_fep: Ns must be between 0 and %d\n", frame_parms->slots_per_frame-1);
 
-  unsigned int nb_prefix_samples;
-  unsigned int nb_prefix_samples0;
-  if (pbch_decoded) {
-    nb_prefix_samples  = frame_parms->nb_prefix_samples;
-    nb_prefix_samples0 = frame_parms->nb_prefix_samples0;
-  }
-  else {
-    nb_prefix_samples  = frame_parms->nb_prefix_samples;
-    nb_prefix_samples0 = frame_parms->nb_prefix_samples;
-  }
+  unsigned int nb_prefix_samples = frame_parms->nb_prefix_samples;
   unsigned int frame_length_samples = frame_parms->samples_per_frame;
 
   dft_size_idx_t dftsize = get_dft(frame_parms->ofdm_symbol_size);
@@ -236,10 +224,7 @@ int nr_slot_fep_init_sync(PHY_VARS_NR_UE *ue,
 
   unsigned int slot_offset = frame_parms->get_samples_slot_timestamp(Ns,frame_parms,0);
   unsigned int rx_offset   = sample_offset + slot_offset;
-  unsigned int abs_symbol  = Ns * frame_parms->symbols_per_slot + symbol;
-  for (int idx_symb = Ns*frame_parms->symbols_per_slot; idx_symb <= abs_symbol; idx_symb++)
-    rx_offset += (idx_symb%(0x7<<frame_parms->numerology_index)) ? nb_prefix_samples : nb_prefix_samples0;
-  rx_offset += frame_parms->ofdm_symbol_size * symbol;
+  rx_offset += (frame_parms->ofdm_symbol_size + nb_prefix_samples) * symbol + nb_prefix_samples;
 
 #ifdef DEBUG_FEP
   //  if (ue->frame <100)
@@ -256,37 +241,28 @@ int nr_slot_fep_init_sync(PHY_VARS_NR_UE *ue,
       // rxdata is 2 frames len
       // we have to wrap on the end
 
-      memcpy((void *)&tmp_dft_in[0],
-             (void *)&common_vars->rxdata[aa][rx_offset],
-             (frame_length_samples*2 - rx_offset) * sizeof(int32_t));
-      memcpy((void *)&tmp_dft_in[frame_length_samples*2 - rx_offset],
-             (void *)&common_vars->rxdata[aa][0],
-             (frame_parms->ofdm_symbol_size - (frame_length_samples*2 - rx_offset)) * sizeof(int32_t));
+      memcpy((void *)&tmp_dft_in[0], (void *)&rxdata[aa][rx_offset], (frame_length_samples * 2 - rx_offset) * sizeof(int32_t));
+      memcpy((void *)&tmp_dft_in[frame_length_samples * 2 - rx_offset],
+             (void *)&rxdata[aa][0],
+             (frame_parms->ofdm_symbol_size - (frame_length_samples * 2 - rx_offset)) * sizeof(int32_t));
       rxdata_ptr = (int16_t *)tmp_dft_in;
 
     } else if ((rx_offset & 7) != 0) {
 
       // if input to dft is not 256-bit aligned
-      memcpy((void *)&tmp_dft_in[0],
-             (void *)&common_vars->rxdata[aa][rx_offset],
-             frame_parms->ofdm_symbol_size * sizeof(int32_t));
+      memcpy((void *)&tmp_dft_in[0], (void *)&rxdata[aa][rx_offset], frame_parms->ofdm_symbol_size * sizeof(int32_t));
       rxdata_ptr = (int16_t *)tmp_dft_in;
 
     } else {
 
       // use dft input from RX buffer directly
-      rxdata_ptr = (int16_t *)&common_vars->rxdata[aa][rx_offset];
-
+      rxdata_ptr = (int16_t *)&rxdata[aa][rx_offset];
     }
-
-    start_meas(&ue->rx_dft_stats);
 
     dft(dftsize,
         rxdata_ptr,
         (int16_t *)&rxdataF[aa][frame_parms->ofdm_symbol_size*symbol],
         1);
-
-    stop_meas(&ue->rx_dft_stats);
 
     int symb_offset = (Ns%frame_parms->slots_per_subframe)*frame_parms->symbols_per_slot;
     c16_t rot2 = frame_parms->symbol_rotation[link_type][symbol + symb_offset];
