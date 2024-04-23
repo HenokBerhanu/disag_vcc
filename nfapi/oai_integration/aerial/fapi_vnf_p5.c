@@ -33,6 +33,8 @@
 #include "fapi_vnf_p5.h"
 #include "fapi_vnf_p7.h"
 #include "nfapi/open-nFAPI/vnf/inc/vnf_p7.h"
+#include "nr_fapi.h"
+#include "nr_fapi_p5.h"
 
 extern RAN_CONTEXT_t RC;
 extern UL_RCC_IND_t UL_RCC_INFO;

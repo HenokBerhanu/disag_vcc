@@ -755,6 +755,7 @@ set(NFAPI_SRC
 )
 add_library(NFAPI_LIB ${NFAPI_SRC})
 target_link_libraries(NFAPI_LIB PUBLIC nfapi_common)
+target_link_libraries(NFAPI_LIB PUBLIC nr_fapi_p5)
 
 include_directories(${NFAPI_DIR}/nfapi/public_inc)
 include_directories(${NFAPI_DIR}/nfapi/inc)
@@ -779,6 +780,7 @@ set(NFAPI_VNF_SRC
 )
 add_library(NFAPI_VNF_LIB ${NFAPI_VNF_SRC})
 target_link_libraries(NFAPI_VNF_LIB PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs)
+target_link_libraries(NFAPI_VNF_LIB PRIVATE nr_fapi_p5)
 if(OAI_AERIAL)
   target_compile_definitions(NFAPI_VNF_LIB PRIVATE ENABLE_AERIAL)
 endif()
