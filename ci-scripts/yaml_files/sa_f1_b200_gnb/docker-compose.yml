@@ -1,8 +1,9 @@
 services:
     gnb_cu:
         image: oai-gnb:latest
-        privileged: true
         container_name: sa-cu-gnb
+        cap_drop:
+            - ALL
         ulimits:
           core: -1 # for core dumps
         environment:
@@ -26,8 +27,12 @@ services:
 
     gnb_du_fdd:
         image: oai-gnb:latest
-        privileged: true
         container_name: sa-du-b200-gnb
+        cap_drop:
+            - ALL
+        cap_add:
+            - SYS_NICE
+            - IPC_LOCK
         ulimits:
           core: -1 # for core dumps
         environment:
@@ -36,9 +41,10 @@ services:
                                     --telnetsrv --telnetsrv.listenport 9091 --telnetsrv.shrmod ci
                                     --gNBs.[0].min_rxtxtime 2 --gNBs.[0].do_CSIRS 1 --gNBs.[0].do_SRS 0 --L1s.[0].max_ldpc_iterations 20
                                     --log_config.global_log_options level,nocolor,time,line_num,function
+        devices:
+            - /dev/bus/usb/:/dev/bus/usb/
         volumes:
             - ../../conf_files/gnb-du.sa.band1.52prb.usrpb210.conf:/opt/oai-gnb/etc/gnb.conf
-            - /dev:/dev
         # for performance reasons, we use host mode: in bridge mode, we have
         # unacceptable DL TCP performance. However, the whole point of
         # containerization is to not be in host mode, so update this to macvlan
