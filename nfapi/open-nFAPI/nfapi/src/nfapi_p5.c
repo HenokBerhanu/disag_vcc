@@ -1231,16 +1231,15 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
                         end,
                         &pack_uint16_tlv_value);
   numTLVs++;
-
-  if (NFAPI_MODE != NFAPI_MODE_AERIAL) {
-    // TLV not supported by Aerial L1
-    pack_nr_tlv(NFAPI_NR_CONFIG_FREQUENCY_SHIFT_7P5KHZ_TAG,
-                &(pNfapiMsg->carrier_config.frequency_shift_7p5khz),
-                ppWritePackedMsg,
-                end,
-                &pack_uint8_tlv_value);
-    numTLVs++;
-  }
+#ifndef ENABLE_AERIAL
+  // TLV not supported by Aerial L1
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_FREQUENCY_SHIFT_7P5KHZ_TAG,
+                        &(pNfapiMsg->carrier_config.frequency_shift_7p5khz),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
+  numTLVs++;
+#endif
   // END Carrier Configuration
 
   // START Cell Configuration
@@ -1266,15 +1265,16 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
                         end,
                         &pack_uint32_tlv_value);
   numTLVs++;
-  if (NFAPI_MODE != NFAPI_MODE_AERIAL) {
-    // TLV not supported by Aerial L1
-    retval &= pack_nr_tlv(NFAPI_NR_CONFIG_BCH_PAYLOAD_TAG,
-                          &(pNfapiMsg->ssb_config.bch_payload),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint8_tlv_value);
-    numTLVs++;
-  }
+
+#ifndef ENABLE_AERIAL
+  // TLV not supported by Aerial L1
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_BCH_PAYLOAD_TAG,
+                        &(pNfapiMsg->ssb_config.bch_payload),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
+  numTLVs++;
+#endif
 
   retval &= pack_nr_tlv(NFAPI_NR_CONFIG_SCS_COMMON_TAG,
                         &(pNfapiMsg->ssb_config.scs_common),
@@ -1355,12 +1355,11 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
     numTLVs++;
     for (int k = 0; k < prach_fd_occasion.num_unused_root_sequences.value; k++) {
       prach_fd_occasion.unused_root_sequences_list[k].tl.tag = NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG;
-      prach_fd_occasion.unused_root_sequences_list[k].value = 0;
-      pack_nr_tlv(NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG,
-                  &(prach_fd_occasion.unused_root_sequences_list[k]),
-                  ppWritePackedMsg,
-                  end,
-                  &pack_uint16_tlv_value);
+      retval &= pack_nr_tlv(NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG,
+                            &(prach_fd_occasion.unused_root_sequences_list[k]),
+                            ppWritePackedMsg,
+                            end,
+                            &pack_uint16_tlv_value);
       numTLVs++;
     }
   }
@@ -1372,24 +1371,23 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
                         &pack_uint8_tlv_value);
   numTLVs++;
   pNfapiMsg->prach_config.prach_multiple_carriers_in_a_band.tl.tag = NFAPI_NR_CONFIG_PRACH_MULTIPLE_CARRIERS_IN_A_BAND_TAG;
-  pNfapiMsg->prach_config.prach_multiple_carriers_in_a_band.value = 0;
-  pack_nr_tlv(NFAPI_NR_CONFIG_PRACH_MULTIPLE_CARRIERS_IN_A_BAND_TAG,
-              &(pNfapiMsg->prach_config.prach_multiple_carriers_in_a_band),
-              ppWritePackedMsg,
-              end,
-              &pack_uint8_tlv_value);
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_PRACH_MULTIPLE_CARRIERS_IN_A_BAND_TAG,
+                        &(pNfapiMsg->prach_config.prach_multiple_carriers_in_a_band),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
   numTLVs++;
   // END PRACH Configuration
   // START SSB Table
-  if (NFAPI_MODE != NFAPI_MODE_AERIAL) {
-    // TLV not supported by Aerial L1
-    retval &= pack_nr_tlv(NFAPI_NR_CONFIG_SSB_OFFSET_POINT_A_TAG,
-                          &(pNfapiMsg->ssb_table.ssb_offset_point_a),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint16_tlv_value);
-    numTLVs++;
-  }
+#ifndef ENABLE_AERIAL
+  // TLV not supported by Aerial L1
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_SSB_OFFSET_POINT_A_TAG,
+                        &(pNfapiMsg->ssb_table.ssb_offset_point_a),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint16_tlv_value);
+  numTLVs++;
+#endif
   retval &=
       pack_nr_tlv(NFAPI_NR_CONFIG_SSB_PERIOD_TAG, &(pNfapiMsg->ssb_table.ssb_period), ppWritePackedMsg, end, &pack_uint8_tlv_value);
   numTLVs++;
@@ -1402,7 +1400,7 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
   numTLVs++;
   /* was unused */
   pNfapiMsg->ssb_table.MIB.tl.tag = NFAPI_NR_CONFIG_MIB_TAG;
-  pack_nr_tlv(NFAPI_NR_CONFIG_MIB_TAG, &(pNfapiMsg->ssb_table.MIB), ppWritePackedMsg, end, &pack_uint32_tlv_value);
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_MIB_TAG, &(pNfapiMsg->ssb_table.MIB), ppWritePackedMsg, end, &pack_uint32_tlv_value);
   numTLVs++;
   // SCF222.10.02 Table 3-25 : If included there must be two instances of this TLV
   retval &= pack_nr_tlv(NFAPI_NR_CONFIG_SSB_MASK_TAG,
@@ -1418,47 +1416,51 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
                         end,
                         &pack_uint32_tlv_value);
   numTLVs++;
-  if (NFAPI_MODE != NFAPI_MODE_AERIAL) {
-    // TLV not supported by Aerial L1
-    for (int i = 0; i < 64; i++) {
-      // SCF222.10.02 Table 3-25 : If included there must be 64 instances of this TLV
-      retval &= pack_nr_tlv(NFAPI_NR_CONFIG_BEAM_ID_TAG,
-                            &(pNfapiMsg->ssb_table.ssb_beam_id_list[i].beam_id),
+#ifndef ENABLE_AERIAL
+  // TLV not supported by Aerial L1
+  for (int i = 0; i < 64; i++) {
+    // SCF222.10.02 Table 3-25 : If included there must be 64 instances of this TLV
+    retval &= pack_nr_tlv(NFAPI_NR_CONFIG_BEAM_ID_TAG,
+                          &(pNfapiMsg->ssb_table.ssb_beam_id_list[i].beam_id),
+                          ppWritePackedMsg,
+                          end,
+                          &pack_uint8_tlv_value);
+    numTLVs++;
+  }
+
+  // END SSB Table
+  // START TDD Table
+  retval &=
+      pack_nr_tlv(NFAPI_NR_CONFIG_TDD_PERIOD_TAG, &(pNfapiMsg->tdd_table.tdd_period), ppWritePackedMsg, end, &pack_uint8_tlv_value);
+  numTLVs++;
+  const uint8_t slotsperframe[5] = {10, 20, 40, 80, 160};
+  // Assuming always CP_Normal, because Cyclic prefix is not included in CONFIG.request 10.02, but is present in 10.04
+  uint8_t cyclicprefix = 1;
+  bool normal_CP = cyclicprefix ? false : true;
+  // 3GPP 38.211 Table 4.3.2.1 & Table 4.3.2.2
+  uint8_t number_of_symbols_per_slot = normal_CP ? 14 : 12;
+  for (int i = 0; i < slotsperframe[pNfapiMsg->ssb_config.scs_common.value]; i++) { // TODO check right number of slots
+    for (int k = 0; k < number_of_symbols_per_slot; k++) { // TODO can change?
+      retval &= pack_nr_tlv(NFAPI_NR_CONFIG_SLOT_CONFIG_TAG,
+                            &pNfapiMsg->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config,
                             ppWritePackedMsg,
                             end,
                             &pack_uint8_tlv_value);
       numTLVs++;
     }
-
-    // END SSB Table
-    // START TDD Table
-    retval &= pack_nr_tlv(NFAPI_NR_CONFIG_TDD_PERIOD_TAG,
-                          &(pNfapiMsg->tdd_table.tdd_period),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint8_tlv_value);
-    numTLVs++;
-    // END TDD Table
-    for (int i = 0; i < 40; i++) {
-      for (int k = 0; k < 14; k++) {
-        pack_nr_tlv(NFAPI_NR_CONFIG_SLOT_CONFIG_TAG,
-                    &(pNfapiMsg->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config),
-                    ppWritePackedMsg,
-                    end,
-                    &pack_uint8_tlv_value);
-        numTLVs++;
-      }
-    }
   }
+
+  // END TDD Table
+#endif
   // START Measurement Config
   // SCF222.10.02 Table 3-27 : Contains only one TLV and is currently unused
   pNfapiMsg->measurement_config.rssi_measurement.tl.tag = NFAPI_NR_CONFIG_RSSI_MEASUREMENT_TAG;
   pNfapiMsg->measurement_config.rssi_measurement.value = 1;
-  pack_nr_tlv(NFAPI_NR_CONFIG_RSSI_MEASUREMENT_TAG,
-              &(pNfapiMsg->measurement_config.rssi_measurement),
-              ppWritePackedMsg,
-              end,
-              &pack_uint8_tlv_value);
+  retval &= pack_nr_tlv(NFAPI_NR_CONFIG_RSSI_MEASUREMENT_TAG,
+                        &(pNfapiMsg->measurement_config.rssi_measurement),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
   numTLVs++;
   // END Measurement Config
 
@@ -1469,57 +1471,57 @@ uint8_t pack_nr_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
   // START Precoding Matrix (PM) PDU
   // Struct in nfapi/open-nFAPI/nfapi/public_inc/nfapi_nr_interface_scf.h nfapi_nr_pm_pdu_t, currently unused, tag to use for AERIAL
   // is 0xA011 END Precoding Matrix (PM) PDU
-  if (NFAPI_MODE != NFAPI_MODE_AERIAL) {
-    // START nFAPI TLVs included in CONFIG.request for IDLE and CONFIGURED states
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV4_TAG,
-                          &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv4),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_ipv4_address_value);
-    numTLVs++;
+#ifndef ENABLE_AERIAL
+  // START nFAPI TLVs included in CONFIG.request for IDLE and CONFIGURED states
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV4_TAG,
+                        &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv4),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_ipv4_address_value);
+  numTLVs++;
 
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV6_TAG,
-                          &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv6),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_ipv6_address_value);
-    numTLVs++;
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV6_TAG,
+                        &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv6),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_ipv6_address_value);
+  numTLVs++;
 
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_PORT_TAG,
-                          &(pNfapiMsg->nfapi_config.p7_vnf_port),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint16_tlv_value);
-    numTLVs++;
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_P7_VNF_PORT_TAG,
+                        &(pNfapiMsg->nfapi_config.p7_vnf_port),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint16_tlv_value);
+  numTLVs++;
 
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_WINDOW_TAG,
-                          &(pNfapiMsg->nfapi_config.timing_window),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint8_tlv_value);
-    numTLVs++;
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_WINDOW_TAG,
+                        &(pNfapiMsg->nfapi_config.timing_window),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
+  numTLVs++;
 
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_INFO_MODE_TAG,
-                          &(pNfapiMsg->nfapi_config.timing_info_mode),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint8_tlv_value);
-    numTLVs++;
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_INFO_MODE_TAG,
+                        &(pNfapiMsg->nfapi_config.timing_info_mode),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
+  numTLVs++;
 
-    retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_INFO_PERIOD_TAG,
-                          &(pNfapiMsg->nfapi_config.timing_info_period),
-                          ppWritePackedMsg,
-                          end,
-                          &pack_uint8_tlv_value);
-    numTLVs++;
-    // END nFAPI TLVs included in CONFIG.request for IDLE and CONFIGURED states
+  retval &= pack_nr_tlv(NFAPI_NR_NFAPI_TIMING_INFO_PERIOD_TAG,
+                        &(pNfapiMsg->nfapi_config.timing_info_period),
+                        ppWritePackedMsg,
+                        end,
+                        &pack_uint8_tlv_value);
+  numTLVs++;
+  // END nFAPI TLVs included in CONFIG.request for IDLE and CONFIGURED states
 
-    if (pNfapiMsg->vendor_extension != 0 && config != 0) {
-      retval &= pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config);
-      NFAPI_TRACE(NFAPI_TRACE_DEBUG, "Packing CONFIG.request vendor_extension_tlv %d\n", pNfapiMsg->vendor_extension->tag);
-      numTLVs++;
-    }
+  if (pNfapiMsg->vendor_extension != 0 && config != 0) {
+    retval &= pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config);
+    NFAPI_TRACE(NFAPI_TRACE_DEBUG, "Packing CONFIG.request vendor_extension_tlv %d\n", pNfapiMsg->vendor_extension->tag);
+    numTLVs++;
   }
+#endif
   pNfapiMsg->num_tlv = numTLVs;
   retval &= push8(pNfapiMsg->num_tlv, &pNumTLVFields, end);
   return retval;
@@ -2494,16 +2496,6 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
   int tdd_periodicity_idx = 0;
   int symbol_per_slot_idx = 0;
   nfapi_nr_config_request_scf_t *pNfapiMsg = (nfapi_nr_config_request_scf_t *)msg;
-  // Memory allocations
-  pNfapiMsg->tdd_table.max_tdd_periodicity_list =
-      (nfapi_nr_max_tdd_periodicity_t *)malloc(40 * sizeof(nfapi_nr_max_tdd_periodicity_t));
-
-  for (int i = 0; i < 40; i++) {
-    pNfapiMsg->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list =
-        (nfapi_nr_max_num_of_symbol_per_slot_t *)malloc(14 * sizeof(nfapi_nr_max_num_of_symbol_per_slot_t));
-  }
-  pNfapiMsg->prach_config.num_prach_fd_occasions_list =
-      (nfapi_nr_num_prach_fd_occasions_t *)malloc(sizeof(nfapi_nr_num_prach_fd_occasions_t));
   // unpack TLVs
 
   unpack_tlv_t unpack_fns[] = {
@@ -2528,22 +2520,12 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
       {NFAPI_NR_CONFIG_RESTRICTED_SET_CONFIG_TAG, &(pNfapiMsg->prach_config.restricted_set_config), &unpack_uint8_tlv_value},
       {NFAPI_NR_CONFIG_NUM_PRACH_FD_OCCASIONS_TAG, &(pNfapiMsg->prach_config.num_prach_fd_occasions), &unpack_uint8_tlv_value},
       {NFAPI_NR_CONFIG_PRACH_CONFIG_INDEX_TAG, &(pNfapiMsg->prach_config.prach_ConfigurationIndex), &unpack_uint8_tlv_value},
-      {NFAPI_NR_CONFIG_PRACH_ROOT_SEQUENCE_INDEX_TAG,
-       &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].prach_root_sequence_index),
-       &unpack_uint16_tlv_value},
-      {NFAPI_NR_CONFIG_NUM_ROOT_SEQUENCES_TAG,
-       &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].num_root_sequences),
-       &unpack_uint8_tlv_value},
-      {NFAPI_NR_CONFIG_K1_TAG, &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].k1), &unpack_uint16_tlv_value},
-      {NFAPI_NR_CONFIG_PRACH_ZERO_CORR_CONF_TAG,
-       &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].prach_zero_corr_conf),
-       &unpack_uint8_tlv_value},
-      {NFAPI_NR_CONFIG_NUM_UNUSED_ROOT_SEQUENCES_TAG,
-       &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].num_unused_root_sequences),
-       &unpack_uint16_tlv_value},
-      {NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG,
-       &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[0].unused_root_sequences_list[0]),
-       &unpack_uint16_tlv_value},
+      {NFAPI_NR_CONFIG_PRACH_ROOT_SEQUENCE_INDEX_TAG, NULL, &unpack_uint16_tlv_value},
+      {NFAPI_NR_CONFIG_NUM_ROOT_SEQUENCES_TAG, NULL, &unpack_uint8_tlv_value},
+      {NFAPI_NR_CONFIG_K1_TAG, NULL, &unpack_uint16_tlv_value},
+      {NFAPI_NR_CONFIG_PRACH_ZERO_CORR_CONF_TAG, NULL, &unpack_uint8_tlv_value},
+      {NFAPI_NR_CONFIG_NUM_UNUSED_ROOT_SEQUENCES_TAG, NULL, &unpack_uint16_tlv_value},
+      {NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG, NULL, &unpack_uint16_tlv_value},
       {NFAPI_NR_CONFIG_SSB_PER_RACH_TAG, &(pNfapiMsg->prach_config.ssb_per_rach), &unpack_uint8_tlv_value},
       {NFAPI_NR_CONFIG_PRACH_MULTIPLE_CARRIERS_IN_A_BAND_TAG,
        &(pNfapiMsg->prach_config.prach_multiple_carriers_in_a_band),
@@ -2562,9 +2544,7 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
        &(pNfapiMsg->ssb_table.multiple_cells_ss_pbch_in_a_carrier),
        &unpack_uint8_tlv_value},
       {NFAPI_NR_CONFIG_TDD_PERIOD_TAG, &(pNfapiMsg->tdd_table.tdd_period), &unpack_uint8_tlv_value},
-      {NFAPI_NR_CONFIG_SLOT_CONFIG_TAG,
-       &(pNfapiMsg->tdd_table.max_tdd_periodicity_list[0].max_num_of_symbol_per_slot_list[0].slot_config),
-       &unpack_uint8_tlv_value},
+      {NFAPI_NR_CONFIG_SLOT_CONFIG_TAG, NULL, &unpack_uint8_tlv_value},
       {NFAPI_NR_CONFIG_RSSI_MEASUREMENT_TAG, &(pNfapiMsg->measurement_config.rssi_measurement), &unpack_uint8_tlv_value},
       {NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV4_TAG, &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv4), &unpack_ipv4_address_value},
       {NFAPI_NR_NFAPI_P7_VNF_ADDRESS_IPV6_TAG, &(pNfapiMsg->nfapi_config.p7_vnf_address_ipv6), &unpack_ipv6_address_value},
@@ -2592,11 +2572,43 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
         pStartOfValue = *ppReadPackedMsg;
         tagMatch = 1;
         nfapi_tl_t *tl = (nfapi_tl_t *)(unpack_fns[idx].tlv);
-        tl->tag = generic_tl.tag;
-        tl->length = generic_tl.length;
+        if (tl) {
+          tl->tag = generic_tl.tag;
+          tl->length = generic_tl.length;
+        }
         int result = 0;
         switch (generic_tl.tag) {
+          case NFAPI_NR_CONFIG_NUM_PRACH_FD_OCCASIONS_TAG:
+            pNfapiMsg->prach_config.num_prach_fd_occasions.tl.tag = generic_tl.tag;
+            pNfapiMsg->prach_config.num_prach_fd_occasions.tl.length = generic_tl.length;
+            result = (*unpack_fns[idx].unpack_func)(&pNfapiMsg->prach_config.num_prach_fd_occasions, ppReadPackedMsg, end);
+            pNfapiMsg->prach_config.num_prach_fd_occasions_list = (nfapi_nr_num_prach_fd_occasions_t *)malloc(
+                pNfapiMsg->prach_config.num_prach_fd_occasions.value * sizeof(nfapi_nr_num_prach_fd_occasions_t));
+            prach_root_seq_idx = 0;
+            break;
+          case NFAPI_NR_CONFIG_SCS_COMMON_TAG:
+            pNfapiMsg->ssb_config.scs_common.tl.tag = generic_tl.tag;
+            pNfapiMsg->ssb_config.scs_common.tl.length = generic_tl.length;
+            result = (*unpack_fns[idx].unpack_func)(&pNfapiMsg->ssb_config.scs_common, ppReadPackedMsg, end);
+            const uint8_t slotsperframe[5] = {10, 20, 40, 80, 160};
+            // Assuming always CP_Normal, because Cyclic prefix is not included in CONFIG.request 10.02, but is present in 10.04
+            uint8_t cyclicprefix = 1;
+            bool normal_CP = cyclicprefix ? false : true;
+            // 3GPP 38.211 Table 4.3.2.1 & Table 4.3.2.2
+            uint8_t number_of_symbols_per_slot = normal_CP ? 14 : 12;
+
+            pNfapiMsg->tdd_table.max_tdd_periodicity_list = (nfapi_nr_max_tdd_periodicity_t *)malloc(
+                slotsperframe[pNfapiMsg->ssb_config.scs_common.value] * sizeof(nfapi_nr_max_tdd_periodicity_t));
+
+            for (int i = 0; i < slotsperframe[pNfapiMsg->ssb_config.scs_common.value]; i++) {
+              pNfapiMsg->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list =
+                  (nfapi_nr_max_num_of_symbol_per_slot_t *)malloc(number_of_symbols_per_slot
+                                                                  * sizeof(nfapi_nr_max_num_of_symbol_per_slot_t));
+            }
+            break;
           case NFAPI_NR_CONFIG_PRACH_ROOT_SEQUENCE_INDEX_TAG:
+            unpack_fns[idx].tlv =
+                &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_root_sequence_index);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_root_sequence_index.tl.tag =
                 generic_tl.tag;
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_root_sequence_index.tl.length =
@@ -2605,9 +2617,9 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                 &pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_root_sequence_index,
                 ppReadPackedMsg,
                 end);
-            prach_root_seq_idx++;
             break;
           case NFAPI_NR_CONFIG_K1_TAG:
+            unpack_fns[idx].tlv = &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].k1);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].k1.tl.tag = generic_tl.tag;
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].k1.tl.length = generic_tl.length;
             result = (*unpack_fns[idx].unpack_func)(&pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].k1,
@@ -2615,6 +2627,7 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                                                     end);
             break;
           case NFAPI_NR_CONFIG_PRACH_ZERO_CORR_CONF_TAG:
+            unpack_fns[idx].tlv = &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_zero_corr_conf);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_zero_corr_conf.tl.tag = generic_tl.tag;
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].prach_zero_corr_conf.tl.length =
                 generic_tl.length;
@@ -2624,6 +2637,7 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                 end);
             break;
           case NFAPI_NR_CONFIG_NUM_ROOT_SEQUENCES_TAG:
+            unpack_fns[idx].tlv = &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_root_sequences);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_root_sequences.tl.tag = generic_tl.tag;
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_root_sequences.tl.length =
                 generic_tl.length;
@@ -2633,6 +2647,8 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                 end);
             break;
           case NFAPI_NR_CONFIG_NUM_UNUSED_ROOT_SEQUENCES_TAG:
+            unpack_fns[idx].tlv =
+                &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences.tl.tag =
                 generic_tl.tag;
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences.tl.length =
@@ -2641,8 +2657,15 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                 &pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences,
                 ppReadPackedMsg,
                 end);
+            pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].unused_root_sequences_list =
+                (nfapi_uint8_tlv_t *)malloc(
+                    pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences.value
+                    * sizeof(nfapi_uint8_tlv_t));
+            unused_root_seq_idx = 0;
             break;
           case NFAPI_NR_CONFIG_UNUSED_ROOT_SEQUENCES_TAG:
+            unpack_fns[idx].tlv = &(pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx]
+                                        .unused_root_sequences_list[unused_root_seq_idx]);
             pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx]
                 .unused_root_sequences_list[unused_root_seq_idx]
                 .tl.tag = generic_tl.tag;
@@ -2654,6 +2677,12 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                                                     ppReadPackedMsg,
                                                     end);
             unused_root_seq_idx++;
+            // last tlv of the list
+            if (unused_root_seq_idx
+                >= pNfapiMsg->prach_config.num_prach_fd_occasions_list[prach_root_seq_idx].num_unused_root_sequences.value) {
+              prach_root_seq_idx++;
+              unused_root_seq_idx = 0;
+            }
             break;
           case NFAPI_NR_CONFIG_SSB_MASK_TAG:
             pNfapiMsg->ssb_table.ssb_mask_list[ssb_mask_idx].ssb_mask.tl.tag = generic_tl.tag;
@@ -2663,21 +2692,25 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
             break;
           case NFAPI_NR_CONFIG_DL_GRID_SIZE_TAG:
             for (int i = 0; i < 5; i++) {
+              pNfapiMsg->carrier_config.dl_grid_size[i].tl.tag = generic_tl.tag;
               result = unpack_uint16_tlv_value(&pNfapiMsg->carrier_config.dl_grid_size[i], ppReadPackedMsg, end);
             }
             break;
           case NFAPI_NR_CONFIG_DL_K0_TAG:
             for (int i = 0; i < 5; i++) {
+              pNfapiMsg->carrier_config.dl_k0[i].tl.tag = generic_tl.tag;
               result = unpack_uint16_tlv_value(&pNfapiMsg->carrier_config.dl_k0[i], ppReadPackedMsg, end);
             }
             break;
           case NFAPI_NR_CONFIG_UL_GRID_SIZE_TAG:
             for (int i = 0; i < 5; i++) {
+              pNfapiMsg->carrier_config.ul_grid_size[i].tl.tag = generic_tl.tag;
               result = unpack_uint16_tlv_value(&pNfapiMsg->carrier_config.ul_grid_size[i], ppReadPackedMsg, end);
             }
             break;
           case NFAPI_NR_CONFIG_UL_K0_TAG:
             for (int i = 0; i < 5; i++) {
+              pNfapiMsg->carrier_config.ul_k0[i].tl.tag = generic_tl.tag;
               result = unpack_uint16_tlv_value(&pNfapiMsg->carrier_config.ul_k0[i], ppReadPackedMsg, end);
             }
             break;
@@ -2690,6 +2723,9 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
             config_beam_idx++;
             break;
           case NFAPI_NR_CONFIG_SLOT_CONFIG_TAG:
+            unpack_fns[idx].tlv = &(pNfapiMsg->tdd_table.max_tdd_periodicity_list[tdd_periodicity_idx]
+                                        .max_num_of_symbol_per_slot_list[symbol_per_slot_idx]
+                                        .slot_config);
             pNfapiMsg->tdd_table.max_tdd_periodicity_list[tdd_periodicity_idx]
                 .max_num_of_symbol_per_slot_list[symbol_per_slot_idx]
                 .slot_config.tl.tag = generic_tl.tag;
@@ -2701,7 +2737,7 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
                                                          .slot_config,
                                                     ppReadPackedMsg,
                                                     end);
-            symbol_per_slot_idx = (symbol_per_slot_idx + 1) % 14;
+            symbol_per_slot_idx = (symbol_per_slot_idx + 1) % number_of_symbols_per_slot;
             if (symbol_per_slot_idx == 0) {
               tdd_periodicity_idx++;
             }
@@ -2710,7 +2746,12 @@ uint8_t unpack_nr_config_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *
             result = (*unpack_fns[idx].unpack_func)(tl, ppReadPackedMsg, end);
             break;
         }
-
+        // update tl pointer with updated value, if it was set in the switch (it was inside lists)
+        if (!tl) {
+          tl = (nfapi_tl_t *)(unpack_fns[idx].tlv);
+          tl->tag = generic_tl.tag;
+          tl->length = generic_tl.length;
+        }
         if (result == 0)
           return 0;
 

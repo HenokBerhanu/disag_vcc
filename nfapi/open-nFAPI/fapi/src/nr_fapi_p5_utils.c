@@ -180,6 +180,135 @@ bool eq_param_response(const nfapi_nr_param_response_scf_t *unpacked_req, const 
 
   return true;
 }
+
+bool eq_config_request(const nfapi_nr_config_request_scf_t *unpacked_req, const nfapi_nr_config_request_scf_t *req)
+{
+  EQ(unpacked_req->header.message_id, req->header.message_id);
+  EQ(unpacked_req->header.message_length, req->header.message_length);
+  EQ(unpacked_req->num_tlv, req->num_tlv);
+
+  EQ_TLV(unpacked_req->carrier_config.dl_bandwidth, req->carrier_config.dl_bandwidth);
+
+  EQ_TLV(unpacked_req->carrier_config.dl_frequency, req->carrier_config.dl_frequency);
+
+  for (int i = 0; i < 5; ++i) {
+    EQ_TLV(unpacked_req->carrier_config.dl_k0[i], req->carrier_config.dl_k0[i]);
+
+    EQ_TLV(unpacked_req->carrier_config.dl_grid_size[i], req->carrier_config.dl_grid_size[i]);
+  }
+
+  EQ_TLV(unpacked_req->carrier_config.num_tx_ant, req->carrier_config.num_tx_ant);
+
+  EQ_TLV(unpacked_req->carrier_config.uplink_bandwidth, req->carrier_config.uplink_bandwidth);
+
+  EQ_TLV(unpacked_req->carrier_config.uplink_frequency, req->carrier_config.uplink_frequency);
+
+  for (int i = 0; i < 5; ++i) {
+    EQ_TLV(unpacked_req->carrier_config.ul_k0[i], req->carrier_config.ul_k0[i]);
+
+    EQ_TLV(unpacked_req->carrier_config.ul_grid_size[i], req->carrier_config.ul_grid_size[i]);
+  }
+
+  EQ_TLV(unpacked_req->carrier_config.num_rx_ant, req->carrier_config.num_rx_ant);
+
+  EQ_TLV(unpacked_req->carrier_config.frequency_shift_7p5khz, req->carrier_config.frequency_shift_7p5khz);
+
+  EQ_TLV(unpacked_req->cell_config.phy_cell_id, req->cell_config.phy_cell_id);
+
+  EQ_TLV(unpacked_req->cell_config.frame_duplex_type, req->cell_config.frame_duplex_type);
+
+  EQ_TLV(unpacked_req->ssb_config.ss_pbch_power, req->ssb_config.ss_pbch_power);
+
+  EQ_TLV(unpacked_req->ssb_config.bch_payload, req->ssb_config.bch_payload);
+
+  EQ_TLV(unpacked_req->ssb_config.scs_common, req->ssb_config.scs_common);
+
+  EQ_TLV(unpacked_req->prach_config.prach_sequence_length, req->prach_config.prach_sequence_length);
+
+  EQ_TLV(unpacked_req->prach_config.prach_sub_c_spacing, req->prach_config.prach_sub_c_spacing);
+
+  EQ_TLV(unpacked_req->prach_config.restricted_set_config, req->prach_config.restricted_set_config);
+
+  EQ_TLV(unpacked_req->prach_config.num_prach_fd_occasions, req->prach_config.num_prach_fd_occasions);
+
+  EQ_TLV(unpacked_req->prach_config.prach_ConfigurationIndex, req->prach_config.prach_ConfigurationIndex);
+
+  for (int i = 0; i < unpacked_req->prach_config.num_prach_fd_occasions.value; i++) {
+    nfapi_nr_num_prach_fd_occasions_t unpacked_prach_fd_occasion = unpacked_req->prach_config.num_prach_fd_occasions_list[i];
+    nfapi_nr_num_prach_fd_occasions_t req_prach_fd_occasion = req->prach_config.num_prach_fd_occasions_list[i];
+
+    EQ_TLV(unpacked_prach_fd_occasion.prach_root_sequence_index, req_prach_fd_occasion.prach_root_sequence_index);
+
+    EQ_TLV(unpacked_prach_fd_occasion.num_root_sequences, req_prach_fd_occasion.num_root_sequences);
+
+    EQ_TLV(unpacked_prach_fd_occasion.k1, req_prach_fd_occasion.k1);
+
+    EQ_TLV(unpacked_prach_fd_occasion.prach_zero_corr_conf, req_prach_fd_occasion.prach_zero_corr_conf);
+
+    EQ_TLV(unpacked_prach_fd_occasion.num_unused_root_sequences, req_prach_fd_occasion.num_unused_root_sequences);
+    for (int k = 0; k < unpacked_prach_fd_occasion.num_unused_root_sequences.value; k++) {
+      EQ_TLV(unpacked_prach_fd_occasion.unused_root_sequences_list[k], req_prach_fd_occasion.unused_root_sequences_list[k]);
+    }
+  }
+
+  EQ_TLV(unpacked_req->prach_config.ssb_per_rach, req->prach_config.ssb_per_rach);
+
+  EQ_TLV(unpacked_req->prach_config.prach_multiple_carriers_in_a_band, req->prach_config.prach_multiple_carriers_in_a_band);
+
+  EQ_TLV(unpacked_req->ssb_table.ssb_offset_point_a, req->ssb_table.ssb_offset_point_a);
+
+  EQ_TLV(unpacked_req->ssb_table.ssb_period, req->ssb_table.ssb_period);
+
+  EQ_TLV(unpacked_req->ssb_table.ssb_subcarrier_offset, req->ssb_table.ssb_subcarrier_offset);
+
+  EQ_TLV(unpacked_req->ssb_table.MIB, req->ssb_table.MIB);
+
+  EQ_TLV(unpacked_req->ssb_table.ssb_mask_list[0].ssb_mask, req->ssb_table.ssb_mask_list[0].ssb_mask);
+
+  EQ_TLV(unpacked_req->ssb_table.ssb_mask_list[1].ssb_mask, req->ssb_table.ssb_mask_list[1].ssb_mask);
+
+  for (int i = 0; i < 64; i++) {
+    EQ_TLV(unpacked_req->ssb_table.ssb_beam_id_list[i].beam_id, req->ssb_table.ssb_beam_id_list[i].beam_id);
+  }
+
+  EQ_TLV(unpacked_req->tdd_table.tdd_period, req->tdd_table.tdd_period);
+
+  const uint8_t slotsperframe[5] = {10, 20, 40, 80, 160};
+  // Assuming always CP_Normal, because Cyclic prefix is not included in CONFIG.request 10.02, but is present in 10.04
+  uint8_t cyclicprefix = 1;
+  bool normal_CP = cyclicprefix ? false : true;
+  // 3GPP 38.211 Table 4.3.2.1 & Table 4.3.2.2
+  uint8_t number_of_symbols_per_slot = normal_CP ? 14 : 12;
+
+  for (int i = 0; i < slotsperframe[unpacked_req->ssb_config.scs_common.value]; i++) {
+    for (int k = 0; k < number_of_symbols_per_slot; k++) {
+      EQ_TLV(unpacked_req->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config,
+             req->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config);
+    }
+  }
+
+  EQ_TLV(unpacked_req->measurement_config.rssi_measurement, req->measurement_config.rssi_measurement);
+
+  EQ(unpacked_req->nfapi_config.p7_vnf_address_ipv4.tl.tag, req->nfapi_config.p7_vnf_address_ipv4.tl.tag);
+  for (int i = 0; i < NFAPI_IPV4_ADDRESS_LENGTH; ++i) {
+    EQ(unpacked_req->nfapi_config.p7_vnf_address_ipv4.address[i], req->nfapi_config.p7_vnf_address_ipv4.address[i]);
+  }
+
+  EQ(unpacked_req->nfapi_config.p7_vnf_address_ipv6.tl.tag, req->nfapi_config.p7_vnf_address_ipv6.tl.tag);
+  for (int i = 0; i < NFAPI_IPV6_ADDRESS_LENGTH; ++i) {
+    EQ(unpacked_req->nfapi_config.p7_vnf_address_ipv6.address[i], req->nfapi_config.p7_vnf_address_ipv6.address[i]);
+  }
+
+  EQ_TLV(unpacked_req->nfapi_config.p7_vnf_port, req->nfapi_config.p7_vnf_port);
+
+  EQ_TLV(unpacked_req->nfapi_config.timing_window, req->nfapi_config.timing_window);
+
+  EQ_TLV(unpacked_req->nfapi_config.timing_info_mode, req->nfapi_config.timing_info_mode);
+
+  EQ_TLV(unpacked_req->nfapi_config.timing_info_period, req->nfapi_config.timing_info_period);
+  return true;
+}
+
 void free_param_request(nfapi_nr_param_request_scf_t *msg)
 {
   if (msg->vendor_extension) {
@@ -195,6 +324,34 @@ void free_param_response(nfapi_nr_param_response_scf_t *msg)
 
   if (msg->cell_param.config_tlvs_to_report_list) {
     free(msg->cell_param.config_tlvs_to_report_list);
+  }
+}
+
+void free_config_request(nfapi_nr_config_request_scf_t *msg)
+{
+  if (msg->vendor_extension) {
+    free(msg->vendor_extension);
+  }
+
+  if (msg->prach_config.num_prach_fd_occasions_list) {
+    for (int i = 0; i < msg->prach_config.num_prach_fd_occasions.value; i++) {
+      nfapi_nr_num_prach_fd_occasions_t *prach_fd_occasion = &(msg->prach_config.num_prach_fd_occasions_list[i]);
+      if (prach_fd_occasion->unused_root_sequences_list) {
+        free(prach_fd_occasion->unused_root_sequences_list);
+      }
+    }
+    free(msg->prach_config.num_prach_fd_occasions_list);
+  }
+  const uint8_t slotsperframe[5] = {10, 20, 40, 80, 160};
+  if (msg->tdd_table.max_tdd_periodicity_list) {
+    for (int i = 0; i < slotsperframe[msg->ssb_config.scs_common.value]; i++) {
+      free(msg->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list);
+    }
+    free(msg->tdd_table.max_tdd_periodicity_list);
+  }
+
+  if (msg->pmi_list.pmi_pdu) {
+    free(msg->pmi_list.pmi_pdu);
   }
 }
 
@@ -340,6 +497,175 @@ void copy_param_response(const nfapi_nr_param_response_scf_t *src, nfapi_nr_para
   COPY_TLV(dst->prach_param.max_prach_fd_occasions_in_a_slot, src->prach_param.max_prach_fd_occasions_in_a_slot);
 
   COPY_TLV(dst->measurement_param.rssi_measurement_support, src->measurement_param.rssi_measurement_support);
+
+  COPY_TL(dst->nfapi_config.p7_vnf_address_ipv4.tl, src->nfapi_config.p7_vnf_address_ipv4.tl);
+  memcpy(dst->nfapi_config.p7_vnf_address_ipv4.address,
+         src->nfapi_config.p7_vnf_address_ipv4.address,
+         sizeof(dst->nfapi_config.p7_vnf_address_ipv4.address));
+
+  COPY_TL(dst->nfapi_config.p7_vnf_address_ipv6.tl, src->nfapi_config.p7_vnf_address_ipv6.tl);
+  memcpy(dst->nfapi_config.p7_vnf_address_ipv6.address,
+         src->nfapi_config.p7_vnf_address_ipv6.address,
+         sizeof(dst->nfapi_config.p7_vnf_address_ipv6.address));
+
+  COPY_TLV(dst->nfapi_config.p7_vnf_port, src->nfapi_config.p7_vnf_port);
+
+  COPY_TL(dst->nfapi_config.p7_pnf_address_ipv4.tl, src->nfapi_config.p7_pnf_address_ipv4.tl);
+  memcpy(dst->nfapi_config.p7_pnf_address_ipv4.address,
+         src->nfapi_config.p7_pnf_address_ipv4.address,
+         sizeof(dst->nfapi_config.p7_pnf_address_ipv4.address));
+
+  COPY_TL(dst->nfapi_config.p7_pnf_address_ipv6.tl, src->nfapi_config.p7_pnf_address_ipv6.tl);
+  memcpy(dst->nfapi_config.p7_pnf_address_ipv6.address,
+         src->nfapi_config.p7_pnf_address_ipv6.address,
+         sizeof(dst->nfapi_config.p7_pnf_address_ipv6.address));
+
+  COPY_TLV(dst->nfapi_config.p7_pnf_port, src->nfapi_config.p7_pnf_port);
+
+  COPY_TLV(dst->nfapi_config.timing_window, src->nfapi_config.timing_window);
+
+  COPY_TLV(dst->nfapi_config.timing_info_mode, src->nfapi_config.timing_info_mode);
+
+  COPY_TLV(dst->nfapi_config.timing_info_period, src->nfapi_config.timing_info_period);
+
+  COPY_TLV(dst->nfapi_config.dl_tti_timing_offset, src->nfapi_config.dl_tti_timing_offset);
+
+  COPY_TLV(dst->nfapi_config.ul_tti_timing_offset, src->nfapi_config.ul_tti_timing_offset);
+
+  COPY_TLV(dst->nfapi_config.ul_dci_timing_offset, src->nfapi_config.ul_dci_timing_offset);
+
+  COPY_TLV(dst->nfapi_config.tx_data_timing_offset, src->nfapi_config.tx_data_timing_offset);
+}
+
+void copy_config_request(const nfapi_nr_config_request_scf_t *src, nfapi_nr_config_request_scf_t *dst)
+{
+  dst->header.message_id = src->header.message_id;
+  dst->header.message_length = src->header.message_length;
+  if (src->vendor_extension) {
+    dst->vendor_extension = calloc(1, sizeof(nfapi_vendor_extension_tlv_t));
+    dst->vendor_extension->tag = src->vendor_extension->tag;
+    dst->vendor_extension->length = src->vendor_extension->length;
+    copy_vendor_extension_value(&dst->vendor_extension, &src->vendor_extension);
+  }
+
+  dst->num_tlv = src->num_tlv;
+
+  COPY_TLV(dst->carrier_config.dl_bandwidth, src->carrier_config.dl_bandwidth);
+
+  COPY_TLV(dst->carrier_config.dl_frequency, src->carrier_config.dl_frequency);
+
+  for (int i = 0; i < 5; ++i) {
+    COPY_TLV(dst->carrier_config.dl_k0[i], src->carrier_config.dl_k0[i]);
+
+    COPY_TLV(dst->carrier_config.dl_grid_size[i], src->carrier_config.dl_grid_size[i]);
+  }
+
+  COPY_TLV(dst->carrier_config.num_tx_ant, src->carrier_config.num_tx_ant);
+
+  COPY_TLV(dst->carrier_config.uplink_bandwidth, src->carrier_config.uplink_bandwidth);
+
+  COPY_TLV(dst->carrier_config.uplink_frequency, src->carrier_config.uplink_frequency);
+
+  COPY_TLV(dst->carrier_config.uplink_frequency, src->carrier_config.uplink_frequency);
+
+  for (int i = 0; i < 5; ++i) {
+    COPY_TLV(dst->carrier_config.ul_k0[i], src->carrier_config.ul_k0[i]);
+
+    COPY_TLV(dst->carrier_config.ul_grid_size[i], src->carrier_config.ul_grid_size[i]);
+  }
+
+  COPY_TLV(dst->carrier_config.num_rx_ant, src->carrier_config.num_rx_ant);
+
+  COPY_TLV(dst->carrier_config.frequency_shift_7p5khz, src->carrier_config.frequency_shift_7p5khz);
+
+  COPY_TLV(dst->cell_config.phy_cell_id, src->cell_config.phy_cell_id);
+
+  COPY_TLV(dst->cell_config.frame_duplex_type, src->cell_config.frame_duplex_type);
+
+  COPY_TLV(dst->ssb_config.ss_pbch_power, src->ssb_config.ss_pbch_power);
+
+  COPY_TLV(dst->ssb_config.bch_payload, src->ssb_config.bch_payload);
+
+  COPY_TLV(dst->ssb_config.scs_common, src->ssb_config.scs_common);
+
+  COPY_TLV(dst->prach_config.prach_sequence_length, src->prach_config.prach_sequence_length);
+
+  COPY_TLV(dst->prach_config.prach_sub_c_spacing, src->prach_config.prach_sub_c_spacing);
+
+  COPY_TLV(dst->prach_config.restricted_set_config, src->prach_config.restricted_set_config);
+
+  COPY_TLV(dst->prach_config.num_prach_fd_occasions, src->prach_config.num_prach_fd_occasions);
+
+  COPY_TLV(dst->prach_config.prach_ConfigurationIndex, src->prach_config.prach_ConfigurationIndex);
+
+  COPY_TLV(dst->prach_config.prach_ConfigurationIndex, src->prach_config.prach_ConfigurationIndex);
+
+  dst->prach_config.num_prach_fd_occasions_list = (nfapi_nr_num_prach_fd_occasions_t *)malloc(
+      dst->prach_config.num_prach_fd_occasions.value * sizeof(nfapi_nr_num_prach_fd_occasions_t));
+  for (int i = 0; i < dst->prach_config.num_prach_fd_occasions.value; i++) {
+    nfapi_nr_num_prach_fd_occasions_t *src_prach_fd_occasion = &(src->prach_config.num_prach_fd_occasions_list[i]);
+    nfapi_nr_num_prach_fd_occasions_t *dst_prach_fd_occasion = &(dst->prach_config.num_prach_fd_occasions_list[i]);
+
+    COPY_TLV(dst_prach_fd_occasion->prach_root_sequence_index, src_prach_fd_occasion->prach_root_sequence_index);
+
+    COPY_TLV(dst_prach_fd_occasion->num_root_sequences, src_prach_fd_occasion->num_root_sequences);
+
+    COPY_TLV(dst_prach_fd_occasion->k1, src_prach_fd_occasion->k1);
+
+    COPY_TLV(dst_prach_fd_occasion->prach_zero_corr_conf, src_prach_fd_occasion->prach_zero_corr_conf);
+
+    COPY_TLV(dst_prach_fd_occasion->num_unused_root_sequences, src_prach_fd_occasion->num_unused_root_sequences);
+
+    dst_prach_fd_occasion->unused_root_sequences_list =
+        (nfapi_uint8_tlv_t *)malloc(dst_prach_fd_occasion->num_unused_root_sequences.value * sizeof(nfapi_uint8_tlv_t));
+    for (int k = 0; k < dst_prach_fd_occasion->num_unused_root_sequences.value; k++) {
+      COPY_TLV(dst_prach_fd_occasion->unused_root_sequences_list[k], src_prach_fd_occasion->unused_root_sequences_list[k]);
+    }
+  }
+
+  COPY_TLV(dst->prach_config.ssb_per_rach, src->prach_config.ssb_per_rach);
+
+  COPY_TLV(dst->prach_config.prach_multiple_carriers_in_a_band, src->prach_config.prach_multiple_carriers_in_a_band);
+
+  COPY_TLV(dst->ssb_table.ssb_offset_point_a, src->ssb_table.ssb_offset_point_a);
+
+  COPY_TLV(dst->ssb_table.ssb_period, src->ssb_table.ssb_period);
+
+  COPY_TLV(dst->ssb_table.ssb_subcarrier_offset, src->ssb_table.ssb_subcarrier_offset);
+
+  COPY_TLV(dst->ssb_table.MIB, src->ssb_table.MIB);
+
+  COPY_TLV(dst->ssb_table.ssb_mask_list[0].ssb_mask, src->ssb_table.ssb_mask_list[0].ssb_mask);
+
+  COPY_TLV(dst->ssb_table.ssb_mask_list[1].ssb_mask, src->ssb_table.ssb_mask_list[1].ssb_mask);
+
+  for (int i = 0; i < 64; i++) {
+    COPY_TLV(dst->ssb_table.ssb_beam_id_list[i].beam_id, src->ssb_table.ssb_beam_id_list[i].beam_id);
+  }
+
+  COPY_TLV(dst->tdd_table.tdd_period, src->tdd_table.tdd_period);
+
+  const uint8_t slotsperframe[5] = {10, 20, 40, 80, 160};
+  // Assuming always CP_Normal, because Cyclic prefix is not included in CONFIG.request 10.02, but is present in 10.04
+  uint8_t cyclicprefix = 1;
+  bool normal_CP = cyclicprefix ? false : true;
+  // 3GPP 38.211 Table 4.3.2.1 & Table 4.3.2.2
+  uint8_t number_of_symbols_per_slot = normal_CP ? 14 : 12;
+  dst->tdd_table.max_tdd_periodicity_list = (nfapi_nr_max_tdd_periodicity_t *)malloc(slotsperframe[dst->ssb_config.scs_common.value]
+                                                                                     * sizeof(nfapi_nr_max_tdd_periodicity_t));
+
+  for (int i = 0; i < slotsperframe[dst->ssb_config.scs_common.value]; i++) {
+    dst->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list =
+        (nfapi_nr_max_num_of_symbol_per_slot_t *)malloc(number_of_symbols_per_slot * sizeof(nfapi_nr_max_num_of_symbol_per_slot_t));
+  }
+  for (int i = 0; i < slotsperframe[dst->ssb_config.scs_common.value]; i++) { // TODO check right number of slots
+    for (int k = 0; k < number_of_symbols_per_slot; k++) { // TODO can change?
+      COPY_TLV(dst->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config,
+               src->tdd_table.max_tdd_periodicity_list[i].max_num_of_symbol_per_slot_list[k].slot_config);
+    }
+  }
+
+  COPY_TLV(dst->measurement_config.rssi_measurement, src->measurement_config.rssi_measurement);
 
   COPY_TL(dst->nfapi_config.p7_vnf_address_ipv4.tl, src->nfapi_config.p7_vnf_address_ipv4.tl);
   memcpy(dst->nfapi_config.p7_vnf_address_ipv4.address,

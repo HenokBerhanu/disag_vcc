@@ -20,6 +20,7 @@
 
 #include "stddef.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 // Constants - update based on implementation
 #define NFAPI_MAX_PHY_RF_INSTANCES 2
