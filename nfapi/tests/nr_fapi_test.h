@@ -18,7 +18,7 @@
  * For more information about the OpenAirInterface (OAI) Software Alliance:
  *      contact@openairinterface.org
  */
-/*! \file nfapi/open-nFAPI/fapi/inc/nr_fapi_p5.h
+/*! \file nfapi/tests/p5/nr_fapi_test.h
  * \brief
  * \author Ruben S. Silva
  * \date 2024
@@ -29,11 +29,64 @@
  * \warning
  */
 
-#ifndef OPENAIRINTERFACE_NR_FAPI_P5_H
-#define OPENAIRINTERFACE_NR_FAPI_P5_H
-#include "stdint.h"
-#include "nfapi_interface.h"
+#ifndef OPENAIRINTERFACE_NR_FAPI_TEST_H
+#define OPENAIRINTERFACE_NR_FAPI_TEST_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-uint8_t pack_nr_param_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config);
-uint8_t unpack_nr_param_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config);
-#endif // OPENAIRINTERFACE_NR_FAPI_P5_H
+#ifndef _STANDALONE_TESTING_
+#include "common/utils/LOG/log.h"
+#endif
+#include "nfapi_nr_interface.h"
+#include "nfapi_nr_interface_scf.h"
+
+uint8_t rand8()
+{
+  return (rand() & 0xff);
+}
+uint16_t rand16()
+{
+  return rand8() << 8 | rand8();
+}
+uint32_t rand24()
+{
+  return rand16() << 8 | rand8();
+}
+uint32_t rand32()
+{
+  return rand24() << 8 | rand8();
+}
+uint64_t rand64()
+{
+  return (uint64_t)rand32() << 32 | rand32();
+}
+
+uint8_t rand8_range(uint8_t lower, uint8_t upper)
+{
+  return (rand() % (upper - lower + 1)) + lower;
+}
+
+uint16_t rand16_range(uint16_t lower, uint16_t upper)
+{
+  return (rand() % (upper - lower + 1)) + lower;
+}
+
+int main(int n, char *v[]);
+
+static inline void fapi_test_init_seeded(time_t seed)
+{
+  srand(seed);
+  printf("srand seed is %ld\n", seed);
+  logInit();
+  set_glog(OAILOG_DISABLE);
+}
+
+static inline void fapi_test_init()
+{
+  fapi_test_init_seeded(time(NULL));
+}
+#endif // OPENAIRINTERFACE_NR_FAPI_TEST_H
