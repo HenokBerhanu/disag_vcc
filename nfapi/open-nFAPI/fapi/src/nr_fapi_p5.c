@@ -30,6 +30,7 @@
  */
 #include "nr_fapi.h"
 #include "nr_fapi_p5.h"
+#include "nr_fapi_p5_utils.h"
 #include "debug.h"
 
 bool isFAPIMessageIDValid(uint16_t id)
