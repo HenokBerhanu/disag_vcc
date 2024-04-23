@@ -44,6 +44,12 @@
 #include "nfapi_nr_interface.h"
 #include "nfapi_nr_interface_scf.h"
 
+#define FILL_TLV(TlV, TaG, VaL) \
+  do {                          \
+    TlV.tl.tag = TaG;           \
+    TlV.value = VaL;            \
+  } while (0)
+
 uint8_t rand8()
 {
   return (rand() & 0xff);
