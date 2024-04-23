@@ -1405,10 +1405,7 @@ void *vnf_p7_start_thread(void *ptr) {
   return config;
 }
 
-void set_thread_priority(int priority);
-
 void *vnf_nr_p7_thread_start(void *ptr) {
-  set_thread_priority(79);
   init_queue(&gnb_rach_ind_queue);
   init_queue(&gnb_rx_ind_queue);
   init_queue(&gnb_crc_ind_queue);
@@ -1451,7 +1448,6 @@ void *vnf_nr_p7_thread_start(void *ptr) {
 }
 
 void *vnf_p7_thread_start(void *ptr) {
-  set_thread_priority(79);
   vnf_p7_info *p7_vnf = (vnf_p7_info *)ptr;
   p7_vnf->config->port = p7_vnf->local_port;
   p7_vnf->config->sync_indication = &phy_sync_indication;
@@ -1495,7 +1491,7 @@ int pnf_nr_start_resp_cb(nfapi_vnf_config_t *config, int p5_idx, nfapi_nr_pnf_st
 
   if(p7_vnf->thread_started == 0) {
     pthread_t vnf_p7_thread;
-    pthread_create(&vnf_p7_thread, NULL, &vnf_nr_p7_thread_start, p7_vnf);
+    threadCreate(&vnf_p7_thread, &vnf_nr_p7_thread_start, p7_vnf, "vnf_p7_thread", -1, OAI_PRIORITY_RT);
     p7_vnf->thread_started = 1;
   } else {
     // P7 thread already running.
@@ -1519,7 +1515,7 @@ int pnf_start_resp_cb(nfapi_vnf_config_t *config, int p5_idx, nfapi_pnf_start_re
 
   if(p7_vnf->thread_started == 0) {
     pthread_t vnf_p7_thread;
-    pthread_create(&vnf_p7_thread, NULL, &vnf_p7_thread_start, p7_vnf);
+    threadCreate(&vnf_p7_thread, &vnf_p7_thread_start, p7_vnf, "vnf_p7_thread", -1, OAI_PRIORITY_RT);
     p7_vnf->thread_started = 1;
   } else {
     // P7 thread already running.
