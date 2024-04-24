@@ -620,39 +620,59 @@ uint8_t unpackarray(uint8_t **ppReadPackedMsg,
 
 uint32_t pack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **out, uint8_t *end)
 {
-  // Helper vars for DCI Payload
-  uint8_t dci_bytes_inverted[DCI_PAYLOAD_BYTE_LEN];
   uint8_t dci_byte_len = (payloadSizeBits + 7) / 8;
+#ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
+  // Helper vars for DCI Payload
+  uint8_t dci_bytes_inverted[DCI_PAYLOAD_BYTE_LEN] = {0};
+  uint8_t payload_internal[DCI_PAYLOAD_BYTE_LEN] = {0}; // Used to not edit the "outside" pointer
+  uint8_t rotation_bits = 0;
   // Align the dci payload bits to the left on the payload buffer
-  uint64_t *dci_pdu = (uint64_t *)payload;
   if (payloadSizeBits % 8 != 0) {
-    uint8_t rotation_bits = 8 - (payloadSizeBits % 8);
-    *dci_pdu = (*dci_pdu << rotation_bits);
+    rotation_bits = 8 - (payloadSizeBits % 8);
+    // Bit shifting value ( << )
+    uint64_t t = 0;
+    memcpy(&t, payload, dci_byte_len);
+    t = t << rotation_bits;
+    memcpy(payload_internal, &t, dci_byte_len);
+  } else {
+    // No rotation needed
+    memcpy(payload_internal, payload, dci_byte_len);
   }
   // Invert the byte order of the DCI Payload
   for (int j = 0; j < dci_byte_len; j++) {
-    dci_bytes_inverted[j] = payload[(dci_byte_len - 1) - j];
+    dci_bytes_inverted[j] = payload_internal[(dci_byte_len - 1) - j];
   }
   return pusharray8(dci_bytes_inverted, DCI_PAYLOAD_BYTE_LEN, dci_byte_len, out, end);
+#else
+  return pusharray8(payload, DCI_PAYLOAD_BYTE_LEN, dci_byte_len, out, end);
+#endif
 }
 
 uint32_t unpack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **in, uint8_t *end)
 {
   // Pull the inverted DCI and invert it back
   //  Helper vars for DCI Payload
-  uint8_t dci_bytes_inverted[DCI_PAYLOAD_BYTE_LEN];
   uint8_t dci_byte_len = (payloadSizeBits + 7) / 8;
+#ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
+  uint8_t dci_bytes_inverted[DCI_PAYLOAD_BYTE_LEN] = {0};
   // Get DCI array inverted
   uint32_t pullresult = pullarray8(in, dci_bytes_inverted, DCI_PAYLOAD_BYTE_LEN, dci_byte_len, end);
-  uint64_t *dci_pdu = (uint64_t *)payload;
+
   // Reversing the byte order of the inverted DCI payload
   for (uint16_t j = 0; j < dci_byte_len; j++) {
     payload[j] = dci_bytes_inverted[(dci_byte_len - 1) - j];
   }
+
+  uint64_t t = 0;
+  memcpy(&t, payload, dci_byte_len);
   if (payloadSizeBits % 8 != 0) {
     uint8_t rotation_bits = 8 - (payloadSizeBits % 8);
-    *dci_pdu = (*dci_pdu >> rotation_bits);
+    t = (t >> (uint64_t)rotation_bits);
   }
+  memcpy(payload, &t, dci_byte_len);
+#else
+  uint32_t pullresult = pullarray8(in, payload, DCI_PAYLOAD_BYTE_LEN, dci_byte_len, end);
+#endif
   return pullresult;
 }
 
