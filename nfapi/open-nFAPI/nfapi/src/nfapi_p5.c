@@ -1149,11 +1149,32 @@ static uint8_t pack_config_request(void *msg, uint8_t **ppWritePackedMsg, uint8_
 uint8_t pack_nr_config_response(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config)
 {
   nfapi_nr_config_response_scf_t *pNfapiMsg = (nfapi_nr_config_response_scf_t *)msg;
-  return (push8(pNfapiMsg->error_code, ppWritePackedMsg, end) && push8(pNfapiMsg->num_invalid_tlvs, ppWritePackedMsg, end)
-          && push8(pNfapiMsg->num_invalid_tlvs_configured_in_idle, ppWritePackedMsg, end)
-          && push8(pNfapiMsg->num_invalid_tlvs_configured_in_running, ppWritePackedMsg, end)
-          && push8(pNfapiMsg->num_missing_tlvs, ppWritePackedMsg, end)
-          && pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config));
+  uint8_t retval = push8(pNfapiMsg->error_code, ppWritePackedMsg, end);
+  retval &= push8(pNfapiMsg->num_invalid_tlvs, ppWritePackedMsg, end);
+  retval &= push8(pNfapiMsg->num_invalid_tlvs_configured_in_idle, ppWritePackedMsg, end);
+  retval &= push8(pNfapiMsg->num_invalid_tlvs_configured_in_running, ppWritePackedMsg, end);
+  retval &= push8(pNfapiMsg->num_missing_tlvs, ppWritePackedMsg, end);
+
+  // pack lists
+  for (int i = 0; i < pNfapiMsg->num_invalid_tlvs; ++i) {
+    nfapi_nr_generic_tlv_scf_t *element = &(pNfapiMsg->invalid_tlvs_list[i]);
+    pack_nr_generic_tlv(element->tl.tag, element, ppWritePackedMsg, end);
+  }
+  for (int i = 0; i < pNfapiMsg->num_invalid_tlvs_configured_in_idle; ++i) {
+    nfapi_nr_generic_tlv_scf_t *element = &(pNfapiMsg->invalid_tlvs_configured_in_idle_list[i]);
+    pack_nr_generic_tlv(element->tl.tag, element, ppWritePackedMsg, end);
+  }
+  for (int i = 0; i < pNfapiMsg->num_invalid_tlvs_configured_in_running; ++i) {
+    nfapi_nr_generic_tlv_scf_t *element = &(pNfapiMsg->invalid_tlvs_configured_in_running_list[i]);
+    pack_nr_generic_tlv(element->tl.tag, element, ppWritePackedMsg, end);
+  }
+  for (int i = 0; i < pNfapiMsg->num_missing_tlvs; ++i) {
+    nfapi_nr_generic_tlv_scf_t *element = &(pNfapiMsg->missing_tlvs_list[i]);
+    pack_nr_generic_tlv(element->tl.tag, element, ppWritePackedMsg, end);
+  }
+
+  retval &= pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config);
+  return retval;
 }
 
 static uint8_t pack_config_response(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config) {
@@ -2113,14 +2134,36 @@ static uint8_t unpack_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, v
 
 uint8_t unpack_nr_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
-  nfapi_nr_config_response_scf_t *pNfapiMsg = (nfapi_nr_config_response_scf_t *)msg;
-  uint8_t invalid_unsupported_TLVs, invalidTLVsIdle, InvalidTLVsRunning, missingTLVS;
-  uint8_t retVal = (pull8(ppReadPackedMsg, &pNfapiMsg->error_code, end) && pull8(ppReadPackedMsg, &invalid_unsupported_TLVs, end)
-                    && pull8(ppReadPackedMsg, &invalidTLVsIdle, end) && pull8(ppReadPackedMsg, &InvalidTLVsRunning, end)
-                    && pull8(ppReadPackedMsg, &missingTLVS, end)
-                    && unpack_nr_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(pNfapiMsg->vendor_extension)));
-  // TODO: Process and use the invalid TLVs fields
-  return retVal;
+  nfapi_nr_config_response_scf_t *nfapi_resp = (nfapi_nr_config_response_scf_t *)msg;
+  uint8_t retval = pull8(ppReadPackedMsg, &nfapi_resp->error_code, end)
+                   && pull8(ppReadPackedMsg, &nfapi_resp->num_invalid_tlvs, end)
+                   && pull8(ppReadPackedMsg, &nfapi_resp->num_invalid_tlvs_configured_in_idle, end)
+                   && pull8(ppReadPackedMsg, &nfapi_resp->num_invalid_tlvs_configured_in_running, end)
+                   && pull8(ppReadPackedMsg, &nfapi_resp->num_missing_tlvs, end);
+  // First unpack the invalid_tlvs_list
+  // allocate the memory
+  nfapi_resp->invalid_tlvs_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(nfapi_resp->num_invalid_tlvs * sizeof(nfapi_nr_generic_tlv_scf_t));
+  nfapi_resp->invalid_tlvs_configured_in_idle_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(nfapi_resp->num_invalid_tlvs_configured_in_idle * sizeof(nfapi_nr_generic_tlv_scf_t));
+  nfapi_resp->invalid_tlvs_configured_in_running_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(nfapi_resp->num_invalid_tlvs_configured_in_running * sizeof(nfapi_nr_generic_tlv_scf_t));
+  nfapi_resp->missing_tlvs_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(nfapi_resp->num_missing_tlvs * sizeof(nfapi_nr_generic_tlv_scf_t));
+
+  // unpack the TLV lists
+  unpack_nr_generic_tlv_list(nfapi_resp->invalid_tlvs_list, nfapi_resp->num_invalid_tlvs, ppReadPackedMsg, end);
+  unpack_nr_generic_tlv_list(nfapi_resp->invalid_tlvs_configured_in_idle_list,
+                             nfapi_resp->num_invalid_tlvs_configured_in_idle,
+                             ppReadPackedMsg,
+                             end);
+  unpack_nr_generic_tlv_list(nfapi_resp->invalid_tlvs_configured_in_running_list,
+                             nfapi_resp->num_invalid_tlvs_configured_in_running,
+                             ppReadPackedMsg,
+                             end);
+  unpack_nr_generic_tlv_list(nfapi_resp->missing_tlvs_list, nfapi_resp->num_missing_tlvs, ppReadPackedMsg, end);
+  retval &= unpack_nr_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(nfapi_resp->vendor_extension));
+  return retval;
 }
 
 uint8_t unpack_nr_start_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)

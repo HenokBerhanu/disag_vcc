@@ -309,6 +309,65 @@ bool eq_config_request(const nfapi_nr_config_request_scf_t *unpacked_req, const 
   return true;
 }
 
+static bool eq_config_response_tlv_lists(nfapi_nr_generic_tlv_scf_t *unpacked_list,
+                                         nfapi_nr_generic_tlv_scf_t *req_list,
+                                         uint8_t size)
+{
+  for (int i = 0; i < size; ++i) {
+    nfapi_nr_generic_tlv_scf_t *unpacked_element = &(unpacked_list[i]);
+    nfapi_nr_generic_tlv_scf_t *req_element = &(req_list[i]);
+
+    EQ(unpacked_element->tl.tag, req_element->tl.tag);
+    EQ(unpacked_element->tl.length, req_element->tl.length);
+    // check according to value type
+    switch (unpacked_element->tl.length) {
+      case UINT_8:
+        EQ(unpacked_element->value.u8, req_element->value.u8);
+        break;
+      case UINT_16:
+        EQ(unpacked_element->value.u16, req_element->value.u16);
+        break;
+      case UINT_32:
+        EQ(unpacked_element->value.u32, req_element->value.u32);
+        break;
+      case ARRAY_UINT_16:
+        for (int j = 0; j < 5; ++j) {
+          EQ(unpacked_element->value.array_u16[j], req_element->value.array_u16[j]);
+        }
+        break;
+      default:
+        printf("unknown length %d\n", unpacked_element->tl.length);
+        DevAssert(1 == 0);
+        break;
+    }
+  }
+  return true;
+}
+
+bool eq_config_response(const nfapi_nr_config_response_scf_t *unpacked_req, const nfapi_nr_config_response_scf_t *req)
+{
+  EQ(unpacked_req->header.message_id, req->header.message_id);
+  EQ(unpacked_req->header.message_length, req->header.message_length);
+
+  EQ(unpacked_req->error_code, req->error_code);
+  EQ(unpacked_req->num_invalid_tlvs, req->num_invalid_tlvs);
+  EQ(unpacked_req->num_invalid_tlvs_configured_in_idle, req->num_invalid_tlvs_configured_in_idle);
+  EQ(unpacked_req->num_invalid_tlvs_configured_in_running, req->num_invalid_tlvs_configured_in_running);
+  EQ(unpacked_req->num_missing_tlvs, req->num_missing_tlvs);
+  // compare the list elements
+  EQ(eq_config_response_tlv_lists(unpacked_req->invalid_tlvs_list, req->invalid_tlvs_list, req->num_invalid_tlvs), true);
+  EQ(eq_config_response_tlv_lists(unpacked_req->invalid_tlvs_configured_in_idle_list,
+                                  req->invalid_tlvs_configured_in_idle_list,
+                                  req->num_invalid_tlvs_configured_in_idle),
+     true);
+  EQ(eq_config_response_tlv_lists(unpacked_req->invalid_tlvs_configured_in_running_list,
+                                  req->invalid_tlvs_configured_in_running_list,
+                                  req->num_invalid_tlvs_configured_in_running),
+     true);
+  EQ(eq_config_response_tlv_lists(unpacked_req->missing_tlvs_list, req->missing_tlvs_list, req->num_missing_tlvs), true);
+  return true;
+}
+
 void free_param_request(nfapi_nr_param_request_scf_t *msg)
 {
   if (msg->vendor_extension) {
@@ -352,6 +411,29 @@ void free_config_request(nfapi_nr_config_request_scf_t *msg)
 
   if (msg->pmi_list.pmi_pdu) {
     free(msg->pmi_list.pmi_pdu);
+  }
+}
+
+void free_config_response(nfapi_nr_config_response_scf_t *msg)
+{
+  if (msg->vendor_extension) {
+    free(msg->vendor_extension);
+  }
+
+  if (msg->invalid_tlvs_list) {
+    free(msg->invalid_tlvs_list);
+  }
+
+  if (msg->invalid_tlvs_configured_in_idle_list) {
+    free(msg->invalid_tlvs_configured_in_idle_list);
+  }
+
+  if (msg->invalid_tlvs_configured_in_running_list) {
+    free(msg->invalid_tlvs_configured_in_running_list);
+  }
+
+  if (msg->missing_tlvs_list) {
+    free(msg->missing_tlvs_list);
   }
 }
 
@@ -704,4 +786,45 @@ void copy_config_request(const nfapi_nr_config_request_scf_t *src, nfapi_nr_conf
   COPY_TLV(dst->nfapi_config.ul_dci_timing_offset, src->nfapi_config.ul_dci_timing_offset);
 
   COPY_TLV(dst->nfapi_config.tx_data_timing_offset, src->nfapi_config.tx_data_timing_offset);
+}
+
+void copy_config_response(const nfapi_nr_config_response_scf_t *src, nfapi_nr_config_response_scf_t *dst)
+{
+  dst->header.message_id = src->header.message_id;
+  dst->header.message_length = src->header.message_length;
+  if (src->vendor_extension) {
+    dst->vendor_extension = calloc(1, sizeof(nfapi_vendor_extension_tlv_t));
+    dst->vendor_extension->tag = src->vendor_extension->tag;
+    dst->vendor_extension->length = src->vendor_extension->length;
+    copy_vendor_extension_value(&dst->vendor_extension, &src->vendor_extension);
+  }
+
+  dst->error_code = src->error_code;
+  dst->num_invalid_tlvs = src->num_invalid_tlvs;
+  dst->num_invalid_tlvs_configured_in_idle = src->num_invalid_tlvs_configured_in_idle;
+  dst->num_invalid_tlvs_configured_in_running = src->num_invalid_tlvs_configured_in_running;
+  dst->num_missing_tlvs = src->num_missing_tlvs;
+
+  dst->invalid_tlvs_list = (nfapi_nr_generic_tlv_scf_t *)malloc(dst->num_invalid_tlvs * sizeof(nfapi_nr_generic_tlv_scf_t));
+  dst->invalid_tlvs_configured_in_idle_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(dst->num_invalid_tlvs_configured_in_idle * sizeof(nfapi_nr_generic_tlv_scf_t));
+  dst->invalid_tlvs_configured_in_running_list =
+      (nfapi_nr_generic_tlv_scf_t *)malloc(dst->num_invalid_tlvs_configured_in_running * sizeof(nfapi_nr_generic_tlv_scf_t));
+  dst->missing_tlvs_list = (nfapi_nr_generic_tlv_scf_t *)malloc(dst->num_missing_tlvs * sizeof(nfapi_nr_generic_tlv_scf_t));
+
+  for (int i = 0; i < dst->num_invalid_tlvs; ++i) {
+    COPY_TLV(dst->invalid_tlvs_list[i], src->invalid_tlvs_list[i]);
+  }
+
+  for (int i = 0; i < dst->num_invalid_tlvs_configured_in_idle; ++i) {
+    COPY_TLV(dst->invalid_tlvs_configured_in_idle_list[i], src->invalid_tlvs_configured_in_idle_list[i]);
+  }
+
+  for (int i = 0; i < dst->num_invalid_tlvs_configured_in_running; ++i) {
+    COPY_TLV(dst->invalid_tlvs_configured_in_running_list[i], src->invalid_tlvs_configured_in_running_list[i]);
+  }
+
+  for (int i = 0; i < dst->num_missing_tlvs; ++i) {
+    COPY_TLV(dst->missing_tlvs_list[i], src->missing_tlvs_list[i]);
+  }
 }

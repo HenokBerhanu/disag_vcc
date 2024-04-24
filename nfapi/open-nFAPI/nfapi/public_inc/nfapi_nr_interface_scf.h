@@ -576,6 +576,23 @@ typedef struct {
   nfapi_nr_pm_list_t            pmi_list;
 } nfapi_nr_config_request_scf_t;
 
+typedef enum {
+  UINT_8 = sizeof(uint8_t),
+  UINT_16 = sizeof(uint16_t),
+  UINT_32 = sizeof(uint32_t),
+  ARRAY_UINT_16 = 5 * sizeof(uint16_t),
+  UNKNOWN = 0xffff
+} nfapi_nr_config_response_tlv_value_type_t;
+
+typedef struct {
+  nfapi_tl_t tl;
+  union {
+    uint8_t u8;
+    uint16_t u16;
+    uint32_t u32;
+    uint16_t array_u16[5]; // 4 TLVs defined as array ( dlK0, dlGridSize, ulK0, ulGridSize )
+  } value;
+} nfapi_nr_generic_tlv_scf_t;
 
 /* CONFIG.RESPONSE */
 typedef struct {
@@ -585,8 +602,11 @@ typedef struct {
   uint8_t num_invalid_tlvs_configured_in_idle;
   uint8_t num_invalid_tlvs_configured_in_running;
   uint8_t num_missing_tlvs;
-  // TODO: add list of invalid/unsupported TLVs (see Table 3.18)
-   nfapi_vendor_extension_tlv_t  vendor_extension;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_list;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_configured_in_idle_list;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_configured_in_running_list;
+  nfapi_nr_generic_tlv_scf_t* missing_tlvs_list;
+  nfapi_vendor_extension_tlv_t vendor_extension;
 } nfapi_nr_config_response_scf_t;
 
 //------------------------------//

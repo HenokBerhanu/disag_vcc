@@ -1209,6 +1209,134 @@ uint8_t pack_nr_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t
   return 1;
 }
 
+uint8_t pack_nr_generic_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end)
+{
+  nfapi_nr_generic_tlv_scf_t *toPack = (nfapi_nr_generic_tlv_scf_t *)tlv;
+  // If the tag is defined
+  if (toPack->tl.tag == tag && toPack->tl.length != 0) {
+    // write the tlv header, length comes with value
+    if (pack_tl(&(toPack->tl), ppWritePackedMsg, end) == 0)
+      return 0;
+
+    // pack the tlv value
+    switch (toPack->tl.length) {
+      case UINT_8:
+        if (push8(toPack->value.u8, ppWritePackedMsg, end) == 0) {
+          return 0;
+        }
+        break;
+      case UINT_16:
+        if (push16(toPack->value.u16, ppWritePackedMsg, end) == 0) {
+          return 0;
+        }
+        break;
+      case UINT_32:
+        if (push32(toPack->value.u32, ppWritePackedMsg, end) == 0) {
+          return 0;
+        }
+        break;
+      case ARRAY_UINT_16:
+        if ((push16(toPack->value.array_u16[0], ppWritePackedMsg, end) && push16(toPack->value.array_u16[1], ppWritePackedMsg, end)
+             && push16(toPack->value.array_u16[2], ppWritePackedMsg, end)
+             && push16(toPack->value.array_u16[3], ppWritePackedMsg, end)
+             && push16(toPack->value.array_u16[4], ppWritePackedMsg, end))
+            == 0) {
+          return 0;
+        }
+        break;
+      default:
+        break;
+    }
+
+    // calculate the length of the value and rewrite the tl header
+    // in case of nfapi_nr_config_response_tlv_list_scf_t this is to come pre-calculated, possibly unnecessary
+    /*toPack->tl.length = (*ppWritePackedMsg) - pStartOfValue;
+    // rewrite the header with the correct length
+    pack_tl(&(toPack->tl), &pStartOfTlv, end);*/
+    // Add padding that ensures multiple of 4 bytes (SCF 225 Section 2.3.2.1)
+    int padding = get_tlv_padding(toPack->tl.length);
+    NFAPI_TRACE(NFAPI_TRACE_DEBUG, "TLV 0x%x with padding of %d bytes\n", toPack->tl.tag, padding);
+    if (padding != 0) {
+      memset(*ppWritePackedMsg, 0, padding);
+      (*ppWritePackedMsg) += padding;
+    }
+  } else {
+    if (toPack->tl.tag != 0) {
+      NFAPI_TRACE(NFAPI_TRACE_WARN, "Warning pack_tlv tag 0x%x does not match expected 0x%x\n", toPack->tl.tag, tag);
+    } else {
+      // NFAPI_TRACE(NFAPI_TRACE_ERROR, "Warning pack_tlv tag 0x%x ZERO does not match expected 0x%x\n", tl->tag, tag);
+    }
+  }
+
+  return 1;
+}
+
+uint8_t unpack_nr_generic_tlv()
+{
+  return 1;
+}
+
+uint8_t unpack_nr_generic_tlv_list(void *tlv_list, uint8_t tlv_count, uint8_t **ppReadPackedMsg, uint8_t *end)
+{
+  nfapi_nr_generic_tlv_scf_t *toUnpack = (nfapi_nr_generic_tlv_scf_t *)tlv_list;
+  uint8_t numBadTags = 0;
+  for (int i = 0; i < tlv_count; ++i) {
+    nfapi_nr_generic_tlv_scf_t *element = &(toUnpack[i]);
+
+    // unpack each generic tlv
+    //  unpack the tl and process the values accordingly
+    if (unpack_tl(ppReadPackedMsg, &(element->tl), end) == 0)
+      return 0;
+
+    uint8_t *pStartOfValue = *ppReadPackedMsg;
+    // check for valid tag
+    if (element->tl.tag < NFAPI_NR_CONFIG_DL_BANDWIDTH_TAG || element->tl.tag > NFAPI_NR_CONFIG_RSSI_MEASUREMENT_TAG) {
+      numBadTags++;
+      if (numBadTags > MAX_BAD_TAG) {
+        NFAPI_TRACE(NFAPI_TRACE_ERROR, "Supplied message has had too many bad tags\n");
+        on_error();
+        return 0;
+      }
+    }
+    // if tag is valid, check length to determine which type to unpack
+    switch (element->tl.length) {
+      case UINT_8:
+        pull8(ppReadPackedMsg, &(element->value.u8), end);
+        break;
+      case UINT_16:
+        pull16(ppReadPackedMsg, &(element->value.u16), end);
+        break;
+      case UINT_32:
+        pull32(ppReadPackedMsg, &(element->value.u32), end);
+        break;
+      case ARRAY_UINT_16:
+        for (int j = 0; j < 5; ++j) {
+          pull16(ppReadPackedMsg, &(element->value.array_u16[j]), end);
+        }
+        break;
+      default:
+        printf("unknown length %d\n", element->tl.length);
+        break;
+    }
+
+    // check if the length was right;
+    if (element->tl.length != (*ppReadPackedMsg - pStartOfValue)) {
+      NFAPI_TRACE(NFAPI_TRACE_ERROR,
+                  "Warning tlv tag 0x%x length %d not equal to unpack %ld\n",
+                  element->tl.tag,
+                  element->tl.length,
+                  (*ppReadPackedMsg - pStartOfValue));
+      on_error();
+    }
+    // Remove padding that ensures multiple of 4 bytes (SCF 225 Section 2.3.2.1)
+    int padding = get_tlv_padding(element->tl.length);
+    if (padding != 0) {
+      (*ppReadPackedMsg) += padding;
+    }
+  }
+  return 1;
+}
+
 const char *nfapi_error_code_to_str(nfapi_error_code_e value)
 {
   switch (value) {

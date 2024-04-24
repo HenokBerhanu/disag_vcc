@@ -86,6 +86,7 @@ uint8_t unpack_tl(uint8_t **ppReadPackedMsg, nfapi_tl_t *tl, uint8_t *end);
 typedef uint8_t (*pack_tlv_fn)(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
 uint8_t pack_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn);
 uint8_t pack_nr_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn);
+uint8_t pack_nr_generic_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
 
 uint32_t pack_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config);
 int unpack_vendor_extension_tlv(nfapi_tl_t *tl,
@@ -93,6 +94,8 @@ int unpack_vendor_extension_tlv(nfapi_tl_t *tl,
                                 uint8_t *end,
                                 nfapi_p4_p5_codec_config_t *config,
                                 nfapi_tl_t **ve_tlv);
+
+uint8_t unpack_nr_generic_tlv_list(void *tlv_list, uint8_t tlv_count, uint8_t **ppReadPackedMsg, uint8_t *end);
 
 uint8_t get_tlv_padding(uint16_t tlv_length);
 
