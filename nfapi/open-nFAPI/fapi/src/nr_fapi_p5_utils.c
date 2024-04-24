@@ -390,6 +390,13 @@ bool eq_stop_request(const nfapi_nr_stop_request_scf_t *unpacked_req, const nfap
   return true;
 }
 
+bool eq_stop_indication(const nfapi_nr_stop_indication_scf_t *unpacked_req, const nfapi_nr_stop_indication_scf_t *req)
+{
+  EQ(unpacked_req->header.message_id, req->header.message_id);
+  EQ(unpacked_req->header.message_length, req->header.message_length);
+  return true;
+}
+
 void free_param_request(nfapi_nr_param_request_scf_t *msg)
 {
   if (msg->vendor_extension) {
@@ -474,6 +481,13 @@ void free_start_response(nfapi_nr_start_response_scf_t *msg)
 }
 
 void free_stop_request(nfapi_nr_stop_request_scf_t *msg)
+{
+  if (msg->vendor_extension) {
+    free(msg->vendor_extension);
+  }
+}
+
+void free_stop_indication(nfapi_nr_stop_indication_scf_t *msg)
 {
   if (msg->vendor_extension) {
     free(msg->vendor_extension);
@@ -898,6 +912,18 @@ void copy_start_response(const nfapi_nr_start_response_scf_t *src, nfapi_nr_star
 }
 
 void copy_stop_request(const nfapi_nr_stop_request_scf_t *src, nfapi_nr_stop_request_scf_t *dst)
+{
+  dst->header.message_id = src->header.message_id;
+  dst->header.message_length = src->header.message_length;
+  if (src->vendor_extension) {
+    dst->vendor_extension = calloc(1, sizeof(nfapi_vendor_extension_tlv_t));
+    dst->vendor_extension->tag = src->vendor_extension->tag;
+    dst->vendor_extension->length = src->vendor_extension->length;
+    copy_vendor_extension_value(&dst->vendor_extension, &src->vendor_extension);
+  }
+}
+
+void copy_stop_indication(const nfapi_nr_stop_indication_scf_t *src, nfapi_nr_stop_indication_scf_t *dst)
 {
   dst->header.message_id = src->header.message_id;
   dst->header.message_length = src->header.message_length;

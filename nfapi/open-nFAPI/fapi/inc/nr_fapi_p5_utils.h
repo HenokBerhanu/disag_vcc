@@ -70,6 +70,7 @@ bool eq_config_response(const nfapi_nr_config_response_scf_t *unpacked_req, cons
 bool eq_start_request(const nfapi_nr_start_request_scf_t *unpacked_req, const nfapi_nr_start_request_scf_t *req);
 bool eq_start_response(const nfapi_nr_start_response_scf_t *unpacked_req, const nfapi_nr_start_response_scf_t *req);
 bool eq_stop_request(const nfapi_nr_stop_request_scf_t *unpacked_req, const nfapi_nr_stop_request_scf_t *req);
+bool eq_stop_indication(const nfapi_nr_stop_indication_scf_t *unpacked_req, const nfapi_nr_stop_indication_scf_t *req);
 
 void free_param_request(nfapi_nr_param_request_scf_t *msg);
 void free_param_response(nfapi_nr_param_response_scf_t *msg);
@@ -78,6 +79,7 @@ void free_config_response(nfapi_nr_config_response_scf_t *msg);
 void free_start_request(nfapi_nr_start_request_scf_t *msg);
 void free_start_response(nfapi_nr_start_response_scf_t *msg);
 void free_stop_request(nfapi_nr_stop_request_scf_t *msg);
+void free_stop_indication(nfapi_nr_stop_indication_scf_t *msg);
 
 void copy_param_request(const nfapi_nr_param_request_scf_t *src, nfapi_nr_param_request_scf_t *dst);
 void copy_param_response(const nfapi_nr_param_response_scf_t *src, nfapi_nr_param_response_scf_t *dst);
@@ -86,5 +88,6 @@ void copy_config_response(const nfapi_nr_config_response_scf_t *src, nfapi_nr_co
 void copy_start_request(const nfapi_nr_start_request_scf_t *src, nfapi_nr_start_request_scf_t *dst);
 void copy_start_response(const nfapi_nr_start_response_scf_t *src, nfapi_nr_start_response_scf_t *dst);
 void copy_stop_request(const nfapi_nr_stop_request_scf_t *src, nfapi_nr_stop_request_scf_t *dst);
+void copy_stop_indication(const nfapi_nr_stop_indication_scf_t *src, nfapi_nr_stop_indication_scf_t *dst);
 
 #endif // OPENAIRINTERFACE_NR_FAPI_P5_UTILS_H
