@@ -1163,12 +1163,6 @@ static uint8_t pack_start_response(void *msg, uint8_t **ppWritePackedMsg, uint8_
            pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config) );
 }
 
-uint8_t pack_nr_stop_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config)
-{
-  nfapi_nr_stop_request_scf_t *pNfapiMsg = (nfapi_nr_stop_request_scf_t *)msg;
-  return pack_vendor_extension_tlv(pNfapiMsg->vendor_extension, ppWritePackedMsg, end, config);
-}
-
 static uint8_t pack_stop_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config)
 {
   nfapi_stop_request_t *pNfapiMsg = (nfapi_stop_request_t *)msg;
@@ -2098,12 +2092,6 @@ static uint8_t unpack_start_response(uint8_t **ppReadPackedMsg, uint8_t *end, vo
   nfapi_start_response_t *pNfapiMsg = (nfapi_start_response_t *)msg;
   return ( pull32(ppReadPackedMsg, &pNfapiMsg->error_code, end) &&
            unpack_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(pNfapiMsg->vendor_extension)));
-}
-
-uint8_t unpack_nr_stop_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
-{
-  nfapi_nr_stop_request_scf_t *pNfapiMsg = (nfapi_nr_stop_request_scf_t *)msg;
-  return unpack_nr_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(pNfapiMsg->vendor_extension));
 }
 
 static uint8_t unpack_stop_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config) {
