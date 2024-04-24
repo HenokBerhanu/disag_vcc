@@ -1,5 +1,5 @@
 set(Test_Labels fapi p5)
-set(_fapi_p5_messages "param_request;param_response;config_request;config_response")
+set(_fapi_p5_messages "param_request;param_response;config_request;config_response;start_request")
 
 foreach (fapi_p5_message IN LISTS _fapi_p5_messages)
     add_executable(nr_fapi_${fapi_p5_message}_test nr_fapi_${fapi_p5_message}_test.c)
