@@ -2104,7 +2104,7 @@ static uint8_t unpack_start_request(uint8_t **ppReadPackedMsg, uint8_t *end, voi
 uint8_t unpack_nr_start_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
   nfapi_nr_start_response_scf_t *pNfapiMsg = (nfapi_nr_start_response_scf_t *)msg;
-  return (pull32(ppReadPackedMsg, &pNfapiMsg->error_code, end)
+  return (pull8(ppReadPackedMsg, (uint8_t *)&pNfapiMsg->error_code, end)
           && unpack_nr_tlv_list(NULL, 0, ppReadPackedMsg, end, config, &(pNfapiMsg->vendor_extension)));
 }
 static uint8_t unpack_start_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config) {
