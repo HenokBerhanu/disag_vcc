@@ -138,6 +138,7 @@ typedef struct nr_mac_config_t {
   bool force_256qam_off;
   bool force_UL256qam_off;
   bool use_deltaMCS;
+  int maxMIMO_layers;
   //int pusch_TargetSNRx10;
   //int pucch_TargetSNRx10;
 } nr_mac_config_t;
