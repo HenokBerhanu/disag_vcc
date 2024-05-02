@@ -313,7 +313,13 @@ int main(int argc, char **argv)
 
   randominit(0);
 
-  while ((c = getopt(argc, argv, "c:hn:o:s:FIL:N:R:S:T:")) != -1) {
+  while ((c = getopt(argc, argv, "--:c:hn:o:s:FIL:N:R:S:T:")) != -1) {
+
+    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
+    if (c == 1 || c == '-')
+      continue;
+
     printf("SIDELINK PSBCH SIM: handling optarg %c\n", c);
     switch (c) {
       case 'c':

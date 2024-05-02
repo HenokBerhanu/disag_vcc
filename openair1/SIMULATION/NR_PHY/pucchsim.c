@@ -155,7 +155,14 @@ int main(int argc, char **argv)
   randominit(0);
   logInit();
 
-  while ((c = getopt (argc, argv, "f:hA:f:g:i:I:P:B:b:t:T:m:n:r:o:s:S:x:y:z:N:F:GR:IL:q:cd:")) != -1) {
+  while ((c = getopt (argc, argv, "--:f:hA:f:g:i:I:P:B:b:t:T:m:n:r:o:s:S:x:y:z:N:F:GR:IL:q:cd:")) != -1) {
+
+    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
+    if (c == 1 || c == '-')
+      continue;
+
+    printf("handling optarg %c\n",c);
     switch (c) {
     case 'f':
       //write_output_file=1;
