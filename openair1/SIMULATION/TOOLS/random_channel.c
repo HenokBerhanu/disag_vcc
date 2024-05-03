@@ -76,7 +76,6 @@ static unsigned int max_chan;
 static channel_desc_t **defined_channels;
 static char *modellist_name;
 
-
 void fill_channel_desc(channel_desc_t *chan_desc,
                        uint8_t nb_tx,
                        uint8_t nb_rx,
@@ -92,9 +91,10 @@ void fill_channel_desc(channel_desc_t *chan_desc,
                        double aoa,
                        double forgetting_factor,
                        double max_Doppler,
-                       int32_t channel_offset,
+                       uint64_t channel_offset,
                        double path_loss_dB,
-                       uint8_t random_aoa) {
+                       uint8_t random_aoa)
+{
   uint16_t i,j;
   double delta_tau;
   LOG_I(OCM,"[CHANNEL] Getting new channel descriptor, nb_tx %d, nb_rx %d, nb_taps %d, channel_length %d\n",
@@ -568,7 +568,7 @@ channel_desc_t *new_channel_desc_scm(uint8_t nb_tx,
                                      double maxDoppler,
                                      const corr_level_t corr_level,
                                      double forgetting_factor,
-                                     int32_t channel_offset,
+                                     uint64_t channel_offset,
                                      double path_loss_dB,
                                      float noise_power_dB)
 {
@@ -2063,8 +2063,12 @@ static void display_channelmodel(channel_desc_t *cd,int debug, telnet_printfunc_
   prnt("nb_tx: %i    nb_rx: %i    taps: %i bandwidth: %lf    sampling: %lf\n",cd->nb_tx, cd->nb_rx, cd->nb_taps, cd->channel_bandwidth, cd->sampling_rate);
   prnt("channel length: %i    Max path delay: %lf   ricean fact.: %lf    angle of arrival: %lf (randomized:%s)\n",
        cd->channel_length, cd->Td, cd->ricean_factor, cd->aoa, (cd->random_aoa?"Yes":"No"));
-  prnt("max Doppler: %lf    path loss: %lf  noise: %lf rchannel offset: %i    forget factor; %lf\n",
-       cd->max_Doppler, cd->path_loss_dB, cd->noise_power_dB, cd->channel_offset, cd->forgetting_factor);
+  prnt("max Doppler: %lf    path loss: %lf  noise: %lf rchannel offset: %lu    forget factor; %lf\n",
+       cd->max_Doppler,
+       cd->path_loss_dB,
+       cd->noise_power_dB,
+       cd->channel_offset,
+       cd->forgetting_factor);
   prnt("Initial phase: %lf   nb_path: %i \n",
        cd->ip, cd->nb_paths);
 
