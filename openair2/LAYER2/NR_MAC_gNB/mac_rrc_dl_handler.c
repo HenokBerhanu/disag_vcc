@@ -439,7 +439,6 @@ void ue_context_setup_request(const f1ap_ue_context_setup_t *req)
   AssertFatal(enc_rval.encoded > 0, "Could not encode CellGroup, failed element %s\n", enc_rval.failed_type->name);
   resp.du_to_cu_rrc_information->cellGroupConfig_length = (enc_rval.encoded + 7) >> 3;
 
-  /* TODO: need to apply after UE context reconfiguration confirmed? */
   nr_mac_prepare_cellgroup_update(mac, UE, new_CellGroup);
 
   /* Fill the QoS config in MAC for each active DRB */
