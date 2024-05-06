@@ -142,7 +142,7 @@ void gnb_du_configuration_update_acknowledge(const f1ap_gnb_du_configuration_upd
 
 static NR_RLC_BearerConfig_t *get_bearerconfig_from_srb(const f1ap_srb_to_be_setup_t *srb)
 {
-  long priority = srb->srb_id; // high priority for SRB
+  long priority = srb->srb_id == 2 ? 3 : 1; // see 38.331 sec 9.2.1
   e_NR_LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration bucket =
       NR_LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration_ms5;
   return get_SRB_RLC_BearerConfig(get_lcid_from_srbid(srb->srb_id), priority, bucket);
@@ -163,7 +163,8 @@ static int handle_ue_context_srbs_setup(NR_UE_info_t *UE,
     NR_RLC_BearerConfig_t *rlc_BearerConfig = get_bearerconfig_from_srb(srb);
     nr_rlc_add_srb(UE->rnti, srb->srb_id, rlc_BearerConfig);
 
-    nr_lc_config_t c = {.lcid = rlc_BearerConfig->logicalChannelIdentity};
+    int priority = rlc_BearerConfig->mac_LogicalChannelConfig->ul_SpecificParameters->priority;
+    nr_lc_config_t c = {.lcid = rlc_BearerConfig->logicalChannelIdentity, .priority = priority};
     nr_mac_add_lcid(&UE->UE_sched_ctrl, &c);
 
     (*resp_srbs)[i] = *srb;
@@ -229,8 +230,12 @@ static int handle_ue_context_drbs_setup(NR_UE_info_t *UE,
     nr_rlc_add_drb(UE->rnti, drb->drb_id, rlc_BearerConfig);
 
     nr_lc_config_t c = {.lcid = rlc_BearerConfig->logicalChannelIdentity, .nssai = drb->nssai};
-    for (int q = 0; q < drb->drb_info.flows_to_be_setup_length; ++q)
+    int prio = 100;
+    for (int q = 0; q < drb->drb_info.flows_to_be_setup_length; ++q) {
       c.qos_config[q] = get_qos_config(&drb->drb_info.flows_mapped_to_drb[q].qos_params.qos_characteristics);
+      prio = min(prio, c.qos_config[q].priority);
+    }
+    c.priority = prio;
     nr_mac_add_lcid(&UE->UE_sched_ctrl, &c);
 
     *resp_drb = *drb;

@@ -522,6 +522,8 @@ typedef struct NR_QoS_config_s {
 
 typedef struct nr_lc_config {
   uint8_t lcid;
+  /// priority as specified in 38.321
+  int priority;
   /// associated NSSAI for DRB
   nssai_t nssai;
   /// QoS config for DRB

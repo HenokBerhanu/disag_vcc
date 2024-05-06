@@ -3143,7 +3143,8 @@ void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE)
   DevAssert(bearer->servedRadioBearer->choice.srb_Identity == srb_id);
   nr_rlc_add_srb(UE->rnti, bearer->servedRadioBearer->choice.srb_Identity, bearer);
 
-  nr_lc_config_t c = {.lcid = bearer->logicalChannelIdentity};
+  int priority = bearer->mac_LogicalChannelConfig->ul_SpecificParameters->priority;
+  nr_lc_config_t c = {.lcid = bearer->logicalChannelIdentity, .priority = priority};
   nr_mac_add_lcid(&UE->UE_sched_ctrl, &c);
 }
 
@@ -3255,6 +3256,18 @@ static bool eq_lcid_config(const void *vval, const void *vit)
   return it->lcid == val->lcid;
 }
 
+static int cmp_lc_config(const void *va, const void *vb)
+{
+  const nr_lc_config_t *a = (const nr_lc_config_t *)va;
+  const nr_lc_config_t *b = (const nr_lc_config_t *)vb;
+
+  if (a->priority < b->priority)
+    return -1;
+  if (a->priority == b->priority)
+    return 0;
+  return 1;
+}
+
 bool nr_mac_add_lcid(NR_UE_sched_ctrl_t* sched_ctrl, const nr_lc_config_t *c)
 {
   elm_arr_t elm = find_if(&sched_ctrl->lc_config, (void *) c, eq_lcid_config);
@@ -3266,6 +3279,10 @@ bool nr_mac_add_lcid(NR_UE_sched_ctrl_t* sched_ctrl, const nr_lc_config_t *c)
     LOG_D(NR_MAC, "Add LCID %d\n", c->lcid);
     seq_arr_push_back(&sched_ctrl->lc_config, (void*) c, sizeof(*c));
   }
+  void *base = seq_arr_front(&sched_ctrl->lc_config);
+  size_t nmemb = seq_arr_size(&sched_ctrl->lc_config);
+  size_t size = sizeof(*c);
+  qsort(base, nmemb, size, cmp_lc_config);
   return true;
 }
 
