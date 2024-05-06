@@ -2072,13 +2072,15 @@ void release_PUCCH_SRS(NR_UE_MAC_INST_t *mac)
   for (int bwp = 0; bwp < mac->ul_BWPs.count; bwp++) {
     // release SchedulingRequestResourceConfig instances configured in PUCCH-Config
     NR_PUCCH_Config_t *pucch_Config = mac->ul_BWPs.array[bwp]->pucch_Config;
-    for (int j = pucch_Config->schedulingRequestResourceToAddModList->list.count; j > 0 ; j--)
-      asn_sequence_del(&pucch_Config->schedulingRequestResourceToAddModList->list, j - 1, 1);
+    if (pucch_Config)
+      for (int j = pucch_Config->schedulingRequestResourceToAddModList->list.count; j > 0 ; j--)
+        asn_sequence_del(&pucch_Config->schedulingRequestResourceToAddModList->list, j - 1, 1);
     // release SRS-Resource instances configured in SRS-Config
     // TODO not clear if only SRS-Resources or also the ResourceSet should be released
     NR_SRS_Config_t *srs_Config = mac->ul_BWPs.array[bwp]->srs_Config;
-    for (int j = srs_Config->srs_ResourceToAddModList->list.count; j > 0 ; j--)
-      asn_sequence_del(&srs_Config->srs_ResourceToAddModList->list, j - 1, 1);
+    if (srs_Config)
+      for (int j = srs_Config->srs_ResourceToAddModList->list.count; j > 0 ; j--)
+        asn_sequence_del(&srs_Config->srs_ResourceToAddModList->list, j - 1, 1);
   }
 }
 
