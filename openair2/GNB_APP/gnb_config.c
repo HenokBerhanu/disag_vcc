@@ -279,7 +279,10 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //ratematchpattern->patternType.choice.bitmaps->periodicityAndPattern->choice.n40.buf       = MALLOC(5);
   //ratematchpattern->subcarrierSpacing           = CALLOC(1,sizeof(NR_SubcarrierSpacing_t));
   //ratematchpatternid                            = CALLOC(1,sizeof(NR_RateMatchPatternId_t));
-  
+
+  scc->ext2 = CALLOC(1, sizeof(*scc->ext2));
+  scc->ext2->ntn_Config_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17));
+  scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17));
 }
 
 void fill_scc_sim(NR_ServingCellConfigCommon_t *scc,uint64_t *ssb_bitmap,int N_RB_DL,int N_RB_UL,int mu_dl,int mu_ul) {
@@ -471,6 +474,13 @@ void fix_scc(NR_ServingCellConfigCommon_t *scc,uint64_t ssbmap) {
   // check pucch_ResourceConfig
   AssertFatal(*scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->pucch_ResourceCommon < 2,
 	      "pucch_ResourceConfig should be 0 or 1 for now\n");
+
+  if(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 == 0) {
+    free(scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17);
+    free(scc->ext2->ntn_Config_r17);
+    free(scc->ext2);
+    scc->ext2 = NULL;
+  }
 }
 
 /* Function to allocate dedicated serving cell config strutures */

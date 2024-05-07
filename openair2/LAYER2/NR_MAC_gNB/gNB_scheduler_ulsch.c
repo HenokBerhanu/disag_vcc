@@ -1408,19 +1408,21 @@ void handle_nr_srs_measurements(const module_id_t module_id,
 
 long get_K2(NR_PUSCH_TimeDomainResourceAllocationList_t *tdaList,
             int time_domain_assignment,
-            int mu) {
-
+            int mu,
+            const NR_ServingCellConfigCommon_t *scc)
+{
   /* we assume that this function is mutex-protected from outside */
   NR_PUSCH_TimeDomainResourceAllocation_t *tda = tdaList->list.array[time_domain_assignment];
+  const int NTN_gNB_Koffset = get_NTN_Koffset(scc);
 
   if (tda->k2)
-    return *tda->k2;
+    return *tda->k2 + NTN_gNB_Koffset;
   else if (mu < 2)
-    return 1;
+    return 1 + NTN_gNB_Koffset;
   else if (mu == 2)
-    return 2;
+    return 2 + NTN_gNB_Koffset;
   else
-    return 3;
+    return 3 + NTN_gNB_Koffset;
 }
 
 static bool nr_UE_is_to_be_scheduled(const NR_ServingCellConfigCommon_t *scc, int CC_id,  NR_UE_info_t* UE, frame_t frame, sub_frame_t slot, uint32_t ulsch_max_frame_inactivity)
@@ -2059,13 +2061,13 @@ static bool nr_fr1_ulsch_preprocessor(module_id_t module_id, frame_t frame, sub_
                                                                         sched_ctrl->coreset->controlResourceSetId,
                                                                         sched_ctrl->search_space->searchSpaceType->present,
                                                                         TYPE_C_RNTI_);
-  int K2 = get_K2(tdaList, temp_tda, mu);
-  const int sched_frame = (frame + (slot + K2 >= nr_slots_per_frame[mu])) & 1023;
+  int K2 = get_K2(tdaList, temp_tda, mu, scc);
+  const int sched_frame = (frame + (slot + K2) / nr_slots_per_frame[mu]) % MAX_FRAME_NUMBER;
   const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
   const int tda = get_ul_tda(nr_mac, scc, sched_frame, sched_slot);
   if (tda < 0)
     return false;
-  DevAssert(K2 == get_K2(tdaList, tda, mu));
+  DevAssert(K2 == get_K2(tdaList, tda, mu, scc));
 
   if (!is_xlsch_in_slot(nr_mac->ulsch_slot_bitmap[sched_slot / 64], sched_slot))
     return false;
@@ -2074,9 +2076,9 @@ static bool nr_fr1_ulsch_preprocessor(module_id_t module_id, frame_t frame, sub_
   sched_ctrl->sched_pusch.frame = sched_frame;
   UE_iterator(nr_mac->UE_info.list, UE2) {
     NR_UE_sched_ctrl_t *sched_ctrl = &UE2->UE_sched_ctrl;
-    AssertFatal(K2 == get_K2(tdaList, tda, mu),
+    AssertFatal(K2 == get_K2(tdaList, tda, mu, scc),
                 "Different K2, %d(UE%d) != %ld(UE%04x)\n",
-		K2, 0, get_K2(tdaList, tda, mu), UE2->rnti);
+		K2, 0, get_K2(tdaList, tda, mu, scc), UE2->rnti);
     sched_ctrl->sched_pusch.slot = sched_slot;
     sched_ctrl->sched_pusch.frame = sched_frame;
   }

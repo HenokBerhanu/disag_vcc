@@ -227,8 +227,8 @@ bool nr_ul_preprocessor_phytest(module_id_t module_id, frame_t frame, sub_frame_
               "time domain assignment %d >= %d\n",
               temp_tda,
               tdaList->list.count);
-  int K2 = get_K2(tdaList, temp_tda, mu);
-  const int sched_frame = frame + (slot + K2 >= nr_slots_per_frame[mu]);
+  int K2 = get_K2(tdaList, temp_tda, mu, scc);
+  const int sched_frame = frame + (slot + K2) / nr_slots_per_frame[mu];
   const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
   const int tda = get_ul_tda(nr_mac, scc, sched_frame, sched_slot);
   if (tda < 0)
