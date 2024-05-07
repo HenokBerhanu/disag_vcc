@@ -90,6 +90,9 @@ void nr_rrc_mac_config_req_sib1(module_id_t module_id,
                                 NR_SI_SchedulingInfo_t *si_SchedulingInfo,
                                 NR_ServingCellConfigCommonSIB_t *scc);
 
+void nr_rrc_mac_config_req_sib19_r17(module_id_t module_id,
+                                     NR_SIB19_r17_t *sib19_r17);
+
 void nr_rrc_mac_config_req_reset(module_id_t module_id, NR_UE_MAC_reset_cause_t cause);
 
 /**\brief initialization NR UE MAC instance(s)*/
@@ -196,7 +199,7 @@ void set_harq_status(NR_UE_MAC_INST_t *mac,
                      uint8_t pucch_id,
                      uint8_t harq_id,
                      int8_t delta_pucch,
-                     uint8_t data_toul_fb,
+                     uint16_t data_toul_fb,
                      uint8_t dai,
                      int n_CCE,
                      int N_CCE,

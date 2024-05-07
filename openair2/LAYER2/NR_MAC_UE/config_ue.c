@@ -409,6 +409,13 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac,
       // prach_fd_occasion->num_unused_root_sequences = ???
     }
   }
+
+  // NTN Config
+  if (scc->ext2) {
+    UPDATE_IE(mac->sc_info.ntn_Config_r17, scc->ext2->ntn_Config_r17, NR_NTN_Config_r17_t);
+  } else {
+    asn1cFreeStruc(asn_DEF_NR_NTN_Config_r17, mac->sc_info.ntn_Config_r17);
+  }
 }
 
 void release_common_ss_cset(NR_BWP_PDCCH_t *pdcch)
@@ -1583,6 +1590,17 @@ void nr_rrc_mac_config_req_sib1(module_id_t module_id,
   if (!get_softmodem_params()->emulate_l1)
     mac->if_module->phy_config_request(&mac->phy_config);
   mac->phy_config_request_sent = true;
+}
+
+void nr_rrc_mac_config_req_sib19_r17(module_id_t module_id,
+                                     NR_SIB19_r17_t *sib19_r17)
+{
+  NR_UE_MAC_INST_t *mac = get_mac_inst(module_id);
+
+  // ntn-Config-r17
+  UPDATE_IE(mac->sc_info.ntn_Config_r17, sib19_r17->ntn_Config_r17, NR_NTN_Config_r17_t);
+
+  // TODO handle other SIB19 elements
 }
 
 static void handle_reconfiguration_with_sync(NR_UE_MAC_INST_t *mac,

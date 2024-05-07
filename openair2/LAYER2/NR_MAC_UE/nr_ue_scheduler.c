@@ -1112,7 +1112,7 @@ void nr_ue_aperiodic_srs_scheduling(NR_UE_MAC_INST_t *mac, long resource_trigger
     LOG_E(NR_MAC, "Slot for scheduling aperiodic SRS %d is not an UL slot\n", sched_slot);
     return;
   }
-  int sched_frame = frame + (slot + slot_offset >= n_slots_frame) % 1024;
+  int sched_frame = frame + (slot + slot_offset / n_slots_frame) % MAX_FRAME_NUMBER;
   fapi_nr_ul_config_request_pdu_t *pdu = lockGet_ul_config(mac, sched_frame, sched_slot, FAPI_NR_UL_CONFIG_TYPE_SRS);
   if (!pdu)
     return;
@@ -1571,11 +1571,7 @@ int nr_ue_pusch_scheduler(const NR_UE_MAC_INST_t *mac,
                 DURATION_RX_TO_TX);
 
     *slot_tx = (current_slot + k2 + delta) % nr_slots_per_frame[mu];
-    if (current_slot + k2 + delta >= nr_slots_per_frame[mu]){
-      *frame_tx = (current_frame + 1) % 1024;
-    } else {
-      *frame_tx = current_frame;
-    }
+    *frame_tx = (current_frame + (current_slot + k2 + delta) / nr_slots_per_frame[mu]) % MAX_FRAME_NUMBER;
 
   } else {
 
@@ -1593,7 +1589,7 @@ int nr_ue_pusch_scheduler(const NR_UE_MAC_INST_t *mac,
 
     // Calculate TX slot and frame
     *slot_tx = (current_slot + k2) % nr_slots_per_frame[mu];
-    *frame_tx = ((current_slot + k2) > (nr_slots_per_frame[mu]-1)) ? (current_frame + 1) % 1024 : current_frame;
+    *frame_tx = (current_frame + (current_slot + k2) / nr_slots_per_frame[mu]) % MAX_FRAME_NUMBER;
 
   }
 
