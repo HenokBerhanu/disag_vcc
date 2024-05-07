@@ -650,7 +650,6 @@ add_library(HASHTABLE
 include_directories(${OPENAIR_DIR}/common/utils/hashtable)
 
 add_library(UTIL
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   ${OPENAIR_DIR}/common/utils/LOG/vcd_signal_dumper.c
   ${OPENAIR2_DIR}/UTIL/MATH/oml.c
   ${OPENAIR2_DIR}/UTIL/OPT/probe.c
@@ -662,8 +661,6 @@ add_library(UTIL
 )
 if (ENABLE_LTTNG)
   find_package(LTTngUST 2.3.8 EXACT REQUIRED)
-  target_sources(UTIL PRIVATE common/utils/LOG/lttng-tp.c)
-  target_link_libraries(UTIL PUBLIC lttng-ust)
 else()
   message(STATUS "LTTNG support disabled")
 endif()
@@ -674,7 +671,7 @@ if (cap_FOUND)
   target_link_libraries(UTIL PRIVATE cap)
   target_compile_definitions(UTIL PRIVATE HAVE_LIB_CAP)
 endif()
-target_link_libraries(UTIL PUBLIC ${T_LIB} pthread)
+target_link_libraries(UTIL PUBLIC ${T_LIB} pthread LOG)
 
 set(SECURITY_SRC
   ${OPENAIR3_DIR}/SECU/secu_defs.c
@@ -1207,10 +1204,9 @@ set(PHY_MEX_UE
   ${OPENAIR1_DIR}/PHY/TOOLS/simde_operations.c
   ${OPENAIR1_DIR}/PHY/LTE_UE_TRANSPORT/dlsch_llr_computation_avx2.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_ue_measurements.c
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   )
 add_library(PHY_MEX ${PHY_MEX_UE})
-target_link_libraries(PHY_MEX PRIVATE asn1_lte_rrc_hdrs)
+target_link_libraries(PHY_MEX PRIVATE asn1_lte_rrc_hdrs LOG)
 
 #Layer 2 library
 #####################
@@ -1949,10 +1945,9 @@ set(CMAKE_MODULE_PATH "${OPENAIR_DIR}/cmake_targets/tools/MODULES" "${CMAKE_MODU
 # add executables for operation
 #################################
 add_library(minimal_lib
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   ${OPENAIR_DIR}/common/utils/minimal_stub.c
   )
-target_link_libraries(minimal_lib pthread dl ${T_LIB})
+target_link_libraries(minimal_lib PUBLIC pthread dl ${T_LIB} LOG)
 
 add_executable(nfapi_test
   ${OPENAIR_DIR}/openair2/NR_PHY_INTERFACE/nfapi_5g_test.c
