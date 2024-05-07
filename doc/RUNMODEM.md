@@ -138,6 +138,53 @@ You can see all options by typing
 ./nr-uesoftmodem --help
 ```
 
+## How to run a NTN configuration
+
+### NTN channel
+
+A 5G NR NTN configuration only works in a non-terrestrial setup.
+Therefore either SDR boards and a dedicated NTN channel emulator are required, or RFsimulator has to be configured to simulate a NTN channel.
+
+As shown on the [rfsimulator page](../radio/rfsimulator/README.md), RFsimulator provides different possibilities.
+E.g. to perform a simple simulation of a satellite in geostationary orbit (GEO), these parameters should be added to both gNB and UE command lines:
+```
+--rfsimulator.prop_delay 238.74
+```
+
+### gNB
+
+The main parameter to cope with the large NTN propagation delay is the cellSpecificKoffset.
+This parameter is the scheduling offset used for the timing relationships that are modified for NTN (see TS 38.213).
+The unit of the field Koffset is number of slots for a given subcarrier spacing of 15 kHz.
+
+This parameter can be provided to the gNB in the conf file as `cellSpecificKoffset_r17` in the section `servingCellConfigCommon`.
+```
+...
+      cellSpecificKoffset_r17 = 478;
+...
+```
+
+Besides this, some timers, e.g. `sr_ProhibitTimer_v1700`, `t300`, `t301` and `t319`,  in the conf file section `gNBs.[0].TIMERS` might need to be extended.
+```
+...
+    TIMERS :
+    {
+      sr_ProhibitTimer       = 0;
+      sr_TransMax            = 64;
+      sr_ProhibitTimer_v1700 = 512;
+      t300                   = 2000;
+      t301                   = 2000;
+      t319                   = 2000;
+    };
+...
+```
+
+So with these modifications to the file `targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band66.fr1.25PRB.usrpx300.conf` an example gNB command for FDD, 5 MHz BW, 15 kHz SCS, GEO satellite 5G NR NTN is this:
+```
+cd cmake_targets
+sudo ./ran_build/build/nr-softmodem -O ../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band66.fr1.25PRB.usrpx300.conf --sa --rfsim --rfsimulator.prop_delay 238.74
+```
+
 # Specific OAI modes
 
 ## phy-test setup with OAI UE
