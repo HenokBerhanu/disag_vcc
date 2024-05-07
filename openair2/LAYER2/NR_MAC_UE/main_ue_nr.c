@@ -87,13 +87,19 @@ void nr_ue_init_mac(NR_UE_MAC_INST_t *mac)
 
   // Fake SIB19 reception for NTN
   // TODO: remove this and implement the actual SIB19 reception instead!
-  if (get_nrUE_params()->ntn_koffset) {
+  if (get_nrUE_params()->ntn_koffset || get_nrUE_params()->ntn_ta_common) {
     NR_SIB19_r17_t *sib19_r17 = calloc(1, sizeof(*sib19_r17));
     sib19_r17->ntn_Config_r17 = calloc(1, sizeof(*sib19_r17->ntn_Config_r17));
 
     // NTN cellSpecificKoffset-r17
     if (get_nrUE_params()->ntn_koffset) {
       asn1cCallocOne(sib19_r17->ntn_Config_r17->cellSpecificKoffset_r17, get_nrUE_params()->ntn_koffset);
+    }
+
+    // NTN ta-Common-r17
+    if (get_nrUE_params()->ntn_ta_common) {
+      sib19_r17->ntn_Config_r17->ta_Info_r17 = calloc(1, sizeof(*sib19_r17->ntn_Config_r17->ta_Info_r17));
+      sib19_r17->ntn_Config_r17->ta_Info_r17->ta_Common_r17 = get_nrUE_params()->ntn_ta_common / 4.072e-6; // ta-Common-r17 is in units of 4.072e-3 µs, ntn_ta_common is in ms
     }
 
     nr_rrc_mac_config_req_sib19_r17(mac->ue_id, sib19_r17);
