@@ -281,12 +281,6 @@ void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE)
      //process_tag_Config(sched_ctrl,mac_CellGroupConfig->tag_Config);
      //process_phr_Config(sched_ctrl,mac_CellGroupConfig->phr_Config);
    }
-
-   if (CellGroup->spCellConfig && CellGroup->spCellConfig->reconfigurationWithSync
-       && CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated
-       && CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated->choice.uplink->cfra) {
-    nr_mac_prepare_ra_ue(RC.nrmac[0], UE->rnti, CellGroup);
-   }
 }
 
 static void config_common(gNB_MAC_INST *nrmac, nr_pdsch_AntennaPorts_t pdsch_AntennaPorts, int pusch_AntennaPorts, NR_ServingCellConfigCommon_t *scc)
@@ -715,17 +709,23 @@ bool nr_mac_add_test_ue(gNB_MAC_INST *nrmac, uint32_t rnti, NR_CellGroupConfig_t
   DevAssert(get_softmodem_params()->phy_test);
   NR_SCHED_LOCK(&nrmac->sched_lock);
 
-  NR_UE_info_t* UE = add_new_nr_ue(nrmac, rnti, CellGroup);
-  if (UE) {
-    LOG_I(NR_MAC,"Force-added new UE %x with initial CellGroup\n", rnti);
-    process_CellGroup(CellGroup, UE);
-  } else {
-    LOG_E(NR_MAC,"Error adding UE %04x\n", rnti);
+  NR_UE_info_t *UE = add_new_nr_ue(nrmac, rnti, CellGroup);
+  if (!UE) {
+    LOG_E(NR_MAC, "Error adding UE %04x\n", rnti);
+    NR_SCHED_UNLOCK(&nrmac->sched_lock);
+    return false;
+  }
+
+  if (CellGroup->spCellConfig && CellGroup->spCellConfig->reconfigurationWithSync
+      && CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated
+      && CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated->choice.uplink->cfra) {
+    nr_mac_prepare_ra_ue(RC.nrmac[0], UE->rnti, CellGroup);
   }
   process_addmod_bearers_cellGroupConfig(&UE->UE_sched_ctrl, CellGroup->rlc_BearerToAddModList);
   AssertFatal(CellGroup->rlc_BearerToReleaseList == NULL, "cannot release bearers while adding new UEs\n");
   NR_SCHED_UNLOCK(&nrmac->sched_lock);
-  return UE != NULL;
+  LOG_I(NR_MAC, "Added new UE %x with initial CellGroup\n", rnti);
+  return true;
 }
 
 bool nr_mac_prepare_ra_ue(gNB_MAC_INST *nrmac, uint32_t rnti, NR_CellGroupConfig_t *CellGroup)
