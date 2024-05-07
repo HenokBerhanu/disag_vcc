@@ -977,7 +977,7 @@ static NR_UE_harq_t *find_harq(frame_t frame, sub_frame_t slot, NR_UE_info_t * U
     return NULL;
   NR_UE_harq_t *harq = &sched_ctrl->harq_processes[pid];
   /* old feedbacks we missed: mark for retransmission */
-  while (harq->feedback_frame != frame
+  while ((harq->feedback_frame - frame + 1024 ) % 1024 > 512 // harq->feedback_frame < frame, distance of 512 is boundary to decide if feedback_frame is in the past or future
          || (harq->feedback_frame == frame && harq->feedback_slot < slot)) {
     LOG_W(NR_MAC,
           "UE %04x expected HARQ pid %d feedback at %4d.%2d, but is at %4d.%2d instead (HARQ feedback is in the past)\n",
@@ -995,7 +995,9 @@ static NR_UE_harq_t *find_harq(frame_t frame, sub_frame_t slot, NR_UE_info_t * U
     harq = &sched_ctrl->harq_processes[pid];
   }
   /* feedbacks that we wait for in the future: don't do anything */
-  if (harq->feedback_slot > slot) {
+  if ((frame - harq->feedback_frame + 1024 ) % 1024 > 512 // harq->feedback_frame > frame, distance of 512 is boundary to decide if feedback_frame is in the past or future
+      || (harq->feedback_frame == frame && harq->feedback_slot > slot)) {
+
     LOG_W(NR_MAC,
           "UE %04x expected HARQ pid %d feedback at %4d.%2d, but is at %4d.%2d instead (HARQ feedback is in the future)\n",
           UE->rnti,
