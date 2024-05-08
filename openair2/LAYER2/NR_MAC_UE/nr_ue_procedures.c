@@ -230,6 +230,57 @@ void nr_ue_decode_mib(NR_UE_MAC_INST_t *mac, int cc_id)
     mac->state = UE_SYNC;
 }
 
+static void configure_ratematching_csi(fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_pdu,
+                                       fapi_nr_dl_config_request_t *dl_config,
+                                       int rnti_type,
+                                       int frame,
+                                       int slot,
+                                       int mu,
+                                       NR_PDSCH_Config_t *pdsch_config)
+{
+  // only for C-RNTI, MCS-C-RNTI, CS-RNTI (and only C-RNTI is supported for now)
+  if (rnti_type != TYPE_C_RNTI_)
+    return;
+
+  if (pdsch_config && pdsch_config->zp_CSI_RS_ResourceToAddModList) {
+    for (int i = 0; i < pdsch_config->zp_CSI_RS_ResourceToAddModList->list.count; i++) {
+      NR_ZP_CSI_RS_Resource_t *zp_res = pdsch_config->zp_CSI_RS_ResourceToAddModList->list.array[i];
+      NR_ZP_CSI_RS_ResourceId_t id = zp_res->zp_CSI_RS_ResourceId;
+      NR_SetupRelease_ZP_CSI_RS_ResourceSet_t *zp_set = pdsch_config->p_ZP_CSI_RS_ResourceSet;
+      AssertFatal(zp_set && zp_set->choice.setup, "Only periodic ZP resource set is implemented\n");
+      bool found = false;
+      for (int j = 0; j < zp_set->choice.setup->zp_CSI_RS_ResourceIdList.list.count; j++) {
+        if (*zp_set->choice.setup->zp_CSI_RS_ResourceIdList.list.array[j] == id) {
+          found = true;
+          break;
+        }
+      }
+      AssertFatal(found, "Couldn't find periodic ZP resouce in set\n");
+      AssertFatal(zp_res->periodicityAndOffset, "periodicityAndOffset cannot be null for periodic ZP resource\n");
+      int period, offset;
+      csi_period_offset(NULL, zp_res->periodicityAndOffset, &period, &offset);
+      if((frame * nr_slots_per_frame[mu] + slot - offset) % period != 0)
+        continue;
+      AssertFatal(dlsch_pdu->numCsiRsForRateMatching < NFAPI_MAX_NUM_CSI_RATEMATCH, "csiRsForRateMatching out of bounds\n");
+      fapi_nr_dl_config_csirs_pdu_rel15_t *csi_pdu = &dlsch_pdu->csiRsForRateMatching[dlsch_pdu->numCsiRsForRateMatching];
+      csi_pdu->csi_type = 2; // ZP-CSI
+      csi_pdu->subcarrier_spacing = mu;
+      configure_csi_resource_mapping(csi_pdu, &zp_res->resourceMapping, dlsch_pdu->BWPSize, dlsch_pdu->BWPStart);
+      dlsch_pdu->numCsiRsForRateMatching++;
+    }
+  }
+
+  for (int i = 0; i < dl_config->number_pdus; i++) {
+    // This assumes that CSI-RS are scheduled before this moment which is true in current implementation
+    fapi_nr_dl_config_request_pdu_t *csi_req = &dl_config->dl_config_list[i];
+    if (csi_req->pdu_type == FAPI_NR_DL_CONFIG_TYPE_CSI_RS) {
+      AssertFatal(dlsch_pdu->numCsiRsForRateMatching < NFAPI_MAX_NUM_CSI_RATEMATCH, "csiRsForRateMatching out of bounds\n");
+      dlsch_pdu->csiRsForRateMatching[dlsch_pdu->numCsiRsForRateMatching] = csi_req->csirs_config_pdu.csirs_config_rel15;
+      dlsch_pdu->numCsiRsForRateMatching++;
+    }
+  }
+}
+
 int8_t nr_ue_decode_BCCH_DL_SCH(NR_UE_MAC_INST_t *mac,
                                 int cc_id,
                                 unsigned int gNB_index,
@@ -631,8 +682,11 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
     dlsch_pdu->BWPSize = current_DL_BWP->BWPSize;
     dlsch_pdu->BWPStart = current_DL_BWP->BWPStart;
   }
+
+  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
+
   int mux_pattern = 1;
-  if (dci_ind->rnti == SI_RNTI) {
+  if (rnti_type == TYPE_SI_RNTI_) {
     NR_Type0_PDCCH_CSS_config_t type0_PDCCH_CSS_config = mac->type0_PDCCH_CSS_config;
     mux_pattern = type0_PDCCH_CSS_config.type0_pdcch_ss_mux_pattern;
     dl_conf_req->pdu_type = FAPI_NR_DL_CONFIG_TYPE_SI_DLSCH;
@@ -642,12 +696,16 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
       dlsch_pdu->SubcarrierSpacing = mac->mib->subCarrierSpacingCommon + 2;
   } else {
     dlsch_pdu->SubcarrierSpacing = current_DL_BWP->scs;
-    if (mac->ra.RA_window_cnt >= 0 && dci_ind->rnti == mac->ra.ra_rnti) {
+    if (mac->ra.RA_window_cnt >= 0 && rnti_type == TYPE_RA_RNTI_) {
       dl_conf_req->pdu_type = FAPI_NR_DL_CONFIG_TYPE_RA_DLSCH;
     } else {
       dl_conf_req->pdu_type = FAPI_NR_DL_CONFIG_TYPE_DLSCH;
     }
   }
+
+  dlsch_pdu->numCsiRsForRateMatching = 0;
+  configure_ratematching_csi(dlsch_pdu, dl_config, rnti_type, frame, slot, dlsch_pdu->SubcarrierSpacing, pdsch_config);
+
 
   /* IDENTIFIER_DCI_FORMATS */
   /* FREQ_DOM_RESOURCE_ASSIGNMENT_DL */
@@ -670,7 +728,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
   int dmrs_typeA_pos = mac->dmrs_TypeA_Position;
   const int coreset_type = dci_ind->coreset_type == NFAPI_NR_CSET_CONFIG_PDCCH_CONFIG; // 0 for coreset0, 1 otherwise;
 
-  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
+
   NR_tda_info_t tda_info = get_dl_tda_info(current_DL_BWP,
                                            dci_ind->ss_type,
                                            dci->time_domain_assignment.val,
@@ -839,7 +897,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
     return -1;
   }
 
-  if (dci_ind->rnti != mac->ra.ra_rnti && dci_ind->rnti != SI_RNTI) {
+  if (rnti_type != TYPE_RA_RNTI_ && rnti_type != TYPE_SI_RNTI_) {
     AssertFatal(1 + dci->pdsch_to_harq_feedback_timing_indicator.val > DURATION_RX_TO_TX,
                 "PDSCH to HARQ feedback time (%d) needs to be higher than DURATION_RX_TO_TX (%d).\n",
                 1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
@@ -960,6 +1018,10 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
   dlsch_pdu->BWPStart = current_DL_BWP->BWPStart;
   dlsch_pdu->SubcarrierSpacing = current_DL_BWP->scs;
 
+  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
+  dlsch_pdu->numCsiRsForRateMatching = 0;
+  configure_ratematching_csi(dlsch_pdu, dl_config, rnti_type, frame, slot, current_DL_BWP->scs, pdsch_Config);
+
   /* IDENTIFIER_DCI_FORMATS */
   /* CARRIER_IND */
   /* BANDWIDTH_PART_IND */
@@ -981,7 +1043,7 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
   int dmrs_typeA_pos = mac->dmrs_TypeA_Position;
   int mux_pattern = 1;
   const int coreset_type = dci_ind->coreset_type == NFAPI_NR_CSET_CONFIG_PDCCH_CONFIG; // 0 for coreset0, 1 otherwise;
-  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
+
   NR_tda_info_t tda_info = get_dl_tda_info(current_DL_BWP,
                                            dci_ind->ss_type,
                                            dci->time_domain_assignment.val,
