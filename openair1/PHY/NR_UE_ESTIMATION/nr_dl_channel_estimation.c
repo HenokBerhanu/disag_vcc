@@ -28,7 +28,6 @@
 #include "PHY/NR_REFSIG/ptrs_nr.h"
 #include "PHY/NR_REFSIG/nr_mod_table.h"
 #include "PHY/NR_TRANSPORT/nr_sch_dmrs.h"
-#include "PHY/NR_TRANSPORT/nr_transport_proto.h"
 #include "nr_phy_common.h"
 #include "filt16a_32.h"
 #include "T.h"
