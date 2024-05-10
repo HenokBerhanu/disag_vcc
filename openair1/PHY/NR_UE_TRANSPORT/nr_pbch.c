@@ -508,12 +508,10 @@ int nr_rx_pbch(PHY_VARS_NR_UE *ue,
 #endif
   }
 
-  uint32_t payload = 0;
   result->xtra_byte = (out>>24)&0xff;
 
-  for (int i=0; i<NR_POLAR_PBCH_PAYLOAD_BITS; i++)
-    payload |= ((out>>i)&1)<<(NR_POLAR_PBCH_PAYLOAD_BITS-i-1);
-  
+  const uint64_t payload = reverse_bits(out, NR_POLAR_PBCH_PAYLOAD_BITS);
+
   for (int i=0; i<3; i++)
     result->decoded_output[i] = (uint8_t)((payload>>((3-i)<<3))&0xff);
   
