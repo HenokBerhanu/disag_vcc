@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include "assertions.h"
 #include "SIMULATION/TOOLS/sim.h"
+#include "common/config/config_userapi.h"
 #include "common/utils/load_module_shlib.h"
 #include "PHY/CODING/nrLDPC_extern.h"
 //#include "openair1/SIMULATION/NR_PHY/nr_unitary_defs.h"
@@ -402,7 +403,7 @@ int main(int argc, char *argv[])
 {
   short block_length=8448; // decoder supports length: 1201 -> 1280, 2401 -> 2560
   // default to check output inside ldpc, the NR version checks the outer CRC defined by 3GPP
-  char *ldpc_version = "";
+  char *ldpc_version = NULL;
   /* version of the ldpc decoder library to use (XXX suffix to use when loading libldpc_XXX.so */
   short max_iterations=5;
   int n_segments=1;
@@ -424,7 +425,19 @@ int main(int argc, char *argv[])
 
   short BG = 0, Zc;
 
-  while ((c = getopt (argc, argv, "q:r:s:S:l:G:n:d:i:t:u:hv:")) != -1)
+  if ((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) == 0) {
+    exit_fun("[LDPCTEST] Error, configuration module init failed\n");
+  }
+  logInit();
+
+  while ((c = getopt (argc, argv, "--:q:r:s:S:l:G:n:d:i:t:u:hv:")) != -1) {
+
+    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
+    if (c == 1 || c == '-')
+      continue;
+
+    printf("handling optarg %c\n",c);
     switch (c) {
       case 'q':
         qbits = atoi(optarg);
@@ -494,6 +507,7 @@ int main(int argc, char *argv[])
         exit(1);
         break;
     }
+  }
   //printf("the decoder supports BG2, Kb=10, Z=128 & 256\n");
   //printf(" range of blocklength: 1201 -> 1280, 2401 -> 2560\n");
   printf("block length %d: \n", block_length);

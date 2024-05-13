@@ -11,6 +11,7 @@
 #include "PHY/CODING/nrPolar_tools/nr_polar_uci_defs.h"
 #include "PHY/CODING/coding_defs.h"
 #include "SIMULATION/TOOLS/sim.h"
+#include "common/config/config_userapi.h"
 //#include "common/utils/LOG/log.h"
 #include "coding_unitary_defs.h"
 //#define DEBUG_DCI_POLAR_PARAMS
@@ -32,7 +33,19 @@ int main(int argc, char *argv[])
   uint8_t aggregation_level = 8, decoderListSize = 8, logFlag = 0;
   uint16_t rnti=0;
 
-  while ((arguments = getopt (argc, argv, "s:d:f:m:i:l:a:p:hqgFL:k:")) != -1) {
+  if ((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) == 0) {
+    exit_fun("[POLARTEST] Error, configuration module init failed\n");
+  }
+  logInit();
+
+  while ((arguments = getopt (argc, argv, "--:s:d:f:m:i:l:a:p:hqgFL:k:")) != -1) {
+
+    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
+    if (arguments == 1 || arguments == '-')
+      continue;
+
+    printf("handling optarg %c\n",arguments);
     switch (arguments) {
     case 's':
     	SNRstart = atof(optarg);
