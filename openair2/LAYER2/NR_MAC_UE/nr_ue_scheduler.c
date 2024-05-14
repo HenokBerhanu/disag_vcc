@@ -1884,13 +1884,12 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
 
 // Returns a RACH occasion if any matches the SSB idx, the frame and the slot
 static int get_nr_prach_info_from_ssb_index(prach_association_pattern_t *prach_assoc_pattern,
-                                            uint8_t ssb_idx,
+                                            int ssb_idx,
                                             int frame,
                                             int slot,
                                             ssb_list_info_t *ssb_list,
                                             prach_occasion_info_t **prach_occasion_info_pp)
 {
-  ssb_info_t *ssb_info_p;
   prach_occasion_slot_t *prach_occasion_slot_p = NULL;
 
   *prach_occasion_info_pp = NULL;
@@ -1900,14 +1899,20 @@ static int get_nr_prach_info_from_ssb_index(prach_association_pattern_t *prach_a
   //      - ssb_idx mapped to one of the ROs in that RO slot
   //      - exact slot number
   //      - frame offset
-  ssb_info_p = &ssb_list->tx_ssb[ssb_idx];
+  int idx_list = ssb_list->nb_ssb_per_index[ssb_idx];
+  ssb_info_t *ssb_info_p = &ssb_list->tx_ssb[idx_list];
   LOG_D(NR_MAC, "checking for prach : ssb_info_p->nb_mapped_ro %d\n", ssb_info_p->nb_mapped_ro);
-  for (uint8_t n_mapped_ro=0; n_mapped_ro<ssb_info_p->nb_mapped_ro; n_mapped_ro++) {
-    LOG_D(NR_MAC,"%d.%d: mapped_ro[%d]->frame.slot %d.%d, prach_assoc_pattern->nb_of_frame %d\n",
-          frame,slot,n_mapped_ro,ssb_info_p->mapped_ro[n_mapped_ro]->frame,ssb_info_p->mapped_ro[n_mapped_ro]->slot,prach_assoc_pattern->nb_of_frame);
+  for (int n_mapped_ro = 0; n_mapped_ro < ssb_info_p->nb_mapped_ro; n_mapped_ro++) {
+    LOG_D(NR_MAC,
+          "%d.%d: mapped_ro[%d]->frame.slot %d.%d, prach_assoc_pattern->nb_of_frame %d\n",
+          frame,
+          slot,
+          n_mapped_ro,
+          ssb_info_p->mapped_ro[n_mapped_ro]->frame,
+          ssb_info_p->mapped_ro[n_mapped_ro]->slot,
+          prach_assoc_pattern->nb_of_frame);
     if ((slot == ssb_info_p->mapped_ro[n_mapped_ro]->slot) &&
         (ssb_info_p->mapped_ro[n_mapped_ro]->frame == (frame % prach_assoc_pattern->nb_of_frame))) {
-
       uint8_t prach_config_period_nb = ssb_info_p->mapped_ro[n_mapped_ro]->frame / prach_assoc_pattern->prach_conf_period_list[0].nb_of_frame;
       uint8_t frame_nb_in_prach_config_period = ssb_info_p->mapped_ro[n_mapped_ro]->frame % prach_assoc_pattern->prach_conf_period_list[0].nb_of_frame;
       prach_occasion_slot_p = &prach_assoc_pattern->prach_conf_period_list[prach_config_period_nb].prach_occasion_slot_map[frame_nb_in_prach_config_period][slot];
