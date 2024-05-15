@@ -108,7 +108,7 @@ void test_pack_payload(uint8_t payloadSizeBits, uint8_t payload[])
 
   pack_dci_payload(payload, payloadSizeBits, &pWritePackedMessage, pPackMessageEnd);
 
-  uint8_t *unpack_buf = calloc_or_fail(payloadSizeBytes, sizeof(uint8_t));
+  uint8_t unpack_buf[payloadSizeBytes];
   pWritePackedMessage = msg_buf;
   unpack_dci_payload(unpack_buf, payloadSizeBits, &pWritePackedMessage, pPackMessageEnd);
 
@@ -128,7 +128,6 @@ void test_pack_payload(uint8_t payloadSizeBits, uint8_t payload[])
 
   DevAssert(memcmp(payload, unpack_buf, payloadSizeBytes) == 0);
   // All tests successful!
-  free(unpack_buf);
 }
 
 int main(int n, char *v[])

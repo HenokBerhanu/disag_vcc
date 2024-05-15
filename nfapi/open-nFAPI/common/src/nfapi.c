@@ -618,7 +618,7 @@ uint8_t unpackarray(uint8_t **ppReadPackedMsg,
   return 1;
 }
 
-uint32_t pack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **out, uint8_t *end)
+uint32_t pack_dci_payload(uint8_t *payload, uint16_t payloadSizeBits, uint8_t **out, uint8_t *end)
 {
   uint8_t dci_byte_len = (payloadSizeBits + 7) / 8;
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
@@ -648,7 +648,7 @@ uint32_t pack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t *
 #endif
 }
 
-uint32_t unpack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **in, uint8_t *end)
+uint32_t unpack_dci_payload(uint8_t *payload, uint16_t payloadSizeBits, uint8_t **in, uint8_t *end)
 {
   // Pull the inverted DCI and invert it back
   //  Helper vars for DCI Payload
