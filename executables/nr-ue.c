@@ -829,6 +829,7 @@ void *UE_thread(void *arg)
     if (start_rx_stream == 0) {
       start_rx_stream=1;
       syncInFrame(UE, &sync_timestamp, intialSyncOffset);
+      openair0_write_reorder_clear_context(&UE->rfdevice);
       shiftForNextFrame = 0; // will be used to track clock drift
       // read in first symbol
       AssertFatal(UE->frame_parms.ofdm_symbol_size + UE->frame_parms.nb_prefix_samples0
