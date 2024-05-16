@@ -51,9 +51,11 @@ There is some general information in the [OpenAirInterface Gitlab Wiki](https://
 - [How to run with E2 agent](../openair2/E2AP/README.md)
 
 Legacy unmaintained files:
-- `L2NFAPI_NOS1.md`, `L2NFAPI_S1.md`: old L2simulator, not valid anymore
-- `SystemX-tutorial-design.md`
-- `UL_MIMO.txt`
+- [`L2NFAPI_NOS1.md`](./L2NFAPI_NOS1.md), [`L2NFAPI_S1.md`](./L2NFAPI_S1.md):
+  old L2simulator, not valid anymore
+- [`SystemX-tutorial-design.md`](./SystemX-tutorial-design.md): old, high-level
+  documentation
+- [`UL_MIMO.txt`](./UL_MIMO.txt): UL-MIMO specific notes
 
 # Designs
 
@@ -65,7 +67,7 @@ Legacy unmaintained files:
 - [L1 threads in NR-UE](./nr-ue-design.md)
 
 Legacy unmaintained files:
-- 5Gnas.md
+- [`5Gnas.md`](./5Gnas.md)
 
 # Building and running from images
 
