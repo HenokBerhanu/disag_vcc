@@ -941,7 +941,7 @@ uint8_t do_NR_DLInformationTransfer(uint8_t *buffer,
   ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_DL_DCCH_Message, &dl_dcch_msg);
   LOG_D(NR_RRC, "DLInformationTransfer Encoded %zd bytes\n", r.encoded);
   // for (int i=0;i<encoded;i++) printf("%02x ",(*buffer)[i]);
-  return r.encoded;
+  return (r.encoded + 7) / 8;
 }
 
 uint8_t do_NR_ULInformationTransfer(uint8_t **buffer, uint32_t pdu_length, uint8_t *pdu_buffer) {
