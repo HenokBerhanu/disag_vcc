@@ -90,16 +90,6 @@ bool DURecvCb(protocol_ctxt_t *ctxt_pP,
   return true;
 }
 
-static long get_lcid_from_drbid(int drb_id)
-{
-  return drb_id + 3; /* LCID is DRB + 3 */
-}
-
-static long get_lcid_from_srbid(int srb_id)
-{
-  return srb_id;
-}
-
 static bool check_plmn_identity(const f1ap_plmn_t *check_plmn, const f1ap_plmn_t *plmn)
 {
   return plmn->mcc == check_plmn->mcc && plmn->mnc_digit_length == check_plmn->mnc_digit_length && plmn->mnc == check_plmn->mnc;

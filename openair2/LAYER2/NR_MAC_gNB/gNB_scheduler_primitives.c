@@ -3210,3 +3210,13 @@ void nr_mac_trigger_reconfiguration(const gNB_MAC_INST *nrmac, const NR_UE_info_
   };
   nrmac->mac_rrc.ue_context_modification_required(&required);
 }
+
+long get_lcid_from_drbid(int drb_id)
+{
+  return drb_id + 3; /* LCID is DRB + 3 */
+}
+
+long get_lcid_from_srbid(int srb_id)
+{
+  return srb_id;
+}
