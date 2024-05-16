@@ -47,7 +47,7 @@ typedef struct {
   /// HARQ tx status
   harq_result_t tx_status;
   /// Status Flag indicating for this ULSCH (idle,active,disabled)
-  SCH_status_t status;
+  SCH_status_t ULstatus;
   /// Last TPC command
   uint8_t TPC;
   /// Length of ACK information (bits)
