@@ -284,9 +284,9 @@ static arr_ue_id_t filter_ues_by_s_nssai_in_du_or_monolithic(const test_info_lst
   UE_iterator (RC.nrmac[0]->UE_info.list, ue) {
     NR_UE_sched_ctrl_t *sched_ctrl = &ue->UE_sched_ctrl;
     // UE matches if any of its DRBs matches
-    for (int l = 0; l < sched_ctrl->dl_lc_num; ++l) {
-      long lcid = sched_ctrl->dl_lc_ids[l];
-      if (nssai_matches(sched_ctrl->dl_lc_nssai[lcid], sst, sd)) {
+    for (size_t l = 0; l < seq_arr_size(&sched_ctrl->lc_config); ++l) {
+      const nr_lc_config_t *c = seq_arr_at(&sched_ctrl->lc_config, l);
+      if (nssai_matches(c->nssai, sst, sd)) {
         if (node_type == ngran_gNB_DU) {
           f1_ue_data_t rrc_ue_id = du_get_f1_ue_data(ue->rnti); // gNB CU UE ID = rrc_ue_id
           arr_ue_id.ue_id[arr_ue_id.sz] = fill_ue_id_data[ngran_gNB_DU](NULL, rrc_ue_id.secondary_ue, 0);

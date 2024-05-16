@@ -28,6 +28,7 @@
 #include "F1AP_CauseRadioNetwork.h"
 #include "openair3/ocp-gtpu/gtp_itf.h"
 #include "openair2/LAYER2/nr_pdcp/nr_pdcp_oai_api.h"
+#include "common/utils/alg/find.h"
 
 #include "uper_decoder.h"
 #include "uper_encoder.h"
@@ -318,9 +319,13 @@ static void set_nssaiConfig(const int drb_len, const f1ap_drb_to_be_setup_t *req
   for (int i = 0; i < drb_len; i++) {
     const f1ap_drb_to_be_setup_t *drb = &req_drbs[i];
 
-    long lcid = get_lcid_from_drbid(drb->drb_id);
-    sched_ctrl->dl_lc_nssai[lcid] = drb->nssai;
-    LOG_I(NR_MAC, "Setting NSSAI sst: %d, sd: %d for DRB: %ld\n", drb->nssai.sst, drb->nssai.sd, drb->drb_id);
+    nr_lc_config_t c = {.lcid = get_lcid_from_drbid(drb->drb_id)};
+    elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
+    if (elm.found) {
+      nr_lc_config_t *c = (nr_lc_config_t *)elm.it;
+      c->nssai = drb->nssai;
+      LOG_I(NR_MAC, "Setting NSSAI sst: %d, sd: %d for DRB: %ld\n", drb->nssai.sst, drb->nssai.sd, drb->drb_id);
+    }
   }
 }
 
@@ -335,8 +340,11 @@ static void set_QoSConfig(const f1ap_ue_context_modif_req_t *req, NR_UE_sched_ct
   for (int i = 0; i < drb_count; i++) {
     f1ap_drb_to_be_setup_t *drb_p = &req->drbs_to_be_setup[i];
     uint8_t nb_qos_flows = drb_p->drb_info.flows_to_be_setup_length;
-    long drb_id = drb_p->drb_id;
-    LOG_I(NR_MAC, "number of QOS flows mapped to DRB_id %ld: %d\n", drb_id, nb_qos_flows);
+    nr_lc_config_t c = {.lcid = get_lcid_from_drbid(drb_p->drb_id)};
+    elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
+    DevAssert(elm.found);
+    nr_lc_config_t *lc_config = (nr_lc_config_t *) elm.it;
+    LOG_I(NR_MAC, "number of QOS flows mapped to LCID %d: %d\n", c.lcid, nb_qos_flows);
 
     for (int q = 0; q < nb_qos_flows; q++) {
       f1ap_flows_mapped_to_drb_t *qos_flow = &drb_p->drb_info.flows_mapped_to_drb[q];
@@ -355,14 +363,9 @@ static void set_QoSConfig(const f1ap_ue_context_modif_req_t *req, NR_UE_sched_ct
             priority = qos_priority[id];
         }
       }
-      sched_ctrl->qos_config[drb_id - 1][q].fiveQI = fiveqi;
-      sched_ctrl->qos_config[drb_id - 1][q].priority = priority;
-      LOG_D(NR_MAC,
-            "In %s: drb_id %ld: 5QI %lu priority %lu\n",
-            __func__,
-            drb_id,
-            sched_ctrl->qos_config[drb_id - 1][q].fiveQI,
-            sched_ctrl->qos_config[drb_id - 1][q].priority);
+      lc_config->qos_config[q].fiveQI = fiveqi;
+      lc_config->qos_config[q].priority = priority;
+      LOG_D(NR_MAC, "LC ID %d: 5QI %lu priority %lu\n", c.lcid, fiveqi, priority);
     }
   }
 }
@@ -684,8 +687,10 @@ void dl_rrc_message_transfer(const f1ap_dl_rrc_message_t *dl_rrc)
     UE->expect_reconfiguration = false;
     /* Re-establish RLC for all remaining bearers */
     if (UE->reestablish_rlc) {
-      for (int i = 1; i < UE->UE_sched_ctrl.dl_lc_num; ++i)
-        nr_rlc_reestablish_entity(dl_rrc->gNB_DU_ue_id, UE->UE_sched_ctrl.dl_lc_ids[i]);
+      for (int i = 1; i < seq_arr_size(&UE->UE_sched_ctrl.lc_config); ++i) {
+        nr_lc_config_t *lc_config = seq_arr_at(&UE->UE_sched_ctrl.lc_config, i);
+        nr_rlc_reestablish_entity(dl_rrc->gNB_DU_ue_id, lc_config->lcid);
+      }
       UE->reestablish_rlc = false;
     }
   }

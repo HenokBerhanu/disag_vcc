@@ -170,15 +170,15 @@ size_t dump_mac_stats(gNB_MAC_INST *gNB, char *output, size_t strlen, bool reset
                        "UE %04x: MAC:    TX %14"PRIu64" RX %14"PRIu64" bytes\n",
                        UE->rnti, stats->dl.total_bytes, stats->ul.total_bytes);
 
-    for (int i = 0; i < sched_ctrl->dl_lc_num; i++) {
-      int lc_id = sched_ctrl->dl_lc_ids[i];
+    for (int i = 0; i < seq_arr_size(&sched_ctrl->lc_config); i++) {
+      const nr_lc_config_t *c = seq_arr_at(&sched_ctrl->lc_config, i);
       output += snprintf(output,
                          end - output,
                          "UE %04x: LCID %d: TX %14"PRIu64" RX %14"PRIu64" bytes\n",
                          UE->rnti,
-                         lc_id,
-                         stats->dl.lc_bytes[lc_id],
-                         stats->ul.lc_bytes[lc_id]);
+                         c->lcid,
+                         stats->dl.lc_bytes[c->lcid],
+                         stats->ul.lc_bytes[c->lcid]);
     }
   }
   NR_SCHED_UNLOCK(&gNB->UE_info.mutex);

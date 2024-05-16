@@ -52,6 +52,8 @@
 #include "executables/softmodem-common.h"
 #include <complex.h>
 
+#include "common/utils/alg/find.h"
+
 extern RAN_CONTEXT_t RC;
 //extern int l2_init_gNB(void);
 extern uint8_t nfapi_mode;
@@ -272,41 +274,30 @@ static void process_rlcBearerConfig(struct NR_CellGroupConfig__rlc_BearerToAddMo
 {
   if (rlc_bearer2release_list) {
     for (int i = 0; i < rlc_bearer2release_list->list.count; i++) {
-      for (int idx = 0; idx < sched_ctrl->dl_lc_num; idx++) {
-        if (sched_ctrl->dl_lc_ids[idx] == *rlc_bearer2release_list->list.array[i]) {
-          const int remaining_lcs = sched_ctrl->dl_lc_num - idx - 1;
-          memmove(&sched_ctrl->dl_lc_ids[idx], &sched_ctrl->dl_lc_ids[idx + 1], sizeof(sched_ctrl->dl_lc_ids[idx]) * remaining_lcs);
-          sched_ctrl->dl_lc_num--;
-          break;
-        }
-      }
+      nr_lc_config_t c = {.lcid = *rlc_bearer2release_list->list.array[i]};
+      elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
+      if (elm.found)
+        seq_arr_erase(&sched_ctrl->lc_config, elm.it);
+      else
+        LOG_E(NR_MAC, "could not remove rlc bearer: could not find bearer with ID %d\n", c.lcid);
     }
   }
 
   if (rlc_bearer2add_list) {
     // keep lcids
     for (int i = 0; i < rlc_bearer2add_list->list.count; i++) {
-      const int lcid = rlc_bearer2add_list->list.array[i]->logicalChannelIdentity;
-      bool found = false;
-      for (int idx = 0; idx < sched_ctrl->dl_lc_num; idx++) {
-        if (sched_ctrl->dl_lc_ids[idx] == lcid) {
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-        sched_ctrl->dl_lc_num++;
-        sched_ctrl->dl_lc_ids[sched_ctrl->dl_lc_num - 1] = lcid;
-        LOG_D(NR_MAC, "Adding LCID %d (%s %d)\n", lcid, lcid < 4 ? "SRB" : "DRB", lcid);
+      nr_lc_config_t c = {.lcid = rlc_bearer2add_list->list.array[i]->logicalChannelIdentity};
+      elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
+      if (!elm.found) {
+        LOG_D(NR_MAC, "Adding LCID %d (%s %d)\n", c.lcid, c.lcid < 4 ? "SRB" : "DRB", c.lcid);
+        seq_arr_push_back(&sched_ctrl->lc_config, &c, sizeof(c));
+      } else {
+        LOG_W(NR_MAC, "cannot add LCID %d: already present\n", c.lcid);
       }
     }
   }
 
-  LOG_D(NR_MAC, "In %s: total num of active bearers %d) \n",
-      __FUNCTION__,
-      sched_ctrl->dl_lc_num);
-
+  LOG_D(NR_MAC, "total num of active bearers %ld\n", seq_arr_size(&sched_ctrl->lc_config));
 }
 
 void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE)

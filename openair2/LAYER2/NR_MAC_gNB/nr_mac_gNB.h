@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include "common/utils/ds/seq_arr.h"
 
 #define NR_SCHED_LOCK(lock)                                        \
   do {                                                             \
@@ -519,6 +520,14 @@ typedef struct NR_QoS_config_s {
   uint64_t priority;
 } NR_QoS_config_t;
 
+typedef struct nr_lc_config {
+  uint8_t lcid;
+  /// associated NSSAI for DRB
+  nssai_t nssai;
+  /// QoS config for DRB
+  NR_QoS_config_t qos_config[NR_MAX_NUM_QFI];
+} nr_lc_config_t;
+
 /*! \brief scheduling control information set through an API */
 #define MAX_CSI_REPORTS 48
 typedef struct {
@@ -607,20 +616,15 @@ typedef struct {
   /// UL HARQ processes that await retransmission
   NR_list_t retrans_ul_harq;
   NR_UE_mac_ce_ctrl_t UE_mac_ce_ctrl; // MAC CE related information
-  /// number of active DL LCs
-  uint8_t dl_lc_num;
-  /// order in which DLSCH scheduler should allocate LCs
-  uint8_t dl_lc_ids[NR_MAX_NUM_LCID];
 
   /// Timer for RRC processing procedures
   uint32_t rrc_processing_timer;
 
   /// sri, ul_ri and tpmi based on SRS
   nr_srs_feedback_t srs_feedback;
-  nssai_t dl_lc_nssai[NR_MAX_NUM_LCID];
 
-  // Information about the QoS configuration for each LCID/DRB
-  NR_QoS_config_t qos_config[NR_MAX_NUM_LCID - 4][NR_MAX_NUM_QFI]; // 0 -CCCH and 1- 3 SRBs(0,1,2)
+  /// per-LC configuration
+  seq_arr_t lc_config;
 } NR_UE_sched_ctrl_t;
 
 typedef struct {
