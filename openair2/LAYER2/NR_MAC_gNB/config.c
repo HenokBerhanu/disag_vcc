@@ -52,8 +52,6 @@
 #include "executables/softmodem-common.h"
 #include <complex.h>
 
-#include "common/utils/alg/find.h"
-
 extern RAN_CONTEXT_t RC;
 //extern int l2_init_gNB(void);
 extern uint8_t nfapi_mode;
@@ -268,38 +266,6 @@ nfapi_nr_pm_list_t init_DL_MIMO_codebook(gNB_MAC_INST *gNB, nr_pdsch_AntennaPort
   return mat;
 }
 
-static void process_rlcBearerConfig(struct NR_CellGroupConfig__rlc_BearerToAddModList *rlc_bearer2add_list,
-                                    struct NR_CellGroupConfig__rlc_BearerToReleaseList *rlc_bearer2release_list,
-                                    NR_UE_sched_ctrl_t *sched_ctrl)
-{
-  if (rlc_bearer2release_list) {
-    for (int i = 0; i < rlc_bearer2release_list->list.count; i++) {
-      nr_lc_config_t c = {.lcid = *rlc_bearer2release_list->list.array[i]};
-      elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
-      if (elm.found)
-        seq_arr_erase(&sched_ctrl->lc_config, elm.it);
-      else
-        LOG_E(NR_MAC, "could not remove rlc bearer: could not find bearer with ID %d\n", c.lcid);
-    }
-  }
-
-  if (rlc_bearer2add_list) {
-    // keep lcids
-    for (int i = 0; i < rlc_bearer2add_list->list.count; i++) {
-      nr_lc_config_t c = {.lcid = rlc_bearer2add_list->list.array[i]->logicalChannelIdentity};
-      elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
-      if (!elm.found) {
-        LOG_D(NR_MAC, "Adding LCID %d (%s %d)\n", c.lcid, c.lcid < 4 ? "SRB" : "DRB", c.lcid);
-        seq_arr_push_back(&sched_ctrl->lc_config, &c, sizeof(c));
-      } else {
-        LOG_W(NR_MAC, "cannot add LCID %d: already present\n", c.lcid);
-      }
-    }
-  }
-
-  LOG_D(NR_MAC, "total num of active bearers %ld\n", seq_arr_size(&sched_ctrl->lc_config));
-}
-
 void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE)
 {
   /* we assume that this function is mutex-protected from outside */
@@ -321,7 +287,6 @@ void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE)
        && CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated->choice.uplink->cfra) {
     nr_mac_prepare_ra_ue(RC.nrmac[0], UE->rnti, CellGroup);
    }
-   process_rlcBearerConfig(CellGroup->rlc_BearerToAddModList, CellGroup->rlc_BearerToReleaseList, &UE->UE_sched_ctrl);
 }
 
 static void config_common(gNB_MAC_INST *nrmac, nr_pdsch_AntennaPorts_t pdsch_AntennaPorts, int pusch_AntennaPorts, NR_ServingCellConfigCommon_t *scc)
@@ -743,6 +708,8 @@ void nr_mac_configure_sib1(gNB_MAC_INST *nrmac, const f1ap_plmn_t *plmn, uint64_
 
 bool nr_mac_add_test_ue(gNB_MAC_INST *nrmac, uint32_t rnti, NR_CellGroupConfig_t *CellGroup)
 {
+  /* ideally, instead of this function, "users" of this function should call
+   * the ue context setup request function in mac_rrc_dl_handler.c */
   DevAssert(nrmac != NULL);
   DevAssert(CellGroup != NULL);
   DevAssert(get_softmodem_params()->phy_test);
@@ -755,6 +722,8 @@ bool nr_mac_add_test_ue(gNB_MAC_INST *nrmac, uint32_t rnti, NR_CellGroupConfig_t
   } else {
     LOG_E(NR_MAC,"Error adding UE %04x\n", rnti);
   }
+  process_addmod_bearers_cellGroupConfig(&UE->UE_sched_ctrl, CellGroup->rlc_BearerToAddModList);
+  AssertFatal(CellGroup->rlc_BearerToReleaseList == NULL, "cannot release bearers while adding new UEs\n");
   NR_SCHED_UNLOCK(&nrmac->sched_lock);
   return UE != NULL;
 }

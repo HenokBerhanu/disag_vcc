@@ -516,8 +516,8 @@ typedef struct NR_UE_ul_harq {
 } NR_UE_ul_harq_t;
 
 typedef struct NR_QoS_config_s {
-  uint64_t fiveQI;
-  uint64_t priority;
+  int fiveQI;
+  int priority;
 } NR_QoS_config_t;
 
 typedef struct nr_lc_config {
