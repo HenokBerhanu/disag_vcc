@@ -58,6 +58,9 @@
 #include "common/utils/LOG/log.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 
+#define DEFAULT_P0_NOMINAL_PUCCH_0_DBM 0
+#define DEFAULT_DELTA_F_PUCCH_0_DB 0
+
 // #define DEBUG_MIB
 // #define ENABLE_MAC_PAYLOAD_DEBUG 1
 // #define DEBUG_RAR
@@ -1602,6 +1605,7 @@ int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
   return 0;
 }
 
+// PUCCH Power control according to 38.213 section 7.2.1
 int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                               int scs,
                               NR_PUCCH_Config_t *pucch_Config,
@@ -1615,10 +1619,16 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                               int O_uci)
 {
   NR_UE_UL_BWP_t *current_UL_BWP = mac->current_UL_BWP;
+  AssertFatal(current_UL_BWP && current_UL_BWP->pucch_ConfigCommon,
+              "Missing configuration: need UL_BWP and pucch_ConfigCommon to calculate PUCCH tx power\n");
   int PUCCH_POWER_DEFAULT = 0;
-  int16_t P_O_NOMINAL_PUCCH = *current_UL_BWP->pucch_ConfigCommon->p0_nominal;
+  // p0_nominal is optional
+  int16_t P_O_NOMINAL_PUCCH = DEFAULT_P0_NOMINAL_PUCCH_0_DBM;
+  if (current_UL_BWP->pucch_ConfigCommon->p0_nominal != NULL) {
+    P_O_NOMINAL_PUCCH = *current_UL_BWP->pucch_ConfigCommon->p0_nominal;
+  }
 
-  struct NR_PUCCH_PowerControl *power_config = pucch_Config->pucch_PowerControl;
+  struct NR_PUCCH_PowerControl *power_config = pucch_Config ? pucch_Config->pucch_PowerControl : NULL;
 
   if (!power_config)
     return (PUCCH_POWER_DEFAULT);
@@ -1643,7 +1653,8 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
 
   int P_O_PUCCH = P_O_NOMINAL_PUCCH + P_O_UE_PUCCH;
 
-  int16_t delta_F_PUCCH;
+  int16_t delta_F_PUCCH = DEFAULT_DELTA_F_PUCCH_0_DB;
+  long *delta_F_PUCCH_config = NULL;
   int DELTA_TF;
   uint16_t N_ref_PUCCH;
   int N_sc_ctrl_RB = 0;
@@ -1653,33 +1664,36 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
     case 0:
       N_ref_PUCCH = 2;
       DELTA_TF = 10 * log10(N_ref_PUCCH/N_symb_PUCCH);
-      delta_F_PUCCH =  *power_config->deltaF_PUCCH_f0;
+      delta_F_PUCCH_config = power_config->deltaF_PUCCH_f0;
       break;
     case 1:
       N_ref_PUCCH = 14;
       DELTA_TF = 10 * log10(N_ref_PUCCH/N_symb_PUCCH);
-      delta_F_PUCCH =  *power_config->deltaF_PUCCH_f1;
+      delta_F_PUCCH_config = power_config->deltaF_PUCCH_f1;
       break;
     case 2:
       N_sc_ctrl_RB = 10;
       DELTA_TF = get_deltatf(nb_of_prbs, N_symb_PUCCH, freq_hop_flag, add_dmrs_flag, N_sc_ctrl_RB, O_uci);
-      delta_F_PUCCH =  *power_config->deltaF_PUCCH_f2;
+      delta_F_PUCCH_config = power_config->deltaF_PUCCH_f2;
       break;
     case 3:
       N_sc_ctrl_RB = 14;
       DELTA_TF = get_deltatf(nb_of_prbs, N_symb_PUCCH, freq_hop_flag, add_dmrs_flag, N_sc_ctrl_RB, O_uci);
-      delta_F_PUCCH =  *power_config->deltaF_PUCCH_f3;
+      delta_F_PUCCH_config = power_config->deltaF_PUCCH_f3;
       break;
     case 4:
       N_sc_ctrl_RB = 14/(nb_pucch_format_4_in_subframes[subframe_number]);
       DELTA_TF = get_deltatf(nb_of_prbs, N_symb_PUCCH, freq_hop_flag, add_dmrs_flag, N_sc_ctrl_RB, O_uci);
-      delta_F_PUCCH =  *power_config->deltaF_PUCCH_f4;
+      delta_F_PUCCH_config = power_config->deltaF_PUCCH_f4;
       break;
     default:
     {
       LOG_E(MAC,"PUCCH unknown pucch format %d\n", format_type);
       return (0);
     }
+  }
+  if (delta_F_PUCCH_config != NULL) {
+    delta_F_PUCCH = *delta_F_PUCCH_config;
   }
 
   if (power_config->twoPUCCH_PC_AdjustmentStates && *power_config->twoPUCCH_PC_AdjustmentStates > 1) {
