@@ -401,6 +401,7 @@ static int nr_ue_pbch_procedures(PHY_VARS_NR_UE *ue,
                    &hf_frame_bit,
                    &ssb_index,
                    &symb_offset,
+                   ue->frame_parms.samples_per_frame_wCP,
                    rxdataF);
 
   if (ret==0) {

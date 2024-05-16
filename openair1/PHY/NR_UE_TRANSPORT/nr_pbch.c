@@ -378,7 +378,8 @@ int nr_rx_pbch(PHY_VARS_NR_UE *ue,
                int *half_frame_bit,
                int *ssb_index,
                int *ret_symbol_offset,
-               const struct complex16 rxdataF[][frame_parms->samples_per_slot_wCP])
+               int rxdataFSize,
+               const struct complex16 rxdataF[][rxdataFSize])
 {
   int max_h=0;
   int symbol;

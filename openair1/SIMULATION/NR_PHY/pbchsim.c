@@ -812,7 +812,21 @@ int main(int argc, char **argv)
         fapiPbch_t result;
         int ret_ssb_idx;
         int ret_symbol_offset;
-        ret = nr_rx_pbch(UE, &proc, true, estimateSz, dl_ch_estimates, frame_parms, ssb_index % 8, frame_parms->ssb_start_subcarrier, Nid_cell, &result, &n_hf, &ret_ssb_idx, &ret_symbol_offset, rxdataF);
+        ret = nr_rx_pbch(UE,
+                         &proc,
+                         true,
+                         estimateSz,
+                         dl_ch_estimates,
+                         frame_parms,
+                         ssb_index % 8,
+                         frame_parms->ssb_start_subcarrier,
+                         Nid_cell,
+                         &result,
+                         &n_hf,
+                         &ret_ssb_idx,
+                         &ret_symbol_offset,
+                         frame_parms->samples_per_frame_wCP,
+                         rxdataF);
 
         if (ret == 0) {
           // UE->rx_ind.rx_indication_body->mib_pdu.ssb_index;  //not yet detected automatically

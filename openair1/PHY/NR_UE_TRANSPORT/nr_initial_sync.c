@@ -140,6 +140,7 @@ static bool nr_pbch_detection(const UE_nr_rxtx_proc_t *proc,
                       half_frame_bit,
                       ssb_index,
                       symbol_offset,
+                      frame_parms->samples_per_frame_wCP,
                       rxdataF)) {
       if (DUMP_PBCH_CH_ESTIMATES) {
         write_output("pbch_ch_estimates.m", "pbch_ch_estimates", dl_ch_estimates, nb_ant * estimateSz, 1, 1);
