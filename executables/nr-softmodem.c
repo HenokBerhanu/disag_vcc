@@ -49,7 +49,6 @@
 #include "PHY_INTERFACE/phy_interface_vars.h"
 #include "gnb_config.h"
 #include "SIMULATION/TOOLS/sim.h"
-#include "executables/lte-softmodem.h"
 
 #ifdef SMBV
 #include "PHY/TOOLS/smbv.h"
@@ -604,6 +603,7 @@ static void initialize_agent(ngran_node_t node_type, e2_agent_args_t oai_args)
 }
 #endif
 
+void init_eNB_afterRU(void);
 configmodule_interface_t *uniqCfg = NULL;
 int main( int argc, char **argv ) {
   int ru_id, CC_id = 0;

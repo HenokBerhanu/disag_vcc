@@ -1420,6 +1420,7 @@ void nr_rrc_mac_config_req_reset(module_id_t module_id,
                                  NR_UE_MAC_reset_cause_t cause)
 {
   NR_UE_MAC_INST_t *mac = get_mac_inst(module_id);
+  fapi_nr_synch_request_t sync_req = {.target_Nid_cell = -1, .ssb_bw_scan = true};
   switch (cause) {
     case GO_TO_IDLE:
       reset_ra(mac, true);
@@ -1427,7 +1428,7 @@ void nr_rrc_mac_config_req_reset(module_id_t module_id,
       nr_ue_init_mac(mac);
       nr_ue_mac_default_configs(mac);
       // new sync but no target cell id -> -1
-      nr_ue_send_synch_request(mac, module_id, 0, -1);
+      nr_ue_send_synch_request(mac, module_id, 0, &sync_req);
       break;
     case DETACH:
       LOG_A(NR_MAC, "Received detach indication\n");
@@ -1448,7 +1449,9 @@ void nr_rrc_mac_config_req_reset(module_id_t module_id,
       nr_ue_reset_sync_state(mac);
       release_mac_configuration(mac, cause);
       // new sync with old cell ID (re-establishment on the same cell)
-      nr_ue_send_synch_request(mac, module_id, 0, mac->physCellId);
+      sync_req.target_Nid_cell = mac->physCellId;
+      sync_req.ssb_bw_scan = false;
+      nr_ue_send_synch_request(mac, module_id, 0, &sync_req);
       break;
     default:
       AssertFatal(false, "Invalid MAC reset cause %d\n", cause);

@@ -348,7 +348,13 @@ static void *NRUE_phy_stub_standalone_pnf_task(void *arg)
  * \param arg is a pointer to a \ref PHY_VARS_NR_UE structure.
  */
 
-typedef nr_rxtx_thread_data_t syncData_t;
+typedef struct {
+  PHY_VARS_NR_UE *UE;
+  UE_nr_rxtx_proc_t proc;
+  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND];
+  int numGscn;
+  int rx_offset;
+} syncData_t;
 
 static void UE_synch(void *arg) {
   syncData_t *syncD=(syncData_t *) arg;
@@ -431,7 +437,7 @@ static void UE_synch(void *arg) {
 
       uint64_t dl_carrier, ul_carrier;
       nr_get_carrier_frequencies(UE, &dl_carrier, &ul_carrier);
-      nr_initial_sync_t ret = nr_initial_sync(&syncD->proc, UE, 2, get_softmodem_params()->sa);
+      nr_initial_sync_t ret = nr_initial_sync(&syncD->proc, UE, 2, get_softmodem_params()->sa, syncD->gscnInfo, syncD->numGscn);
       if (ret.cell_detected) {
         syncD->rx_offset = ret.rx_offset;
         freq_offset = UE->common_vars.freq_offset; // frequency offset computed with pss in initial sync
@@ -451,24 +457,7 @@ static void UE_synch(void *arg) {
               openair0_cfg[UE->rf_map.card].tx_freq[0]);
 
         UE->rfdevice.trx_set_freq_func(&UE->rfdevice,&openair0_cfg[0]);
-        if (UE->UE_scan_carrier == 1)
-          UE->UE_scan_carrier = 0;
-        else
-          UE->is_synchronized = 1;
-      } else {
-        if (UE->UE_scan_carrier == 1) {
-
-          if (freq_offset >= 0)
-            freq_offset += 100;
-
-          freq_offset *= -1;
-
-          nr_rf_card_config_freq(&openair0_cfg[UE->rf_map.card], ul_carrier, dl_carrier, freq_offset);
-
-          LOG_I(PHY, "Initial sync failed: trying carrier off %d Hz\n", freq_offset);
-
-          UE->rfdevice.trx_set_freq_func(&UE->rfdevice,&openair0_cfg[0]);
-        }
+        UE->is_synchronized = 1;
       }
       break;
 
@@ -601,6 +590,7 @@ static int UE_dl_preprocessing(PHY_VARS_NR_UE *UE, const UE_nr_rxtx_proc_t *proc
     // Start synchronization with a target gNB
     if (UE->synch_request.received_synch_request == 1) {
       UE->is_synchronized = 0;
+      UE->UE_scan_carrier = UE->synch_request.synch_req.ssb_bw_scan;
       UE->target_Nid_cell = UE->synch_request.synch_req.target_Nid_cell;
       clean_UE_harq(UE);
       UE->synch_request.received_synch_request = 0;
@@ -818,6 +808,20 @@ void *UE_thread(void *arg)
       readFrame(UE, &sync_timestamp, false);
       notifiedFIFO_elt_t *Msg = newNotifiedFIFO_elt(sizeof(syncData_t), 0, &nf, UE_synch);
       syncData_t *syncMsg = (syncData_t *)NotifiedFifoData(Msg);
+      NR_DL_FRAME_PARMS *fp = &UE->frame_parms;
+      if (UE->UE_scan_carrier) {
+        // Get list of GSCN in this band for UE's bandwidth and center frequency.
+        LOG_W(PHY, "UE set to scan all GSCN in current bandwidth\n");
+        syncMsg->numGscn =
+            get_scan_ssb_first_sc(fp->dl_CarrierFreq, fp->N_RB_DL, fp->nr_band, fp->numerology_index, syncMsg->gscnInfo);
+      } else {
+        LOG_W(PHY, "SSB position provided\n");
+        nr_gscn_info_t *g = syncMsg->gscnInfo;
+        g->ssbFirstSC = fp->ssb_start_subcarrier;
+        g->gscn = 0;
+        g->ssRef = 0;
+        syncMsg->numGscn = 1;
+      }
       syncMsg->UE = UE;
       memset(&syncMsg->proc, 0, sizeof(syncMsg->proc));
       pushTpool(&(get_nrUE_params()->Tpool), Msg);

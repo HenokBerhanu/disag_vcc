@@ -325,7 +325,12 @@ int dump_ue_stats(PHY_VARS_NR_UE *phy_vars_ue,
 @param n_frames
   @param sa current running mode
 */
-nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *phy_vars_ue, int n_frames, int sa);
+nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
+                                  PHY_VARS_NR_UE *phy_vars_ue,
+                                  int n_frames,
+                                  int sa,
+                                  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND],
+                                  int numGscn);
 
 /*!
   \brief This function gets the carrier frequencies either from FP or command-line-set global variables, depending on the

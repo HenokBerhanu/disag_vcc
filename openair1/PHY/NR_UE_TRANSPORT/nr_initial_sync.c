@@ -293,13 +293,15 @@ void nr_scan_ssb(void *arg)
   }
 }
 
-nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, int n_frames, int sa)
+nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
+                                  PHY_VARS_NR_UE *ue,
+                                  int n_frames,
+                                  int sa,
+                                  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND],
+                                  int numGscn)
 {
   NR_DL_FRAME_PARMS *fp = &ue->frame_parms;
 
-  // Get list of GSCN in this band, current UE's bandwidth and center frequency.
-  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND];
-  int numScans = get_scan_ssb_first_sc(fp->dl_CarrierFreq, fp->N_RB_DL, fp->nr_band, fp->numerology_index, gscnInfo);
   notifiedFIFO_t nf;
   initNotifiedFIFO(&nf);
 
@@ -308,8 +310,8 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, i
         "Starting cell search with center freq: %ld, bandwidth: %d. Scanning for %d number of GSCN.\n",
         fp->dl_CarrierFreq,
         fp->N_RB_DL,
-        numScans);
-  for (int s = 0; s < numScans; s++) {
+        numGscn);
+  for (int s = 0; s < numGscn; s++) {
     notifiedFIFO_elt_t *req = newNotifiedFIFO_elt(sizeof(nr_ue_ssb_scan_t), gscnInfo[s].gscn, &nf, &nr_scan_ssb);
     nr_ue_ssb_scan_t *ssbInfo = (nr_ue_ssb_scan_t *)NotifiedFifoData(req);
     ssbInfo->gscnInfo = gscnInfo[s];
@@ -334,7 +336,7 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, i
 
   // Collect the scan results
   nr_ue_ssb_scan_t res = {0};
-  while (numScans) {
+  while (numGscn) {
     notifiedFIFO_elt_t *req = pullTpool(&nf, &get_nrUE_params()->Tpool);
     nr_ue_ssb_scan_t *ssbInfo = (nr_ue_ssb_scan_t *)NotifiedFifoData(req);
     if (ssbInfo->syncRes.cell_detected) {
@@ -354,7 +356,7 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, i
     }
     free(ssbInfo->rxdata);
     delNotifiedFIFO_elt(req);
-    numScans--;
+    numGscn--;
   }
 
   // Set globals based on detected cell
@@ -446,15 +448,6 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *ue, i
 
     if (res.syncRes.cell_detected) {
       LOG_I(PHY, "[UE%d] In synch, rx_offset %d samples\n", ue->Mod_id, res.syncRes.rx_offset);
-      if (ue->UE_scan_carrier == 0) {
-#if UE_AUTOTEST_TRACE
-      LOG_I(PHY,
-            "[UE  %d] AUTOTEST Cell Sync : rx_offset %d, freq_offset %d \n",
-            ue->Mod_id,
-            ue->rx_offset,
-            ue->common_vars.freq_offset);
-#endif
-      }
       LOG_I(PHY, "[UE %d] Measured Carrier Frequency offset %d Hz\n", ue->Mod_id, res.freqOffset);
     } else {
 #ifdef DEBUG_INITIAL_SYNC
