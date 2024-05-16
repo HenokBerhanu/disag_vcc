@@ -75,7 +75,7 @@ Legacy unmaintained files:
 - [How to run 5G with the RFsimulator from images](../ci-scripts/yaml_files/5g_rfsimulator/README.md)
 - [How to run 4G with the RFsimulator from images](../ci-scripts/yaml_files/4g_rfsimulator_fdd_05MHz/README.md)
 - [How to run 5G with the L2simulator from images](../ci-scripts/yaml_files/5g_l2sim_tdd/README.md)
-- [How to run images in OpenShift](../openshift/README.md)
+- [How to run physical simulators in OpenShift](../openshift/README.md)
 
 # Libraries
 
