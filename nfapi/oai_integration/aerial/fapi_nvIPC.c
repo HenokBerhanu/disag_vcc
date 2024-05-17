@@ -240,6 +240,7 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
                                         &((vnf_p7_t *)((vnf_info *)vnf_config->user_data)->p7_vnfs->config)->_public.codec_config);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_crc_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_crc_indication)(&crc_ind);
+          free(crc_ind.crc_list);
         }
         break;
       }
@@ -278,6 +279,7 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
                                          &((vnf_p7_t *)((vnf_info *)vnf_config->user_data)->p7_vnfs->config)->_public.codec_config);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rach_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rach_indication)(&ind);
+          free(ind.pdu_list);
         }
         break;
       }
