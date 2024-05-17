@@ -358,7 +358,8 @@ int aerial_phy_nr_rx_data_indication(nfapi_nr_rx_data_indication_t *ind)
       rx_ind->pdu_list[j].ul_cqi = ind->pdu_list[j].ul_cqi;
       rx_ind->pdu_list[j].timing_advance = ind->pdu_list[j].timing_advance;
       rx_ind->pdu_list[j].rssi = ind->pdu_list[j].rssi;
-      rx_ind->pdu_list[j].pdu = ind->pdu_list[j].pdu;
+      rx_ind->pdu_list[j].pdu = calloc(rx_ind->pdu_list[j].pdu_length, sizeof(uint8_t));
+      memcpy(rx_ind->pdu_list[j].pdu,ind->pdu_list[j].pdu,ind->pdu_list[j].pdu_length);
       LOG_D(NR_MAC,
             "(%d.%d) Handle %d for index %d, RNTI, %04x, HARQID %d\n",
             ind->sfn,
@@ -920,8 +921,7 @@ static uint8_t aerial_unpack_nr_rx_data_indication_body(nfapi_nr_rx_data_pdu_t *
   }
 
   // Allocate space for the pdu to be unpacked later
-  uint32_t length = value->pdu_length;
-  value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * length, config);
+  value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * value->pdu_length, config);
 
   return 1;
 }

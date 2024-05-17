@@ -222,6 +222,10 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
         NFAPI_TRACE(NFAPI_TRACE_INFO, "%s: Handling RX Indication\n", __FUNCTION__);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rx_data_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rx_data_indication)(&ind);
+          for (int i = 0; i < ind.number_of_pdus; ++i) {
+            free(ind.pdu_list[i].pdu);
+          }
+          free(ind.pdu_list);
         }
         break;
       }
