@@ -116,15 +116,15 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
   // unpack FAPI messages and handle them
   if (vnf_config != 0) {
     // first, unpack the header
-    fapi_phy_api_msg *fapi_msg = calloc(1, sizeof(fapi_phy_api_msg));
-    if (!(pull8(&pReadPackedMessage, &fapi_msg->num_msg, end) && pull8(&pReadPackedMessage, &fapi_msg->opaque_handle, end)
-          && pull16(&pReadPackedMessage, &fapi_msg->message_id, end)
-          && pull32(&pReadPackedMessage, &fapi_msg->message_length, end))) {
+    fapi_phy_api_msg fapi_msg;
+    if (!(pull8(&pReadPackedMessage, &fapi_msg.num_msg, end) && pull8(&pReadPackedMessage, &fapi_msg.opaque_handle, end)
+          && pull16(&pReadPackedMessage, &fapi_msg.message_id, end)
+          && pull32(&pReadPackedMessage, &fapi_msg.message_length, end))) {
       NFAPI_TRACE(NFAPI_TRACE_ERROR, "FAPI message header unpack failed\n");
       return -1;
     }
 
-    switch (fapi_msg->message_id) {
+    switch (fapi_msg.message_id) {
       case NFAPI_NR_PHY_MSG_TYPE_PARAM_RESPONSE:
 
         if (vnf_config->nr_param_resp) {
@@ -210,8 +210,8 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
 
       case NFAPI_NR_PHY_MSG_TYPE_RX_DATA_INDICATION: {
         nfapi_nr_rx_data_indication_t ind;
-        ind.header.message_id = fapi_msg->message_id;
-        ind.header.message_length = fapi_msg->message_length;
+        ind.header.message_id = fapi_msg.message_id;
+        ind.header.message_length = fapi_msg.message_length;
         aerial_unpack_nr_rx_data_indication(
             &pReadPackedMessage,
             end,
@@ -228,8 +228,8 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
 
       case NFAPI_NR_PHY_MSG_TYPE_CRC_INDICATION: {
         nfapi_nr_crc_indication_t crc_ind;
-        crc_ind.header.message_id = fapi_msg->message_id;
-        crc_ind.header.message_length = fapi_msg->message_length;
+        crc_ind.header.message_id = fapi_msg.message_id;
+        crc_ind.header.message_length = fapi_msg.message_length;
         aerial_unpack_nr_crc_indication(&pReadPackedMessage,
                                         end,
                                         &crc_ind,
@@ -279,7 +279,7 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
       }
 
       default: {
-        NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s P5 Unknown message ID %d\n", __FUNCTION__, fapi_msg->message_id);
+        NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s P5 Unknown message ID %d\n", __FUNCTION__, fapi_msg.message_id);
 
         break;
       }
