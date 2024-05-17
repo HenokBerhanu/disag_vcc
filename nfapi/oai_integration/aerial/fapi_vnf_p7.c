@@ -473,19 +473,19 @@ int aerial_phy_nr_uci_indication(nfapi_nr_uci_indication_t *ind)
             uci_ind_pdu->sr.sr_payload = CALLOC(1, sizeof(*uci_ind_pdu->sr.sr_payload));
             AssertFatal(uci_ind_pdu->sr.sr_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->sr.sr_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->sr.sr_payload = *ind_pdu->sr.sr_payload;
+            memcpy(uci_ind_pdu->sr.sr_payload,ind_pdu->sr.sr_payload,sizeof(*uci_ind_pdu->sr.sr_payload));
           }
           if (ind_pdu->csi_part1.csi_part1_payload) {
             uci_ind_pdu->csi_part1.csi_part1_payload = CALLOC(1, sizeof(*uci_ind_pdu->csi_part1.csi_part1_payload));
             AssertFatal(uci_ind_pdu->csi_part1.csi_part1_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->csi_part1.csi_part1_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->csi_part1.csi_part1_payload = *ind_pdu->csi_part1.csi_part1_payload;
+            memcpy(uci_ind_pdu->csi_part1.csi_part1_payload,ind_pdu->csi_part1.csi_part1_payload,sizeof(*uci_ind_pdu->csi_part1.csi_part1_payload));
           }
           if (ind_pdu->csi_part2.csi_part2_payload) {
             uci_ind_pdu->csi_part2.csi_part2_payload = CALLOC(1, sizeof(*uci_ind_pdu->csi_part2.csi_part2_payload));
             AssertFatal(uci_ind_pdu->csi_part2.csi_part2_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->csi_part2.csi_part2_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->csi_part2.csi_part2_payload = *ind_pdu->csi_part2.csi_part2_payload;
+            memcpy(uci_ind_pdu->csi_part2.csi_part2_payload,ind_pdu->csi_part2.csi_part2_payload,sizeof(*uci_ind_pdu->csi_part2.csi_part2_payload));
           }
           break;
         }

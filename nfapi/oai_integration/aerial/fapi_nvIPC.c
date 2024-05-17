@@ -254,6 +254,24 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
 
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_uci_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_uci_indication)(&ind);
+          for (int i = 0; i < ind.num_ucis; i++) {
+            if (ind.uci_list[i].pdu_type == NFAPI_NR_UCI_FORMAT_2_3_4_PDU_TYPE) {
+              if (ind.uci_list[i].pucch_pdu_format_2_3_4.sr.sr_payload) {
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.sr.sr_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.harq.harq_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.harq.harq_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part1.csi_part1_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part1.csi_part1_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part2.csi_part2_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part2.csi_part2_payload);
+              }
+            }
+          }
+          free(ind.uci_list);
+          ind.uci_list = NULL;
         }
 
         break;
