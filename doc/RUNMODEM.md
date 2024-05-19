@@ -102,6 +102,9 @@ Command line parameters for UE in `--sa` mode:
 - `--band` : NR band number (default value 78)
 - `--ssb` : SSB start subcarrier (default value 516)
 
+**Optional parameters**:
+- `--ue-scan-carrier` : scan for cells in current bandwidth. This option can be used if the SSB position of the gNB is unknown. If multiple cells are detected, the UE will try to connect to the first cell. By default, this option is disabled and the UE attempts to only decode SSB given by `--ssb`.
+
 To simplify the configuration for the user testing OAI UE with OAI gNB, the latter prints the following LOG that guides the user to correctly set some of the UE command line parameters.
 
 ```
