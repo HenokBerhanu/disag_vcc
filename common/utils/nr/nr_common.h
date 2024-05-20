@@ -79,6 +79,12 @@ static inline const char *rnti_types(nr_rnti_type_t rr)
 
 #define NR_MAX_NB_LAYERS 4 // 8
 
+// Since the IQ samples are represented by SQ15 R+I (see https://en.wikipedia.org/wiki/Q_(number_format)) we need to compensate when
+// calcualting signal energy. Instead of shifting each sample right by 15, we can normalize the result in dB scale once its
+// calcualted. Signal energy is calculated using RMS^2, where each sample is squared before taking the average of the sum, therefore
+// the total shift is 2 * 15, in dB scale thats 10log10(2^(15*2))
+#define SQ15_SQUARED_NORM_FACTOR_DB 90.3089986992
+
 typedef struct nr_bandentry_s {
   int16_t band;
   uint64_t ul_min;
