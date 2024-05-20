@@ -463,7 +463,7 @@ add_library(f1ap
             ${F1AP_DIR}/f1ap_handlers.c
             ${F1AP_DIR}/f1ap_itti_messaging.c)
 target_include_directories(f1ap PUBLIC F1AP_DIR)
-target_link_libraries(f1ap PUBLIC asn1_f1ap)
+target_link_libraries(f1ap PUBLIC asn1_f1ap L2_NR)
 target_link_libraries(f1ap PRIVATE ngap nr_rrc HASHTABLE)
 
 # LPP
@@ -1414,7 +1414,6 @@ set (MAC_NR_SRC_UE
   ${NR_UE_MAC_DIR}/nr_ue_scheduler.c
   ${NR_UE_MAC_DIR}/nr_ue_dci_configuration.c
   ${NR_UE_MAC_DIR}/nr_ra_procedures.c
-  ${NR_UE_MAC_DIR}/nr_ue_power_procedures.c
 )
 
 set (ENB_APP_SRC
@@ -1463,7 +1462,7 @@ endif()
 
 
 add_library(MAC_UE_NR ${MAC_NR_SRC_UE})
-target_link_libraries(MAC_UE_NR PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs)
+target_link_libraries(MAC_UE_NR PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs PUBLIC nr_ue_power_procedures)
 
 add_library(L2_LTE ${L2_LTE_SRC})
 target_link_libraries(L2_LTE PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs)
@@ -1517,7 +1516,7 @@ target_link_libraries(L2_UE PRIVATE asn1_lte_rrc_hdrs)
 
 add_library( NR_L2_UE ${NR_L2_SRC_UE} ${MAC_NR_SRC_UE} )
 target_link_libraries(NR_L2_UE PRIVATE f1ap nr_rlc)
-target_link_libraries(NR_L2_UE PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs nr_common)
+target_link_libraries(NR_L2_UE PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs nr_common nr_ue_power_procedures)
 
 add_library(MAC_NR_COMMON
             ${OPENAIR2_DIR}/LAYER2/NR_MAC_COMMON/nr_mac_common.c

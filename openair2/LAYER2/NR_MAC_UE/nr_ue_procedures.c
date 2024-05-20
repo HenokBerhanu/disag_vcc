@@ -3945,26 +3945,3 @@ static void nr_ue_process_rar(NR_UE_MAC_INST_t *mac, nr_downlink_indication_t *d
   return;
 }
 
-// Returns the pathloss in dB for the active UL BWP on the selected carrier based on the DL RS associated with the PRACH transmission
-// computation according to clause 7.4 (Physical random access channel) of 3GPP TS 38.213 version 16.3.0 Release 16
-// Assumptions:
-// - PRACH transmission from a UE is not in response to a detection of a PDCCH order by the UE
-// Measurement units:
-// - referenceSignalPower:   dBm/RE (average EPRE of the resources elements that carry secondary synchronization signals in dBm)
-int16_t compute_nr_SSB_PL(NR_UE_MAC_INST_t *mac, short ssb_rsrp_dBm)
-{
-  fapi_nr_config_request_t *cfg = &mac->phy_config.config_req;
-  int referenceSignalPower = cfg->ssb_config.ss_pbch_power;
-  //TODO improve PL measurements. Probably not correct as it is.
-
-  int16_t pathloss = (int16_t)(referenceSignalPower - ssb_rsrp_dBm);
-
-  LOG_D(NR_MAC, "pathloss %d dB, referenceSignalPower %d dBm/RE (%f mW), RSRP %d dBm (%f mW)\n",
-        pathloss,
-        referenceSignalPower,
-        pow(10, referenceSignalPower/10),
-        ssb_rsrp_dBm,
-        pow(10, ssb_rsrp_dBm/10));
-
-  return pathloss;
-}
