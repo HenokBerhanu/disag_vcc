@@ -10,3 +10,4 @@ if(ENABLE_WEBSRV)
 endif()
 
 add_subdirectory(T)
+add_subdirectory(nr)
