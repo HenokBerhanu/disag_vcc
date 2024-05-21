@@ -1688,7 +1688,7 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
       break;
     case 1:
       N_ref_PUCCH = 14;
-      DELTA_TF = 10 * log10(N_ref_PUCCH/N_symb_PUCCH);
+      DELTA_TF = 10 * log10(N_ref_PUCCH/N_symb_PUCCH * O_uci);
       delta_F_PUCCH_config = power_config->deltaF_PUCCH_f1;
       break;
     case 2:
