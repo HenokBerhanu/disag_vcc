@@ -733,7 +733,7 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
 
   // only for Type of integrity protection algorithm: 128-5G-IA2 (2)
-  stream_compute_integrity(EIA2_128_ALG_ID, &stream_cipher, mac);
+  stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
 
   printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
   for(int i = 0; i < 4; i++){
@@ -885,7 +885,7 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
   stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
 
   // only for Type of integrity protection algorithm: 128-5G-IA2 (2)
-  stream_compute_integrity(EIA2_128_ALG_ID, &stream_cipher, mac);
+  stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
 
   printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
   for(int i = 0; i < 4; i++){
