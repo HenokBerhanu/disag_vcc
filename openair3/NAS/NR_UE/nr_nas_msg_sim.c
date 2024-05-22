@@ -603,7 +603,7 @@ static void generateSecurityModeComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   initialNasMsg->length = security_header_len + mm_msg_encode(mm_msg, (uint8_t*)(initialNasMsg->data+security_header_len), size-security_header_len);
 
   stream_cipher.context    = nas->security_container->integrity_context;
-  stream_cipher.count      = nas->security.nas_count++;
+  stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
   stream_cipher.direction  = 0;
   stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);
@@ -703,7 +703,7 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   
   initialNasMsg->length = length;
   stream_cipher.context    = nas->security_container->integrity_context;
-  stream_cipher.count      = nas->security.nas_count++;
+  stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
   stream_cipher.direction  = 0;
   stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);
@@ -765,7 +765,7 @@ static void generateDeregistrationRequest(nr_ue_nas_t *nas, as_nas_info_t *initi
 
   nas_stream_cipher_t stream_cipher = {
     .context = nas->security_container->integrity_context,
-    .count = nas->security.nas_count++,
+    .count = nas->security.nas_count_ul++,
     .bearer = 1,
     .direction = 0,
     .message = (unsigned char *)(initialNasMsg->data + 6),
@@ -855,7 +855,7 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
   initialNasMsg->length = security_header_len + mm_msg_encode(mm_msg, (uint8_t*)(initialNasMsg->data+security_header_len), size-security_header_len);
 
   stream_cipher.context    = nas->security_container->integrity_context;
-  stream_cipher.count      = nas->security.nas_count++;
+  stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
   stream_cipher.direction  = 0;
   stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);

@@ -92,7 +92,8 @@ typedef struct {
   uint8_t res[16];
   uint8_t rand[16];
   uint8_t kgnb[32];
-  uint32_t nas_count;
+  uint32_t nas_count_ul;
+  uint32_t nas_count_dl;
 } ue_sa_security_key_t;
 
 typedef struct {
