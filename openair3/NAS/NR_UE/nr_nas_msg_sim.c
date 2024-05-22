@@ -680,7 +680,7 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   sp_msg->header.protocol_discriminator = FGS_MOBILITY_MANAGEMENT_MESSAGE;
   sp_msg->header.security_header_type   = INTEGRITY_PROTECTED_AND_CIPHERED;
   sp_msg->header.message_authentication_code = 0;
-  sp_msg->header.sequence_number        = 1;
+  sp_msg->header.sequence_number        = nas->security.nas_count_ul & 0xff;
   length = 7;
   sp_msg->plain.mm_msg.registration_complete.protocoldiscriminator = FGS_MOBILITY_MANAGEMENT_MESSAGE;
   length += 1;
@@ -762,7 +762,7 @@ static void generateDeregistrationRequest(nr_ue_nas_t *nas, as_nas_info_t *initi
   sp_msg->header.protocol_discriminator = FGS_MOBILITY_MANAGEMENT_MESSAGE;
   sp_msg->header.security_header_type = INTEGRITY_PROTECTED_AND_CIPHERED;
   sp_msg->header.message_authentication_code = 0;
-  sp_msg->header.sequence_number = 3;
+  sp_msg->header.sequence_number = nas->security.nas_count_ul & 0xff;
   int size = sizeof(fgs_nas_message_security_header_t);
 
   fgs_deregistration_request_ue_originating_msg *dereg_req = &sp_msg->plain.mm_msg.fgs_deregistration_request_ue_originating;
@@ -824,7 +824,7 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
   uint8_t             mac[4];
   nas_msg.header.protocol_discriminator = FGS_MOBILITY_MANAGEMENT_MESSAGE;
   nas_msg.header.security_header_type = INTEGRITY_PROTECTED_AND_CIPHERED;
-  nas_msg.header.sequence_number = 2;
+  nas_msg.header.sequence_number = nas->security.nas_count_ul & 0xff;
 
   size += 7;
 
