@@ -1880,15 +1880,24 @@ static void nr_generate_Msg4(module_id_t module_idP,
       remove_front_nr_list(&sched_ctrl->available_dl_harq);
     }
     NR_UE_harq_t *harq = &sched_ctrl->harq_processes[current_harq_pid];
+    NR_sched_pucch_t *pucch = &sched_ctrl->sched_pucch[alloc];
     DevAssert(!harq->is_waiting);
-    add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
-    harq->is_waiting = true;
+    if (get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+      add_tail_nr_list(&sched_ctrl->available_dl_harq, current_harq_pid);
+      harq->feedback_frame = -1;
+      harq->feedback_slot = -1;
+      harq->is_waiting = false;
+      harq->ndi ^= 1;
+      harq->round = 0;
+    } else {
+      add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
+      harq->feedback_slot = pucch->ul_slot;
+      harq->feedback_frame = pucch->frame;
+      harq->is_waiting = true;
+    }
     ra->harq_pid = current_harq_pid;
     UE->mac_stats.dl.rounds[harq->round]++;
 
-    NR_sched_pucch_t *pucch = &sched_ctrl->sched_pucch[alloc];
-    harq->feedback_slot = pucch->ul_slot;
-    harq->feedback_frame = pucch->frame;
     harq->tb_size = tb_size;
 
     uint8_t *buf = (uint8_t *) harq->transportBlock;
@@ -1967,8 +1976,24 @@ static void nr_generate_Msg4(module_id_t module_idP,
       vrb_map[BWPStart + rb + rbStart] |= SL_to_bitmap(msg4_tda.startSymbolIndex, msg4_tda.nrOfSymbols);
     }
 
-    ra->ra_state = nrRA_WAIT_Msg4_ACK;
-    LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes, next state WAIT_Msg4_ACK\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
+    if (get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+      LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
+
+      LOG_A(NR_MAC, "(UE RNTI 0x%04x) Skipping Ack of RA-Msg4. CBRA procedure succeeded!\n", ra->rnti);
+      UE->Msg4_ACKed = true;
+
+      // Pause scheduling according to:
+      // 3GPP TS 38.331 Section 12 Table 12.1-1: UE performance requirements for RRC procedures for UEs
+      // Msg4 may transmit a RRCReconfiguration, for example when UE sends RRCReestablishmentComplete and MAC CE for C-RNTI in Msg3.
+      // In that case, gNB will generate a RRCReconfiguration that will be transmitted in Msg4, so we need to apply CellGroup after the Ack,
+      // UE->apply_cellgroup was already set when processing RRCReestablishment message
+      nr_mac_enable_ue_rrc_processing_timer(nr_mac, UE, UE->apply_cellgroup);
+
+      nr_clear_ra_proc(ra);
+    } else {
+      ra->ra_state = nrRA_WAIT_Msg4_ACK;
+      LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes, next state WAIT_Msg4_ACK\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
+    }
   }
 }
 
