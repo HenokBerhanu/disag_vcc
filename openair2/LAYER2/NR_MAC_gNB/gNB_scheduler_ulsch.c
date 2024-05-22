@@ -756,14 +756,6 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       nr_process_mac_pdu(gnb_mod_idP, UE, CC_idP, frameP, slotP, sduP, sdu_lenP, harq_pid);
     }
     else {
-      NR_UE_ul_harq_t *cur_harq = &UE_scheduling_control->ul_harq_processes[harq_pid];
-      /* reduce sched_ul_bytes when cur_harq->round == 3 */
-      if (cur_harq->round == 3) {
-        const uint32_t tb_size = UE_scheduling_control->ul_harq_processes[harq_pid].sched_pusch.tb_size;
-        UE_scheduling_control->sched_ul_bytes -= tb_size;
-        if (UE_scheduling_control->sched_ul_bytes < 0)
-          UE_scheduling_control->sched_ul_bytes = 0;
-      }
       if (ul_cqi == 0xff || ul_cqi <= 128) {
         UE->UE_sched_ctrl.pusch_consecutive_dtx_cnt++;
         UE->mac_stats.ulsch_DTX++;
