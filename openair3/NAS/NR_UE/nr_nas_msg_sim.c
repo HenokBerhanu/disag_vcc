@@ -303,7 +303,8 @@ void derive_kamf(uint8_t *kseaf, uint8_t *kamf, uint16_t abba, uicc_t* uicc) {
 }
 
 //------------------------------------------------------------------------------
-void derive_knas(algorithm_type_dist_t nas_alg_type, uint8_t nas_alg_id, uint8_t kamf[32], uint8_t *knas_int) {
+void derive_knas(algorithm_type_dist_t nas_alg_type, uint8_t nas_alg_id, uint8_t kamf[32], uint8_t *knas)
+{
   uint8_t S[20] = {0};
   uint8_t out[32] = { 0 };
   S[0] = 0x69;  //FC
@@ -317,7 +318,7 @@ void derive_knas(algorithm_type_dist_t nas_alg_type, uint8_t nas_alg_id, uint8_t
   byte_array_t data = {.buf = S, .len = 7};
   kdf(kamf, data, 32, out);
 
-  memcpy(knas_int, out+16, 16);
+  memcpy(knas, out+16, 16);
 }
 
 void derive_kgnb(uint8_t kamf[32], uint32_t count, uint8_t *kgnb){
@@ -362,7 +363,6 @@ void derive_ue_keys(uint8_t *buf, nr_ue_nas_t *nas) {
   uint8_t *kausf = nas->security.kausf;
   uint8_t *kseaf = nas->security.kseaf;
   uint8_t *kamf = nas->security.kamf;
-  uint8_t *knas_int = nas->security.knas_int;
   uint8_t *output = nas->security.res;
   uint8_t *rand = nas->security.rand;
   uint8_t *kgnb = nas->security.kgnb;
@@ -385,7 +385,6 @@ void derive_ue_keys(uint8_t *buf, nr_ue_nas_t *nas) {
   derive_kausf(ck, ik, sqn, kausf, nas->uicc);
   derive_kseaf(kausf, kseaf, nas->uicc);
   derive_kamf(kseaf, kamf, 0x0000, nas->uicc);
-  derive_knas(0x02, 2, kamf, knas_int);
   derive_kgnb(kamf,0,kgnb);
 
   printf("kausf:");
@@ -404,12 +403,6 @@ void derive_ue_keys(uint8_t *buf, nr_ue_nas_t *nas) {
   printf("kamf:");
   for(int i = 0; i < 32; i++){
     printf("%x ", kamf[i]);
-  }
-  printf("\n");
-
-  printf("knas_int:\n");
-  for(int i = 0; i < 16; i++){
-    printf("%x ", knas_int[i]);
   }
   printf("\n");
 }
@@ -515,10 +508,6 @@ void generateIdentityResponse(as_nas_info_t *initialNasMsg, uint8_t identitytype
 static void generateAuthenticationResp(nr_ue_nas_t *nas, as_nas_info_t *initialNasMsg, uint8_t *buf)
 {
   derive_ue_keys(buf, nas);
-  /* todo: as of now, nia2 is hardcoded in derive_ue_keys(), remove this hardcoding, use NAS signalling for getting proper algorithm */
-  /* todo: deal with ciphering for this stream_security_container_init() (handle ciphering in general) */
-  /* todo: stream_security_container_delete() is not called anywhere, deal with that */
-  nas->security_container = stream_security_container_init(0, 2 /* hardcoded: nia2 */, NULL, nas->security.knas_int);
   OctetString res;
   res.length = 16;
   res.value = calloc(1,16);
@@ -610,13 +599,46 @@ static void generateSecurityModeComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   /* length in bits */
   stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
 
-  // only for Type of integrity protection algorithm: 128-5G-IA2 (2)
-  stream_compute_integrity(EIA2_128_ALG_ID, &stream_cipher, mac);
+  stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
 
   printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
   for(int i = 0; i < 4; i++){
      initialNasMsg->data[2+i] = mac[i];
   }
+}
+
+static void handle_security_mode_command(instance_t instance, nr_ue_nas_t *nas, as_nas_info_t *initialNasMsg, uint8_t *pdu, int pdu_length)
+{
+  /* retrieve integrity and ciphering algorithms  */
+  AssertFatal(pdu_length > 10, "nas: bad pdu\n");
+  int ciphering_algorithm = (pdu[10] >> 4) & 0x0f;
+  int integrity_algorithm = pdu[10] & 0x0f;
+
+  uint8_t *kamf = nas->security.kamf;
+  uint8_t *knas_enc = nas->security.knas_enc;
+  uint8_t *knas_int = nas->security.knas_int;
+
+  /* derive keys */
+  derive_knas(0x01, ciphering_algorithm, kamf, knas_enc);
+  derive_knas(0x02, integrity_algorithm, kamf, knas_int);
+
+  printf("knas_int: ");
+  for(int i = 0; i < 16; i++){
+    printf("%x ", knas_int[i]);
+  }
+  printf("\n");
+
+  printf("knas_enc: ");
+  for(int i = 0; i < 16; i++){
+    printf("%x ", knas_enc[i]);
+  }
+  printf("\n");
+
+  /* todo: stream_security_container_delete() is not called anywhere, deal with that */
+  nas->security_container = stream_security_container_init(ciphering_algorithm, integrity_algorithm, knas_enc, knas_int);
+
+  nas_itti_kgnb_refresh_req(instance, nas->security.kgnb);
+  generateSecurityModeComplete(nas, initialNasMsg);
 }
 
 static void decodeRegistrationAccept(const uint8_t *buf, int len, nr_ue_nas_t *nas)
@@ -1203,7 +1225,8 @@ void *nas_nrue(void *args_p)
         as_nas_info_t initialNasMsg = {0};
 
         uint8_t *pdu_buffer = NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.data;
-        int msg_type = get_msg_type(pdu_buffer, NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length);
+        int pdu_length = NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length;
+        int msg_type = get_msg_type(pdu_buffer, pdu_length);
         nr_ue_nas_t *nas = get_ue_nas_info(0);
 
         switch (msg_type) {
@@ -1214,14 +1237,13 @@ void *nas_nrue(void *args_p)
             generateAuthenticationResp(nas, &initialNasMsg, pdu_buffer);
             break;
           case FGS_SECURITY_MODE_COMMAND:
-            nas_itti_kgnb_refresh_req(instance, nas->security.kgnb);
-            generateSecurityModeComplete(nas, &initialNasMsg);
+            handle_security_mode_command(instance, nas, &initialNasMsg, pdu_buffer, pdu_length);
             break;
           case FGS_DOWNLINK_NAS_TRANSPORT:
             decodeDownlinkNASTransport(&initialNasMsg, pdu_buffer);
             break;
           case REGISTRATION_ACCEPT:
-            handle_registration_accept(instance, nas, pdu_buffer, NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length);
+            handle_registration_accept(instance, nas, pdu_buffer, pdu_length);
             break;
           case FGS_DEREGISTRATION_ACCEPT:
             LOG_I(NAS, "received deregistration accept\n");
