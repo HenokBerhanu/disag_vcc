@@ -656,6 +656,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
                        const rnti_t rntiP,
                        uint8_t *sduP,
                        const uint32_t sdu_lenP,
+                       const int8_t harq_pid,
                        const uint16_t timing_advance,
                        const uint8_t ul_cqi,
                        const uint16_t rssi)
@@ -673,7 +674,6 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
   if (UE && UE_waiting_CFRA_msg3 == false) {
 
     NR_UE_sched_ctrl_t *UE_scheduling_control = &UE->UE_sched_ctrl;
-    const int8_t harq_pid = UE_scheduling_control->feedback_ul_harq.head;
 
     if (sduP)
       T(T_GNB_MAC_UL_PDU_WITH_DATA, T_INT(gnb_mod_idP), T_INT(CC_idP),
@@ -951,13 +951,14 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
                const rnti_t rntiP,
                uint8_t *sduP,
                const uint32_t sdu_lenP,
+               const int8_t harq_pid,
                const uint16_t timing_advance,
                const uint8_t ul_cqi,
                const uint16_t rssi)
 {
   gNB_MAC_INST *gNB_mac = RC.nrmac[gnb_mod_idP];
   NR_SCHED_LOCK(&gNB_mac->sched_lock);
-  _nr_rx_sdu(gnb_mod_idP, CC_idP, frameP, slotP, rntiP, sduP, sdu_lenP, timing_advance, ul_cqi, rssi);
+  _nr_rx_sdu(gnb_mod_idP, CC_idP, frameP, slotP, rntiP, sduP, sdu_lenP, harq_pid, timing_advance, ul_cqi, rssi);
   NR_SCHED_UNLOCK(&gNB_mac->sched_lock);
 }
 

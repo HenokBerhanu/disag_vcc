@@ -344,6 +344,7 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
                const rnti_t rntiP,
                uint8_t * sduP,
                const uint32_t sdu_lenP,
+               const int8_t harq_pid,
                const uint16_t timing_advance,
                const uint8_t ul_cqi,
                const uint16_t rssi);
