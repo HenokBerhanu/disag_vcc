@@ -749,8 +749,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       LOG_D(NR_MAC, "Received PDU at MAC gNB \n");
 
       UE->UE_sched_ctrl.pusch_consecutive_dtx_cnt = 0;
-      const uint32_t tb_size = UE_scheduling_control->ul_harq_processes[harq_pid].sched_pusch.tb_size;
-      UE_scheduling_control->sched_ul_bytes -= tb_size;
+      UE_scheduling_control->sched_ul_bytes -= sdu_lenP;
       if (UE_scheduling_control->sched_ul_bytes < 0)
         UE_scheduling_control->sched_ul_bytes = 0;
 
