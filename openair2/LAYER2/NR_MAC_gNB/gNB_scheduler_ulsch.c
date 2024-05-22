@@ -2270,9 +2270,17 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     }
     NR_UE_ul_harq_t *cur_harq = &sched_ctrl->ul_harq_processes[harq_id];
     DevAssert(!cur_harq->is_waiting);
-    add_tail_nr_list(&sched_ctrl->feedback_ul_harq, harq_id);
-    cur_harq->feedback_slot = sched_pusch->slot;
-    cur_harq->is_waiting = true;
+    if (nr_mac->radio_config.disable_harq) {
+      add_tail_nr_list(&sched_ctrl->available_ul_harq, harq_id);
+      cur_harq->feedback_slot = -1;
+      cur_harq->is_waiting = false;
+      cur_harq->ndi ^= 1;
+      cur_harq->round = 0;
+    } else {
+      add_tail_nr_list(&sched_ctrl->feedback_ul_harq, harq_id);
+      cur_harq->feedback_slot = sched_pusch->slot;
+      cur_harq->is_waiting = true;
+    }
 
     /* Statistics */
     AssertFatal(cur_harq->round < nr_mac->ul_bler.harq_round_max, "Indexing ulsch_rounds[%d] is out of bounds\n", cur_harq->round);
