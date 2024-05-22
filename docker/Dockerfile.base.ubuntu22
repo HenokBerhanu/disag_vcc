@@ -21,12 +21,12 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04
+#   Valid for Ubuntu 22.04
 #
 #---------------------------------------------------------------------
 
 
-FROM ubuntu:focal AS ran-base
+FROM ubuntu:jammy AS ran-base
 ARG NEEDED_GIT_PROXY
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
@@ -34,6 +34,7 @@ ENV BUILD_UHD_FROM_SOURCE=True
 ENV UHD_VERSION=4.4.0.0
 
 #install developers pkg/repo
+#use gcc-12 to avoid problems of default gcc-11 in FlexRIC
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
@@ -41,9 +42,12 @@ RUN apt-get update && \
        build-essential \
        psmisc \
        git \
+       gcc-12 \
+       g++-12 \
        xxd \
        # python3-pip for conf template generation
        python3-pip && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 --slave /usr/bin/g++ g++ /usr/bin/g++-12 && \
     pip3 install --ignore-installed pyyaml
 
 # Add "Tini - A tiny but valid init for containers", https://github.com/krallin/tini

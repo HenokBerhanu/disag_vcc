@@ -286,7 +286,7 @@ class Containerize():
 		self.host = result.group(0)
 		if self.host == 'Ubuntu':
 			self.cli = 'docker'
-			self.dockerfileprefix = '.ubuntu20'
+			self.dockerfileprefix = '.ubuntu22'
 			self.cliBuildOptions = ''
 		elif self.host == 'Red Hat':
 			self.cli = 'sudo podman'
@@ -677,7 +677,7 @@ class Containerize():
 			return False
 
 		# build ran-unittests image
-		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu20"
+		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu22"
 		ret = cmd.run(f'docker build --progress=plain --tag ran-unittests:{baseTag} --file {dockerfile} . &> {lSourcePath}/cmake_targets/log/unittest-build.log')
 		if ret.returncode != 0:
 			build_log_name = f'build_log_{self.testCase_id}'

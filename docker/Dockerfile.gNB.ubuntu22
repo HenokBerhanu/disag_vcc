@@ -21,17 +21,17 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04
+#   Valid for Ubuntu20.04
 #
 #---------------------------------------------------------------------
 
-FROM ran-base:latest as enb-base
+FROM ran-base:latest as gnb-base
 
-FROM ran-build:latest AS enb-build
+FROM ran-build:latest AS gnb-build
 
 
 #start from scratch for target executable
-FROM ubuntu:focal as oai-enb
+FROM ubuntu:jammy as oai-gnb
 ARG BUILD_OPTION
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
@@ -42,14 +42,14 @@ RUN apt-get update && \
         software-properties-common \
         procps \
         libsctp1 \
-        libboost-chrono1.71.0 \
-        libboost-date-time1.71.0 \
-        libboost-filesystem1.71.0 \
-        libboost-regex1.71.0 \
-        libboost-serialization1.71.0 \
-        libboost-thread1.71.0 \
-        libboost-system1.71.0 \
-        libboost-program-options1.71.0 \
+        libboost-chrono1.74.0 \
+        libboost-date-time1.74.0 \
+        libboost-filesystem1.74.0 \
+        libboost-regex1.74.0 \
+        libboost-serialization1.74.0 \
+        libboost-thread1.74.0 \
+        libboost-system1.74.0 \
+        libboost-program-options1.74.0 \
         tzdata \
         libblas3 \
         libatlas3-base \
@@ -58,59 +58,61 @@ RUN apt-get update && \
         net-tools \
         iperf \
         iperf3 \
-        iputils-ping \
         iproute2 \
+        iputils-ping \
         gdb \
-        python \
         python3 \
         python3-six \
         python3-requests \
         libusb-1.0-0 && \
 # if the --sanitize option was used to build, additional packages are required
     /bin/bash -c 'if [[ "$BUILD_OPTION" = "--sanitize" ]]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-        libasan5 \
+        #libasan5 \ # see below
         libubsan1 \
         liblapacke; fi' && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/oai-enb/bin
-COPY --from=enb-build \
-    /oai-ran/cmake_targets/ran_build/build/lte-softmodem ./
-COPY ./docker/scripts/enb_entrypoint.sh ./entrypoint.sh
+# we select another compile (gcc-12) for compilation, requiring another libasan
+# library version. Installing it above would install the wrong version. Hence,
+# copy the right version from ran-build. When upgrading to Ubuntu24, install
+# the correct one above!
+COPY --from=gnb-build /usr/lib/x86_64-linux-gnu/libasan.so.8.0.0 /usr/lib/x86_64-linux-gnu/
 
-COPY --from=enb-build \
-     /oai-ran/cmake_targets/ran_build/build/liboai_eth_transpro.so \
-     /oai-ran/cmake_targets/ran_build/build/librfsimulator.so \
-     /oai-ran/cmake_targets/ran_build/build/liboai_usrpdevif.so \
-     /oai-ran/cmake_targets/ran_build/build/libcoding.so \
-     /oai-ran/cmake_targets/ran_build/build/libparams_libconfig.so \
-     /oai-ran/cmake_targets/ran_build/build/libdfts.so \
-     /oai-ran/cmake_targets/ran_build/build/liboai_iqplayer.so \
-     /oai-ran/cmake_targets/ran_build/build/libtelnetsrv.so \
-     /oai-ran/cmake_targets/ran_build/build/libtelnetsrv_enb.so \
-     /usr/local/lib/
+WORKDIR /opt/oai-gnb/bin
+COPY --from=gnb-build \
+    /oai-ran/cmake_targets/ran_build/build/nr-softmodem ./
+COPY ./docker/scripts/gnb_entrypoint.sh ./entrypoint.sh
+
+COPY --from=gnb-build \
+    /oai-ran/cmake_targets/ran_build/build/liboai_eth_transpro.so \
+    /oai-ran/cmake_targets/ran_build/build/librfsimulator.so \
+    /oai-ran/cmake_targets/ran_build/build/liboai_usrpdevif.so \
+    /oai-ran/cmake_targets/ran_build/build/libcoding.so \
+    /oai-ran/cmake_targets/ran_build/build/libparams_libconfig.so \
+    /oai-ran/cmake_targets/ran_build/build/libdfts.so \
+    /oai-ran/cmake_targets/ran_build/build/libldpc*.so \
+    /oai-ran/cmake_targets/ran_build/build/libtelnetsrv.so \
+    /oai-ran/cmake_targets/ran_build/build/libtelnetsrv_ci.so \
+    /usr/local/lib/
 
 # Now we are copying from builder-image the UHD files.
-COPY --from=enb-base /usr/local/bin/uhd_find_devices /usr/local/bin
-COPY --from=enb-base /usr/local/lib/libuhd.so.4.4.0 /usr/local/lib
-COPY --from=enb-base /usr/local/lib/uhd/utils/uhd_images_downloader.py /opt/oai-enb/bin
+COPY --from=gnb-base /usr/local/bin/uhd_find_devices /usr/local/bin
+COPY --from=gnb-base /usr/local/lib/libuhd.so.4.4.0 /usr/local/lib
+COPY --from=gnb-base /usr/local/lib/uhd/utils/uhd_images_downloader.py /opt/oai-gnb/bin
 
 RUN /bin/bash -c "ln -s /usr/local/lib/liboai_usrpdevif.so /usr/local/lib/liboai_device.so" && \
-    /bin/bash -c "ln -s /usr/local/lib/liboai_eth_transpro.so /usr/local/lib/liboai_transpro.so" && \
     ldconfig && \
-    ldd /opt/oai-enb/bin/lte-softmodem
+    ldd /opt/oai-gnb/bin/nr-softmodem
 
-WORKDIR /opt/oai-enb
-
-# 2152 --> S1U, GTP/UDP
-# 36412 --> S1C, SCTP/UDP
-# 36422 --> X2C, SCTP/UDP
-EXPOSE 2152/udp 36412/udp 36422/udp
+WORKDIR /opt/oai-gnb
+#EXPOSE 2152/udp  # S1U, GTP/UDP
 #EXPOSE 22100/tcp # ?
+#EXPOSE 36412/udp # S1C, SCTP/UDP
+#EXPOSE 36422/udp # X2C, SCTP/UDP
 #EXPOSE 50000/udp # IF5 / ORI (control)
 #EXPOSE 50001/udp # IF5 / ECPRI (data)
 
-COPY --from=enb-base /tini /tini
-ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-enb/bin/entrypoint.sh"]
-CMD ["/opt/oai-enb/bin/lte-softmodem", "-O", "/opt/oai-enb/etc/enb.conf"]
+COPY --from=gnb-base /tini /tini
+ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-gnb/bin/entrypoint.sh"]
+CMD ["/opt/oai-gnb/bin/nr-softmodem", "-O", "/opt/oai-gnb/etc/gnb.conf"]
