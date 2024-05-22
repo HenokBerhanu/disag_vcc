@@ -1365,7 +1365,7 @@ void set_harq_status(NR_UE_MAC_INST_t *mac,
   // if temp_dai is less or equal than cumulative highest dai for given slot
   // it's an indication dai was reset due to modulo 4 operation
   if (temp_dai <= highest_dai) {
-    int mod4_count = (highest_dai / 4) + 1; // to take into account how many times dai wrapped up (modulo 4)
+    int mod4_count = (highest_dai + 1) / 4; // to take into account how many times dai wrapped up (modulo 4)
     current_harq->dai_cumul += (mod4_count * 4);
   }
   LOG_D(NR_MAC,
