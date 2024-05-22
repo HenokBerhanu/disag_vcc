@@ -566,6 +566,11 @@ void handle_nr_ul_harq(const int CC_idP,
     LOG_E(NR_MAC, "no RA proc for RNTI 0x%04x in Msg3/PUSCH\n", crc_pdu->rnti);
     return;
   }
+  if (nrmac->radio_config.disable_harq) {
+    LOG_D(NR_MAC, "skipping UL feedback handling as HARQ is disabled\n");
+    NR_SCHED_UNLOCK(&nrmac->sched_lock);
+    return;
+  }
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   int8_t harq_pid = sched_ctrl->feedback_ul_harq.head;
   LOG_D(NR_MAC, "Comparing crc_pdu->harq_id vs feedback harq_pid = %d %d\n",crc_pdu->harq_id, harq_pid);
