@@ -52,7 +52,7 @@ TARGET_LIST=""
 function print_help() {
   echo_info "
 This script compiles OpenAirInterface Software, and can install dependencies
-for a number of distributions (Ubuntu 18-22, Fedora, RHEL7/8).
+for a number of distributions (Ubuntu 22-24, Fedora, RHEL9).
 Options:
 --arch-native
    Passes -march=native to the compiler.
