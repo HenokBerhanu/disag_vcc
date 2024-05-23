@@ -391,6 +391,8 @@ Compile the fronthaul interface library by calling `make` and the option
 environment variables `RTE_SDK` for the path to the source tree of DPDK, and
 `XRAN_DIR` to set the path to the fronthaul library.
 
+**Note**: you need at least gcc-11 and g++-11.
+
 ```bash
 cd ~/phy/fhi_lib/lib
 make clean
