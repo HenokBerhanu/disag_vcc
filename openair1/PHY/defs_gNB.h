@@ -716,7 +716,6 @@ typedef struct PHY_VARS_gNB_s {
   notifiedFIFO_t L1_rx_out;
   notifiedFIFO_t resp_RU_tx;
   tpool_t threadPool;
-  int nbSymb;
   int num_pusch_symbols_per_thread;
   pthread_t L1_rx_thread;
   int L1_rx_thread_core;
@@ -727,20 +726,6 @@ typedef struct PHY_VARS_gNB_s {
   /// structure for analyzing high-level RT measurements
   rt_L1_profiling_t rt_L1_profiling; 
 } PHY_VARS_gNB;
-
-typedef struct puschSymbolProc_s {
-  PHY_VARS_gNB *gNB;
-  NR_DL_FRAME_PARMS *frame_parms;
-  nfapi_nr_pusch_pdu_t *rel15_ul;
-  int ulsch_id;
-  int slot;
-  int startSymbol;
-  int numSymbols;
-  int16_t *llr;
-  int16_t **llr_layers;
-  int16_t *s;
-  uint32_t nvar;
-} puschSymbolProc_t;
 
 struct puschSymbolReqId {
   uint16_t ulsch_id;
