@@ -228,6 +228,7 @@ int get_deltatf(uint16_t nb_of_prbs,
 
 int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            int slot,
+                           frame_t frame,
                            uint16_t rnti,
                            PUCCH_sched_t *pucch,
                            fapi_nr_ul_config_pucch_pdu *pucch_pdu);

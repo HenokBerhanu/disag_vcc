@@ -930,7 +930,6 @@ void prepare_msg4_feedback(NR_UE_MAC_INST_t *mac, int pid, int ack_nack)
   mac->nr_ue_emul_l1.num_harqs = 1;
   PUCCH_sched_t pucch = {.n_CCE = current_harq->n_CCE,
                          .N_CCE = current_harq->N_CCE,
-                         .delta_pucch = current_harq->delta_pucch,
                          .ack_payload = ack_nack,
                          .n_harq = 1};
   current_harq->active = false;
@@ -943,7 +942,7 @@ void prepare_msg4_feedback(NR_UE_MAC_INST_t *mac, int pid, int ack_nack)
   fapi_nr_ul_config_request_pdu_t *pdu = lockGet_ul_config(mac, sched_frame, sched_slot, FAPI_NR_UL_CONFIG_TYPE_PUCCH);
   if (!pdu)
     return;
-  int ret = nr_ue_configure_pucch(mac, sched_slot, mac->ra.t_crnti, &pucch, &pdu->pucch_config_pdu);
+  int ret = nr_ue_configure_pucch(mac, sched_slot, sched_frame, mac->ra.t_crnti, &pucch, &pdu->pucch_config_pdu);
   if (ret != 0)
     remove_ul_config_last_item(pdu);
   release_ul_config(pdu, false);

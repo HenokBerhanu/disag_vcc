@@ -394,7 +394,6 @@ typedef struct {
   int n_harq;
   int n_CCE;
   int N_CCE;
-  int delta_pucch;
   int initial_pucch_id;
 } PUCCH_sched_t;
 
