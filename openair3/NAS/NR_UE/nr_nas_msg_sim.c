@@ -894,30 +894,41 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
 }
 
 
-uint8_t get_msg_type(uint8_t *pdu_buffer, uint32_t length) {
-  uint8_t          msg_type = 0;
-  uint8_t          offset   = 0;
+static uint8_t get_msg_type(uint8_t *pdu_buffer, uint32_t length)
+{
+  if (pdu_buffer == NULL)
+    goto error;
 
-  if ((pdu_buffer != NULL) && (length > 0)) {
-    if (((nas_msg_header_t *)(pdu_buffer))->choice.security_protected_nas_msg_header_t.security_header_type > 0) {
-      offset += SECURITY_PROTECTED_5GS_NAS_MESSAGE_HEADER_LENGTH;
-      if (offset < length) {
-        msg_type = ((mm_msg_header_t *)(pdu_buffer + offset))->message_type;
+  /* get security header type */
+  if (length < 2)
+    goto error;
 
-        if (msg_type == FGS_DOWNLINK_NAS_TRANSPORT) {
-          dl_nas_transport_t tmp;
-          memcpy(&tmp, pdu_buffer + offset, sizeof(tmp));
-          msg_type = tmp.sm_nas_msg_header.message_type;
-        }
-      }
-    } else { // plain 5GS NAS message
-      msg_type = ((nas_msg_header_t *)(pdu_buffer))->choice.plain_nas_msg_header.message_type;
-    }
-  } else {
-    LOG_I(NAS, "[UE] Received invalid downlink message\n");
+  int security_header_type = pdu_buffer[1];
+
+  if (security_header_type == 0) {
+    /* plain NAS message */
+    if (length < 3)
+      goto error;
+    return pdu_buffer[2];
+  }
+
+  if (length < 10)
+    goto error;
+
+  int msg_type = pdu_buffer[9];
+
+  if (msg_type == FGS_DOWNLINK_NAS_TRANSPORT) {
+    if (length < 17)
+      goto error;
+
+    msg_type = pdu_buffer[16];
   }
 
   return msg_type;
+
+error:
+  LOG_E(NAS, "[UE] Received invalid downlink message\n");
+  return 0;
 }
 
 static void send_nas_uplink_data_req(instance_t instance, const as_nas_info_t *initial_nas_msg)
