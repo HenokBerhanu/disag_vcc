@@ -217,14 +217,8 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                               uint8_t add_dmrs_flag,
                               uint8_t N_symb_PUCCH,
                               int subframe_number,
-                              int O_uci);
-
-int get_deltatf(uint16_t nb_of_prbs,
-                uint8_t N_symb_PUCCH,
-                uint8_t freq_hop_flag,
-                uint8_t add_dmrs_flag,
-                int N_sc_ctrl_RB,
-                int O_UCI);
+                              int O_uci,
+                              uint16_t start_prb);
 
 int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            int slot,
@@ -234,6 +228,8 @@ int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            fapi_nr_ul_config_pucch_pdu *pucch_pdu);
 
 int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb);
+
+int get_sum_delta_pucch(NR_UE_MAC_INST_t *mac, int slot, frame_t frame);
 
 /* Random Access */
 
