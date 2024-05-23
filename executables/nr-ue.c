@@ -529,7 +529,7 @@ void processSlotTX(void *arg)
   // Force sequential execution, even if we launch in // for all slots
   // at least ULstatus variable is a pure race condition that is quickly detected by assert() in the code because one thread sets it
   // to active, so the other thread try to steal&run the ul work
-  if (rxtxD->stream_status == 2) {
+  if (rxtxD->stream_status == STREAM_STATUS_SYNCED) {
     notifiedFIFO_elt_t *res = pullNotifiedFIFO(UE->tx_resume_ind_fifo + proc->nr_slot_tx);
     delNotifiedFIFO_elt(res);
   }
@@ -751,7 +751,7 @@ void *UE_thread(void *arg)
   PHY_VARS_NR_UE *UE = (PHY_VARS_NR_UE *) arg;
   //  int tx_enabled = 0;
   void *rxp[NB_ANTENNAS_RX];
-  int start_rx_stream = 0;
+  enum stream_status_e stream_status = STREAM_STATUS_UNSYNC;
   fapi_nr_config_request_t *cfg = &UE->nrUE_config;
   int tmp = openair0_device_load(&(UE->rfdevice), &openair0_cfg[0]);
   AssertFatal(tmp == 0, "Could not load the device\n");
@@ -801,7 +801,7 @@ void *UE_thread(void *arg)
           intialSyncOffset = syncMsg->rx_offset;
         }
         delNotifiedFIFO_elt(res);
-        start_rx_stream = 0;
+        stream_status = STREAM_STATUS_UNSYNC;
       } else {
 	if (IS_SOFTMODEM_IQPLAYER || IS_SOFTMODEM_IQRECORDER) {
 	  // For IQ recorder-player we force synchronization to happen in 280 ms
@@ -831,8 +831,8 @@ void *UE_thread(void *arg)
       continue;
     }
 
-    if (start_rx_stream == 0) {
-      start_rx_stream=1;
+    if (stream_status == STREAM_STATUS_UNSYNC) {
+      stream_status = STREAM_STATUS_SYNCING;
       syncInFrame(UE, &sync_timestamp, intialSyncOffset);
       shiftForNextFrame = 0; // will be used to track clock drift
       // read in first symbol
@@ -949,8 +949,8 @@ void *UE_thread(void *arg)
     curMsgTx->proc.timestamp_tx = writeTimestamp;
     curMsgTx->UE = UE;
     curMsgTx->tx_wait_for_dlsch = tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx];
-    curMsgTx->stream_status = start_rx_stream;
-    start_rx_stream = 2;
+    curMsgTx->stream_status = stream_status;
+    stream_status = STREAM_STATUS_SYNCED;
     tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx] = 0;
     pushTpool(&(get_nrUE_params()->Tpool), newTx);
   }
