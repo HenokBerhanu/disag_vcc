@@ -60,6 +60,76 @@ extern uint16_t NB_UE_INST;
 static nr_ue_nas_t nr_ue_nas = {0};
 static nr_nas_msg_snssai_t nas_allowed_nssai[8];
 
+typedef enum {
+  NAS_SECURITY_NO_SECURITY_CONTEXT,
+  NAS_SECURITY_INTEGRITY_FAILED,
+  NAS_SECURITY_INTEGRITY_PASSED,
+  NAS_SECURITY_BAD_INPUT
+} security_state_t;
+
+security_state_t nas_security_rx_process(nr_ue_nas_t *nas, uint8_t *pdu_buffer, int pdu_length)
+{
+  if (nas->security_container == NULL)
+    return NAS_SECURITY_NO_SECURITY_CONTEXT;
+  /* header is 7 bytes, require at least one byte of payload */
+  if (pdu_length < 8)
+    return NAS_SECURITY_BAD_INPUT;
+  /* only accept "integrity protected and ciphered" messages */
+  if (pdu_buffer[1] != 2) {
+    LOG_E(NAS, "todo: unhandled security type %d\n", pdu_buffer[2]);
+    return NAS_SECURITY_BAD_INPUT;
+  }
+
+  /* synchronize NAS SQN, based on 24.501 4.4.3.1 */
+  int nas_sqn = pdu_buffer[6];
+  int target_sqn = nas->security.nas_count_dl & 0xff;
+  if (nas_sqn != target_sqn) {
+    if (nas_sqn < target_sqn)
+      nas->security.nas_count_dl += 256;
+    nas->security.nas_count_dl &= ~255;
+    nas->security.nas_count_dl |= nas_sqn;
+  }
+  if (nas->security.nas_count_dl > 0x00ffffff) {
+    /* it's doubtful that this will happen, so let's simply exit for the time being */
+    /* to be refined if needed */
+    LOG_E(NAS, "max NAS COUNT DL reached\n");
+    exit(1);
+  }
+
+  /* check integrity */
+  uint8_t computed_mac[4];
+  nas_stream_cipher_t stream_cipher;
+  stream_cipher.context    = nas->security_container->integrity_context;
+  stream_cipher.count      = nas->security.nas_count_dl;
+  stream_cipher.bearer     = 1;                          /* todo: don't hardcode */
+  stream_cipher.direction  = 1;
+  stream_cipher.message    = pdu_buffer + 6;
+  /* length in bits */
+  stream_cipher.blength    = (pdu_length - 6) << 3;
+  stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, computed_mac);
+
+  uint8_t *received_mac = pdu_buffer + 2;
+
+  if (memcmp(received_mac, computed_mac, 4) != 0)
+    return NAS_SECURITY_INTEGRITY_FAILED;
+
+  /* decipher */
+  uint8_t buf[pdu_length - 7];
+  stream_cipher.context    = nas->security_container->ciphering_context;
+  stream_cipher.count      = nas->security.nas_count_dl;
+  stream_cipher.bearer     = 1;                          /* todo: don't hardcode */
+  stream_cipher.direction  = 1;
+  stream_cipher.message    = pdu_buffer + 7;
+  /* length in bits */
+  stream_cipher.blength    = (pdu_length - 7) << 3;
+  stream_compute_encrypt(nas->security_container->ciphering_algorithm, &stream_cipher, buf);
+  memcpy(pdu_buffer + 7, buf, pdu_length - 7);
+
+  nas->security.nas_count_dl++;
+
+  return NAS_SECURITY_INTEGRITY_PASSED;
+}
+
 static int nas_protected_security_header_encode(
   char                                       *buffer,
   const fgs_nas_message_security_header_t    *header,
@@ -1234,11 +1304,19 @@ void *nas_nrue(void *args_p)
               NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length,
               NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.data);
         as_nas_info_t initialNasMsg = {0};
+        nr_ue_nas_t *nas = get_ue_nas_info(0);
 
         uint8_t *pdu_buffer = NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.data;
         int pdu_length = NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length;
+
+        security_state_t security_state = nas_security_rx_process(nas, pdu_buffer, pdu_length);
+        if (security_state != NAS_SECURITY_INTEGRITY_PASSED
+            && security_state != NAS_SECURITY_NO_SECURITY_CONTEXT) {
+          LOG_E(NAS, "NAS integrity failed, discard incoming message\n");
+          break;
+        }
+
         int msg_type = get_msg_type(pdu_buffer, pdu_length);
-        nr_ue_nas_t *nas = get_ue_nas_info(0);
 
         switch (msg_type) {
           case FGS_IDENTITY_REQUEST:
