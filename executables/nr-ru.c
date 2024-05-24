@@ -65,7 +65,6 @@ static int DEFRUTPCORES[] = {-1,-1,-1,-1};
 #include "GNB_APP/gnb_paramdef.h"
 #include "common/config/config_userapi.h"
 
-#include "s1ap_eNB.h"
 #include "SIMULATION/ETH_TRANSPORT/proto.h"
 #include <openair1/PHY/TOOLS/phy_scope_interface.h>
 

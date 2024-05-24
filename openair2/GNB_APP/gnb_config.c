@@ -41,7 +41,6 @@
 #include "UTIL/OTG/otg.h"
 #include "UTIL/OTG/otg_externs.h"
 #include "intertask_interface.h"
-#include "s1ap_eNB.h"
 #include "ngap_gNB.h"
 #include "sctp_eNB_task.h"
 #include "sctp_default_values.h"
