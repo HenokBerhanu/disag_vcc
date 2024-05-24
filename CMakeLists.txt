@@ -801,7 +801,6 @@ set(PHY_POLARSRC
   ${OPENAIR1_DIR}/PHY/CODING/nr_polar_init.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_bitwise_operations.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_crc_byte.c
-  ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_crc.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_decoder.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_decoding_tools.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_encoder.c
