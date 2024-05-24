@@ -56,6 +56,11 @@
 #include "LAYER2/RLC/rlc.h"
 
 //#define SRS_DEBUG
+#define verifyMutex(a)                                                \
+  {                                                                   \
+    int ret = a;                                                      \
+    AssertFatal(ret == 0, "Failure in mutex management ret=%d\n", a); \
+  }
 
 static void nr_ue_prach_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, sub_frame_t slotP);
 static void schedule_ta_command(fapi_nr_dl_config_request_t *dl_config, NR_UL_TIME_ALIGNMENT_t *ul_time_alignment);
@@ -65,9 +70,9 @@ void clear_ul_config_request(NR_UE_MAC_INST_t *mac, int scs)
   int slots = nr_slots_per_frame[scs];
   for (int i = 0; i < slots ; i++) {
     fapi_nr_ul_config_request_t *ul_config = mac->ul_config_request + i;
-    pthread_mutex_lock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_lock(&ul_config->mutex_ul_config));
     ul_config->number_pdus = 0;
-    pthread_mutex_unlock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_unlock(&ul_config->mutex_ul_config));
   }
 }
 
@@ -81,7 +86,7 @@ fapi_nr_ul_config_request_pdu_t *lockGet_ul_config(NR_UE_MAC_INST_t *mac, frame_
   AssertFatal(mac->ul_config_request != NULL, "mac->ul_config_request not initialized, logic bug\n");
   fapi_nr_ul_config_request_t *ul_config = mac->ul_config_request + slot_tx;
 
-  pthread_mutex_lock(&ul_config->mutex_ul_config);
+  verifyMutex(pthread_mutex_lock(&ul_config->mutex_ul_config));
   if (ul_config->number_pdus != 0 && (ul_config->frame != frame_tx || ul_config->slot != slot_tx)) {
     LOG_E(NR_MAC, "Error in ul config consistency, clearing slot %d\n", slot_tx);
     ul_config->number_pdus = 0;
@@ -90,12 +95,11 @@ fapi_nr_ul_config_request_pdu_t *lockGet_ul_config(NR_UE_MAC_INST_t *mac, frame_
   ul_config->slot = slot_tx;
   if (ul_config->number_pdus >= FAPI_NR_UL_CONFIG_LIST_NUM) {
     LOG_E(NR_MAC, "Error in ul config for slot %d, no memory\n", slot_tx);
-    pthread_mutex_unlock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_unlock(&ul_config->mutex_ul_config));
     return NULL;
   }
   fapi_nr_ul_config_request_pdu_t *pdu = ul_config->ul_config_list + ul_config->number_pdus++;
   pdu->pdu_type = pdu_type;
-  AssertFatal(!pdu->lock, "no lock in fapi_nr_ul_config_request_pdu_t, aborting");
   pdu->lock = &ul_config->mutex_ul_config;
   pdu->privateNBpdus = &ul_config->number_pdus;
   LOG_D(NR_MAC, "Added ul pdu for %d.%d, type %d\n", frame_tx, slot_tx, pdu_type);
@@ -181,30 +185,28 @@ void remove_ul_config_last_item(fapi_nr_ul_config_request_pdu_t *pdu)
 
 void release_ul_config(fapi_nr_ul_config_request_pdu_t *configPerSlot, bool clearIt)
 {
-  pthread_mutex_t *lock = configPerSlot->lock;
-  configPerSlot->lock = NULL;
   if (clearIt)
     *configPerSlot->privateNBpdus = 0;
-  pthread_mutex_unlock(lock);
+  verifyMutex(pthread_mutex_unlock(configPerSlot->lock));
 }
 
 fapi_nr_ul_config_request_pdu_t *fapiLockIterator(fapi_nr_ul_config_request_t *ul_config, frame_t frame_tx, int slot_tx)
 {
-  pthread_mutex_lock(&ul_config->mutex_ul_config);
+  verifyMutex(pthread_mutex_lock(&ul_config->mutex_ul_config));
   if (ul_config->number_pdus >= FAPI_NR_UL_CONFIG_LIST_NUM) {
     LOG_E(NR_MAC, "Error in ul config in slot %d no memory\n", ul_config->slot);
-    pthread_mutex_unlock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_unlock(&ul_config->mutex_ul_config));
     return NULL;
   }
   if (ul_config->number_pdus != 0 && (ul_config->frame != frame_tx || ul_config->slot != slot_tx)) {
     LOG_E(NR_MAC, "Error in ul config consistency, clearing it slot %d\n", slot_tx);
     ul_config->number_pdus = 0;
-    pthread_mutex_unlock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_unlock(&ul_config->mutex_ul_config));
     return NULL;
   }
   if (ul_config->number_pdus >= FAPI_NR_UL_CONFIG_LIST_NUM) {
     LOG_E(NR_MAC, "Error in ul config for slot %d, no memory\n", slot_tx);
-    pthread_mutex_unlock(&ul_config->mutex_ul_config);
+    verifyMutex(pthread_mutex_unlock(&ul_config->mutex_ul_config));
     return NULL;
   }
   fapi_nr_ul_config_request_pdu_t *pdu = ul_config->ul_config_list + ul_config->number_pdus;
@@ -1007,6 +1009,9 @@ void nr_ue_aperiodic_srs_scheduling(NR_UE_MAC_INST_t *mac, long resource_trigger
     return;
   }
 
+  AssertFatal(slot_offset > DURATION_RX_TO_TX,
+              "Slot offset between DCI and aperiodic SRS (%d) needs to be higher than DURATION_RX_TO_TX (%d)\n",
+              slot_offset, DURATION_RX_TO_TX);
   int n_slots_frame = nr_slots_per_frame[current_UL_BWP->scs];
   int sched_slot = (slot + slot_offset) % n_slots_frame;
   NR_TDD_UL_DL_ConfigCommon_t *tdd_config = mac->tdd_UL_DL_ConfigurationCommon;
@@ -1465,6 +1470,13 @@ int nr_ue_pusch_scheduler(const NR_UE_MAC_INST_t *mac,
         AssertFatal(1 == 0, "Invalid numerology %i\n", mu);
     }
 
+    AssertFatal((k2 + delta) > DURATION_RX_TO_TX,
+                "Slot offset (%ld) for Msg3 needs to be higher than DURATION_RX_TO_TX (%d). Please set min_rxtxtime at least to %d in gNB config file or gNBs.[0].min_rxtxtime=%d via command line.\n",
+                k2,
+                DURATION_RX_TO_TX,
+                DURATION_RX_TO_TX,
+                DURATION_RX_TO_TX);
+
     *slot_tx = (current_slot + k2 + delta) % nr_slots_per_frame[mu];
     if (current_slot + k2 + delta >= nr_slots_per_frame[mu]){
       *frame_tx = (current_frame + 1) % 1024;
@@ -1473,6 +1485,14 @@ int nr_ue_pusch_scheduler(const NR_UE_MAC_INST_t *mac,
     }
 
   } else {
+
+    AssertFatal(k2 > DURATION_RX_TO_TX,
+                "Slot offset K2 (%ld) needs to be higher than DURATION_RX_TO_TX (%d). Please set min_rxtxtime at least to %d in gNB config file or gNBs.[0].min_rxtxtime=%d via command line.\n",
+                k2,
+                DURATION_RX_TO_TX,
+                DURATION_RX_TO_TX,
+                DURATION_RX_TO_TX);
+
     if (k2 < 0) { // This can happen when a false DCI is received
       LOG_W(PHY, "%d.%d. Received k2 %ld\n", current_frame, current_slot, k2);
       return -1;

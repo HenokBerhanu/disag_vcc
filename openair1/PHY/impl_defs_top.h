@@ -272,7 +272,7 @@
 /* - between reception of pdsch and tarnsmission of its acknowlegment    */
 /* - between reception of un uplink grant and its related transmission   */
 // should be 2 as per NR standard, but current UE is not able to perform this value
-#define NR_UE_CAPABILITY_SLOT_RX_TO_TX           (2)
+#define NR_UE_CAPABILITY_SLOT_RX_TO_TX (3)
 
 #define DURATION_RX_TO_TX (NR_UE_CAPABILITY_SLOT_RX_TO_TX)
 

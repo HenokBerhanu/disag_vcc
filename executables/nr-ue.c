@@ -526,6 +526,14 @@ void processSlotTX(void *arg)
   PHY_VARS_NR_UE *UE = rxtxD->UE;
   nr_phy_data_tx_t phy_data = {0};
 
+  // Force sequential execution, even if we launch in // for all slots
+  // at least ULstatus variable is a pure race condition that is quickly detected by assert() in the code because one thread sets it
+  // to active, so the other thread try to steal&run the ul work
+  if (rxtxD->stream_status == STREAM_STATUS_SYNCED) {
+    notifiedFIFO_elt_t *res = pullNotifiedFIFO(UE->tx_resume_ind_fifo + proc->nr_slot_tx);
+    delNotifiedFIFO_elt(res);
+  }
+
   if (UE->if_inst)
     UE->if_inst->slot_indication(UE->Mod_id);
 
@@ -560,11 +568,6 @@ void processSlotTX(void *arg)
       instead,
       we may run in place the processSlotTX() when the conditions are met (when a decreasing tx_wait_for_dlsch[slot] will become 0)
       It will remove the condition signals (for a thread safe semaphore or counter) and make the system simpler
-      This require also other modifications to
-          remove txFifo that is also a big issue
-	  add out of order RF board sending, because,
-	    if we encode and send tx slot as soon as we can,
-	    it will be thrown out of order, especially in TDD mode
     */
     notifiedFIFO_elt_t *res = pollNotifiedFIFO(UE->tx_resume_ind_fifo + proc->nr_slot_tx);
     if (res)
@@ -590,6 +593,11 @@ void processSlotTX(void *arg)
     phy_procedures_nrUE_TX(UE, proc, &phy_data);
   }
 
+  notifiedFIFO_elt_t *newElt = newNotifiedFIFO_elt(sizeof(int), 0, NULL, NULL);
+  int *msgData = (int *)NotifiedFifoData(newElt);
+  int newslot = (proc->nr_slot_tx + 1) % UE->frame_parms.slots_per_frame;
+  *msgData = newslot;
+  pushNotifiedFIFO(UE->tx_resume_ind_fifo + newslot, newElt);
   RU_write(rxtxD);
 }
 
@@ -743,7 +751,7 @@ void *UE_thread(void *arg)
   PHY_VARS_NR_UE *UE = (PHY_VARS_NR_UE *) arg;
   //  int tx_enabled = 0;
   void *rxp[NB_ANTENNAS_RX];
-  int start_rx_stream = 0;
+  enum stream_status_e stream_status = STREAM_STATUS_UNSYNC;
   fapi_nr_config_request_t *cfg = &UE->nrUE_config;
   int tmp = openair0_device_load(&(UE->rfdevice), &openair0_cfg[0]);
   AssertFatal(tmp == 0, "Could not load the device\n");
@@ -754,9 +762,6 @@ void *UE_thread(void *arg)
 
   notifiedFIFO_t nf;
   initNotifiedFIFO(&nf);
-
-  notifiedFIFO_t txFifo;
-  initNotifiedFIFO(&txFifo);
 
   notifiedFIFO_t freeBlocks;
   initNotifiedFIFO_nothreadSafe(&freeBlocks);
@@ -796,7 +801,7 @@ void *UE_thread(void *arg)
           intialSyncOffset = syncMsg->rx_offset;
         }
         delNotifiedFIFO_elt(res);
-        start_rx_stream = 0;
+        stream_status = STREAM_STATUS_UNSYNC;
       } else {
 	if (IS_SOFTMODEM_IQPLAYER || IS_SOFTMODEM_IQRECORDER) {
 	  // For IQ recorder-player we force synchronization to happen in 280 ms
@@ -826,8 +831,8 @@ void *UE_thread(void *arg)
       continue;
     }
 
-    if (start_rx_stream == 0) {
-      start_rx_stream=1;
+    if (stream_status == STREAM_STATUS_UNSYNC) {
+      stream_status = STREAM_STATUS_SYNCING;
       syncInFrame(UE, &sync_timestamp, intialSyncOffset);
       openair0_write_reorder_clear_context(&UE->rfdevice);
       shiftForNextFrame = 0; // will be used to track clock drift
@@ -938,25 +943,18 @@ void *UE_thread(void *arg)
 
     // Start TX slot processing here. It runs in parallel with RX slot processing
     // in current code, DURATION_RX_TO_TX constant is the limit to get UL data to encode from a RX slot
-    notifiedFIFO_elt_t *newTx = newNotifiedFIFO_elt(sizeof(nr_rxtx_thread_data_t), curMsg.proc.nr_slot_tx, &txFifo, processSlotTX);
+    notifiedFIFO_elt_t *newTx = newNotifiedFIFO_elt(sizeof(nr_rxtx_thread_data_t), curMsg.proc.nr_slot_tx, NULL, processSlotTX);
     nr_rxtx_thread_data_t *curMsgTx = (nr_rxtx_thread_data_t *)NotifiedFifoData(newTx);
     curMsgTx->proc = curMsg.proc;
     curMsgTx->writeBlockSize = writeBlockSize;
     curMsgTx->proc.timestamp_tx = writeTimestamp;
     curMsgTx->UE = UE;
     curMsgTx->tx_wait_for_dlsch = tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx];
+    curMsgTx->stream_status = stream_status;
+    stream_status = STREAM_STATUS_SYNCED;
     tx_wait_for_dlsch[curMsgTx->proc.nr_slot_tx] = 0;
     pushTpool(&(get_nrUE_params()->Tpool), newTx);
-
-    // Wait for TX slot processing to finish
-    // Should be removed when bugs, race conditions, will be fixed
-    notifiedFIFO_elt_t *res;
-    res = pullTpool(&txFifo, &(get_nrUE_params()->Tpool));
-    if (res == NULL)
-      LOG_E(PHY, "Tpool has been aborted\n");
-    else
-      delNotifiedFIFO_elt(res);
-  } // while !oai_exit
+  }
 
   return NULL;
 }

@@ -788,6 +788,10 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
   }
 
   if (dci_ind->rnti != mac->ra.ra_rnti && dci_ind->rnti != SI_RNTI)
+    AssertFatal(1 + dci->pdsch_to_harq_feedback_timing_indicator.val > DURATION_RX_TO_TX,
+                "PDSCH to HARQ feedback time (%d) needs to be higher than DURATION_RX_TO_TX (%d).\n",
+                1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
+                DURATION_RX_TO_TX);
 
   // set the harq status at MAC for feedback
   set_harq_status(mac,
@@ -1114,6 +1118,12 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
   /* PDSCH_TO_HARQ_FEEDBACK_TIME_IND */
   // according to TS 38.213 Table 9.2.3-1
   uint8_t feedback_ti = pucch_Config->dl_DataToUL_ACK->list.array[dci->pdsch_to_harq_feedback_timing_indicator.val][0];
+
+  AssertFatal(feedback_ti > DURATION_RX_TO_TX,
+              "PDSCH to HARQ feedback time (%d) needs to be higher than DURATION_RX_TO_TX (%d). Min feedback time set in config "
+              "file (min_rxtxtime).\n",
+              feedback_ti,
+              DURATION_RX_TO_TX);
 
   // set the harq status at MAC for feedback
   set_harq_status(mac,
@@ -1852,10 +1862,17 @@ void order_resources(PUCCH_sched_t *pucch, int num_res)
   }
 }
 
-bool check_overlapping_resources(int curr_start, int curr_length, int next_start, int next_length)
+bool check_overlapping_resources(PUCCH_sched_t *pucch, int j, int o)
 {
   // assuming overlapping means if two resources overlaps in time,
   // ie share a symbol in the slot regardless of PRB
+  NR_PUCCH_Resource_t *pucch_resource = pucch[j - o].pucch_resource;
+  int curr_start, curr_length;
+  get_pucch_start_symbol_length(pucch_resource, &curr_start, &curr_length);
+  pucch_resource = pucch[j + 1].pucch_resource;
+  int next_start, next_length;
+  get_pucch_start_symbol_length(pucch_resource, &next_start, &next_length);
+
   if (curr_start == next_start)
     return true;
   if (curr_start + curr_length - 1 < next_start)
@@ -2201,18 +2218,9 @@ void multiplex_pucch_resource(NR_UE_MAC_INST_t *mac, PUCCH_sched_t *pucch, int n
   int j = 0;
   int o = 0;
   while (j <= num_res - 1) {
-    if (j < num_res - 1) {
-      NR_PUCCH_Resource_t *pucch_resource = pucch[j - o].pucch_resource;
-      int curr_start, curr_length;
-      get_pucch_start_symbol_length(pucch_resource, &curr_start, &curr_length);
-      pucch_resource = pucch[j + 1].pucch_resource;
-      int next_start, next_length;
-      get_pucch_start_symbol_length(pucch_resource, &next_start, &next_length);
-      bool overlap = check_overlapping_resources(curr_start, curr_length, next_start, next_length);
-      if (overlap) {
-        o++;
-        j++;
-      }
+    if ((j < num_res - 1) && check_overlapping_resources(pucch, j, o)) {
+      o++;
+      j++;
     } else {
       if (o > 0) {
         merge_resources(&pucch[j - o], o + 1, pucch_Config);

@@ -632,6 +632,8 @@ typedef struct nr_phy_data_s {
   sl_nr_rx_config_type_enum_t sl_rx_action;
 
 } nr_phy_data_t;
+
+enum stream_status_e { STREAM_STATUS_UNSYNC, STREAM_STATUS_SYNCING, STREAM_STATUS_SYNCED};
 /* this structure is used to pass both UE phy vars and
  * proc to the function UE_thread_rxn_txnp4
  */
@@ -642,6 +644,7 @@ typedef struct nr_rxtx_thread_data_s {
   nr_phy_data_t phy_data;
   int tx_wait_for_dlsch;
   int rx_offset;
+  enum stream_status_e stream_status;
 } nr_rxtx_thread_data_t;
 
 typedef struct LDPCDecode_ue_s {

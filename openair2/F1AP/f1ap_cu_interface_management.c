@@ -158,7 +158,7 @@ int CU_handle_F1_SETUP_REQUEST(instance_t instance, sctp_assoc_t assoc_id, uint3
     if (servedCellInformation->fiveGS_TAC) {
       req->cell[i].info.tac = malloc(sizeof(*req->cell[i].info.tac));
       AssertFatal(req->cell[i].info.tac != NULL, "out of memory\n");
-      OCTET_STRING_TO_INT16(servedCellInformation->fiveGS_TAC, *req->cell[i].info.tac);
+      OCTET_STRING_TO_INT24(servedCellInformation->fiveGS_TAC, *req->cell[i].info.tac);
       LOG_D(F1AP, "req->tac[%d] %d \n", i, *req->cell[i].info.tac);
     }
     
@@ -636,7 +636,7 @@ int CU_handle_gNB_DU_CONFIGURATION_UPDATE(instance_t instance, sctp_assoc_t asso
       if (servedCellInformation->fiveGS_TAC) {
         req->cell_to_modify[i].info.tac = malloc(sizeof(*req->cell_to_modify[i].info.tac));
         AssertFatal(req->cell_to_modify[i].info.tac != NULL, "out of memory\n");
-        OCTET_STRING_TO_INT16(servedCellInformation->fiveGS_TAC, *req->cell_to_modify[i].info.tac);
+        OCTET_STRING_TO_INT24(servedCellInformation->fiveGS_TAC, *req->cell_to_modify[i].info.tac);
         LOG_D(F1AP, "req->tac[%d] %d \n", i, *req->cell_to_modify[i].info.tac);
       }
 
