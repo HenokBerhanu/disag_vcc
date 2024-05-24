@@ -2450,8 +2450,7 @@ bool get_downlink_ack(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, PUCCH_sche
     pucch->pucch_resource = acknack_resource;
     LOG_D(MAC, "frame %d slot %d pucch acknack payload %d\n", frame, slot, o_ACK);
   }
-  reverse_n_bits(&o_ACK, number_harq_feedback);
-  pucch->ack_payload = o_ACK;
+  pucch->ack_payload = reverse_bits(o_ACK, number_harq_feedback);
   pucch->n_harq = number_harq_feedback;
 
   return (number_harq_feedback > 0);
@@ -2720,26 +2719,22 @@ uint8_t get_ssb_rsrp_payload(NR_UE_MAC_INST_t *mac,
 
       if (ssbri_bits > 0) {
         ssbi = ssb_rsrp[0][0];
-        reverse_n_bits(&ssbi, ssbri_bits);
-        temp_payload = ssbi;
+        temp_payload = reverse_bits(ssbi, ssbri_bits);
         bits += ssbri_bits;
       }
 
       uint8_t rsrp_idx = get_rsrp_index(ssb_rsrp[1][0]);
-      reverse_n_bits(&rsrp_idx, 7);
-      temp_payload |= (rsrp_idx<<bits);
+      temp_payload |= (reverse_bits(rsrp_idx, 7) << bits);
       bits += 7; // 7 bits for highest RSRP
 
       // from the second SSB, differential report
       for (int i=1; i<nb_meas; i++){
         ssbi = ssb_rsrp[0][i];
-        reverse_n_bits(&ssbi, ssbri_bits);
-        temp_payload = ssbi;
+        temp_payload = reverse_bits(ssbi, ssbri_bits);
         bits += ssbri_bits;
 
         rsrp_idx = get_rsrp_diff_index(ssb_rsrp[1][0],ssb_rsrp[1][i]);
-        reverse_n_bits(&rsrp_idx, 4);
-        temp_payload |= (rsrp_idx<<bits);
+        temp_payload |= (reverse_bits(rsrp_idx, 4) << bits);
         bits += 4; // 7 bits for highest RSRP
       }
       break; // resorce found
@@ -2756,7 +2751,7 @@ uint8_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
                                      NR_CSI_MeasConfig_t *csi_MeasConfig) {
 
   int n_bits = 0;
-  uint32_t temp_payload = 0;
+  uint64_t temp_payload = 0;
 
   for (int csi_resourceidx = 0; csi_resourceidx < csi_MeasConfig->csi_ResourceConfigToAddModList->list.count; csi_resourceidx++) {
 
@@ -2796,17 +2791,15 @@ uint8_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
                          (mac->csirs_measurements.cqi<<cri_bitlen) |
                          0;
 
-          reverse_n_bits((uint8_t *)&temp_payload, n_bits);
+          temp_payload = reverse_bits(temp_payload, n_bits);
 
           LOG_D(NR_MAC, "cri_bitlen = %d\n", cri_bitlen);
           LOG_D(NR_MAC, "ri_bitlen = %d\n", ri_bitlen);
           LOG_D(NR_MAC, "pmi_x1_bitlen = %d\n", pmi_x1_bitlen);
           LOG_D(NR_MAC, "pmi_x2_bitlen = %d\n", pmi_x2_bitlen);
           LOG_D(NR_MAC, "cqi_bitlen = %d\n", cqi_bitlen);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
-
+          LOG_D(NR_MAC, "csi_part1_payload = 0x%lx\n", temp_payload);
           LOG_D(NR_MAC, "n_bits = %d\n", n_bits);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
 
           break;
         }
@@ -2824,7 +2817,7 @@ uint8_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
                                NR_CSI_MeasConfig_t *csi_MeasConfig) {
 
   int n_bits = 0;
-  uint32_t temp_payload = 0;
+  uint64_t temp_payload = 0;
 
   for (int csi_resourceidx = 0; csi_resourceidx < csi_MeasConfig->csi_ResourceConfigToAddModList->list.count; csi_resourceidx++) {
 
@@ -2858,14 +2851,14 @@ uint8_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
             temp_payload = mac->csirs_measurements.rsrp_dBm + 157;
           }
 
-          reverse_n_bits((uint8_t *)&temp_payload, n_bits);
+          temp_payload = reverse_bits(temp_payload, n_bits);
 
           LOG_D(NR_MAC, "cri_ssbri_bitlen = %d\n", cri_ssbri_bitlen);
           LOG_D(NR_MAC, "rsrp_bitlen = %d\n", rsrp_bitlen);
           LOG_D(NR_MAC, "diff_rsrp_bitlen = %d\n", diff_rsrp_bitlen);
 
           LOG_D(NR_MAC, "n_bits = %d\n", n_bits);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
+          LOG_D(NR_MAC, "csi_part1_payload = 0x%lx\n", temp_payload);
 
           break;
         }
