@@ -661,6 +661,19 @@ static void generateSecurityModeComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
 
   initialNasMsg->length = security_header_len + mm_msg_encode(mm_msg, (uint8_t*)(initialNasMsg->data+security_header_len), size-security_header_len);
 
+  /* ciphering */
+  uint8_t buf[initialNasMsg->length - 7];
+  stream_cipher.context    = nas->security_container->ciphering_context;
+  stream_cipher.count      = nas->security.nas_count_ul;
+  stream_cipher.bearer     = 1;
+  stream_cipher.direction  = 0;
+  stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 7);
+  /* length in bits */
+  stream_cipher.blength    = (initialNasMsg->length - 7) << 3;
+  stream_compute_encrypt(nas->security_container->ciphering_algorithm, &stream_cipher, buf);
+  memcpy(stream_cipher.message, buf, initialNasMsg->length - 7);
+
+  /* integrity protection */
   stream_cipher.context    = nas->security_container->integrity_context;
   stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
@@ -766,6 +779,7 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
 
   // encode the message
   initialNasMsg->data = (Byte_t *)malloc(length * sizeof(Byte_t));
+  initialNasMsg->length = length;
 
   /* Encode the first octet of the header (extended protocol discriminator) */
   ENCODE_U8(initialNasMsg->data + size, sp_msg->header.protocol_discriminator, size);
@@ -792,8 +806,20 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   if(sortransparentcontainer) {
     encode_registration_complete(&sp_msg->plain.mm_msg.registration_complete, initialNasMsg->data + size, length - size);
   }
-  
-  initialNasMsg->length = length;
+
+  /* ciphering */
+  uint8_t buf[initialNasMsg->length - 7];
+  stream_cipher.context    = nas->security_container->ciphering_context;
+  stream_cipher.count      = nas->security.nas_count_ul;
+  stream_cipher.bearer     = 1;
+  stream_cipher.direction  = 0;
+  stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 7);
+  /* length in bits */
+  stream_cipher.blength    = (initialNasMsg->length - 7) << 3;
+  stream_compute_encrypt(nas->security_container->ciphering_algorithm, &stream_cipher, buf);
+  memcpy(stream_cipher.message, buf, initialNasMsg->length - 7);
+
+  /* integrity protection */
   stream_cipher.context    = nas->security_container->integrity_context;
   stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
@@ -801,8 +827,6 @@ static void generateRegistrationComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);
   /* length in bits */
   stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
-
-  // only for Type of integrity protection algorithm: 128-5G-IA2 (2)
   stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
 
   printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
@@ -855,19 +879,35 @@ static void generateDeregistrationRequest(nr_ue_nas_t *nas, as_nas_info_t *initi
 
   initialNasMsg->length = security_header_len + mm_msg_encode(&sp_msg->plain.mm_msg, (uint8_t *)(initialNasMsg->data + security_header_len), size - security_header_len);
 
-  nas_stream_cipher_t stream_cipher = {
-    .context = nas->security_container->integrity_context,
-    .count = nas->security.nas_count_ul++,
-    .bearer = 1,
-    .direction = 0,
-    .message = (unsigned char *)(initialNasMsg->data + 6),
-    .blength = (initialNasMsg->length - 6) << 3, /* length in bits */
-  };
-  uint8_t mac[4];
-  nas_stream_encrypt_eia2(&stream_cipher, mac);
+  nas_stream_cipher_t stream_cipher;
 
-  for(int i = 0; i < 4; i++)
-    initialNasMsg->data[2 + i] = mac[i];
+  /* ciphering */
+  uint8_t buf[initialNasMsg->length - 7];
+  stream_cipher.context    = nas->security_container->ciphering_context;
+  stream_cipher.count      = nas->security.nas_count_ul;
+  stream_cipher.bearer     = 1;
+  stream_cipher.direction  = 0;
+  stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 7);
+  /* length in bits */
+  stream_cipher.blength    = (initialNasMsg->length - 7) << 3;
+  stream_compute_encrypt(nas->security_container->ciphering_algorithm, &stream_cipher, buf);
+  memcpy(stream_cipher.message, buf, initialNasMsg->length - 7);
+
+  /* integrity protection */
+  stream_cipher.context    = nas->security_container->integrity_context;
+  stream_cipher.count      = nas->security.nas_count_ul++;
+  stream_cipher.bearer     = 1;
+  stream_cipher.direction  = 0;
+  stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);
+  /* length in bits */
+  stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
+  uint8_t mac[4];
+  stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
+
+  printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
+  for(int i = 0; i < 4; i++){
+     initialNasMsg->data[2+i] = mac[i];
+  }
 }
 
 static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *initialNasMsg, nas_pdu_session_req_t *pdu_req)
@@ -946,6 +986,19 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
 
   initialNasMsg->length = security_header_len + mm_msg_encode(mm_msg, (uint8_t*)(initialNasMsg->data+security_header_len), size-security_header_len);
 
+  /* ciphering */
+  uint8_t buf[initialNasMsg->length - 7];
+  stream_cipher.context    = nas->security_container->ciphering_context;
+  stream_cipher.count      = nas->security.nas_count_ul;
+  stream_cipher.bearer     = 1;
+  stream_cipher.direction  = 0;
+  stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 7);
+  /* length in bits */
+  stream_cipher.blength    = (initialNasMsg->length - 7) << 3;
+  stream_compute_encrypt(nas->security_container->ciphering_algorithm, &stream_cipher, buf);
+  memcpy(stream_cipher.message, buf, initialNasMsg->length - 7);
+
+  /* integrity protection */
   stream_cipher.context    = nas->security_container->integrity_context;
   stream_cipher.count      = nas->security.nas_count_ul++;
   stream_cipher.bearer     = 1;
@@ -953,8 +1006,6 @@ static void generatePduSessionEstablishRequest(nr_ue_nas_t *nas, as_nas_info_t *
   stream_cipher.message    = (unsigned char *)(initialNasMsg->data + 6);
   /* length in bits */
   stream_cipher.blength    = (initialNasMsg->length - 6) << 3;
-
-  // only for Type of integrity protection algorithm: 128-5G-IA2 (2)
   stream_compute_integrity(nas->security_container->integrity_algorithm, &stream_cipher, mac);
 
   printf("mac %x %x %x %x \n", mac[0], mac[1], mac[2], mac[3]);
