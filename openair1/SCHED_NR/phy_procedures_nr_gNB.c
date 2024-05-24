@@ -83,7 +83,7 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB,int frame,int slot, nfapi_nr_
       LOG_A(PHY,
             "Command line parameters for the UE: -C %lu --CO %ld -r %d --numerology %d --ssb %d\n",
             fp->dl_CarrierFreq,
-            fp->dl_CarrierFreq - fp->ul_CarrierFreq,
+            fp->ul_CarrierFreq - fp->dl_CarrierFreq,
             fp->N_RB_DL,
             scs,
             fp->ssb_start_subcarrier);
