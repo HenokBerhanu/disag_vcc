@@ -104,8 +104,6 @@ typedef struct {
   uint8_t first_rx;
   /// DLSCH status flag indicating
   SCH_status_t status;
-  /// Transport block size
-  uint32_t TBS;
   /// Pointers to transport block segments
   uint8_t **c;
   /// soft bits for each received segment ("d"-sequence)(for definition see 36-212 V8.6 2009-03, p.15)

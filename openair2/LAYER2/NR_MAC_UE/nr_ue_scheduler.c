@@ -1306,7 +1306,6 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
   while (ulcfg_pdu->pdu_type != FAPI_NR_END) {
     uint8_t *ulsch_input_buffer = ulsch_input_buffer_array[number_of_pdus];
     if (ulcfg_pdu->pdu_type == FAPI_NR_UL_CONFIG_TYPE_PUSCH) {
-      int mac_pdu_exist = 0;
       uint16_t TBS_bytes = ulcfg_pdu->pusch_config_pdu.pusch_data.tb_size;
       LOG_D(NR_MAC,
             "harq_id %d, new_data_indicator %d, TBS_bytes %d (ra_state %d)\n",
@@ -1314,27 +1313,26 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
             ulcfg_pdu->pusch_config_pdu.pusch_data.new_data_indicator,
             TBS_bytes,
             ra->ra_state);
+      ulcfg_pdu->pusch_config_pdu.tx_request_body.fapiTxPdu = NULL;
       if (ra->ra_state == nrRA_WAIT_RAR && !ra->cfra) {
         nr_get_msg3_payload(mac, ulsch_input_buffer, TBS_bytes);
         for (int k = 0; k < TBS_bytes; k++) {
           LOG_D(NR_MAC, "(%i): 0x%x\n", k, ulsch_input_buffer[k]);
         }
-        mac_pdu_exist = 1;
+        ulcfg_pdu->pusch_config_pdu.tx_request_body.fapiTxPdu = ulsch_input_buffer;
+        ulcfg_pdu->pusch_config_pdu.tx_request_body.pdu_length = TBS_bytes;
+        number_of_pdus++;
       } else {
         if (ulcfg_pdu->pusch_config_pdu.pusch_data.new_data_indicator
             && (mac->state == UE_CONNECTED || (ra->ra_state == nrRA_WAIT_RAR && ra->cfra))) {
           // Getting IP traffic to be transmitted
           nr_ue_get_sdu(mac, cc_id, frame_tx, slot_tx, gNB_index, ulsch_input_buffer, TBS_bytes);
-          mac_pdu_exist = 1;
+	  ulcfg_pdu->pusch_config_pdu.tx_request_body.fapiTxPdu = ulsch_input_buffer;
+	  ulcfg_pdu->pusch_config_pdu.tx_request_body.pdu_length = TBS_bytes;
+	  number_of_pdus++;
         }
       }
 
-      // Config UL TX PDU
-      if (mac_pdu_exist) {
-        ulcfg_pdu->pusch_config_pdu.tx_request_body.pdu = ulsch_input_buffer;
-        ulcfg_pdu->pusch_config_pdu.tx_request_body.pdu_length = TBS_bytes;
-        number_of_pdus++;
-      }
       if (ra->ra_state == nrRA_WAIT_CONTENTION_RESOLUTION && !ra->cfra) {
         LOG_I(NR_MAC, "[RAPROC][%d.%d] RA-Msg3 retransmitted\n", frame_tx, slot_tx);
         // 38.321 restart the ra-ContentionResolutionTimer at each HARQ retransmission in the first symbol after the end of the Msg3
