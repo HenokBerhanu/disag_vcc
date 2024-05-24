@@ -351,12 +351,10 @@ int aerial_nr_send_config_request(nfapi_vnf_config_t *config, int p5_idx)
 
   nfapi_p4_p5_message_header_t *msg = &req->header;
   uint16_t msg_len = sizeof(nfapi_nr_config_request_scf_t);
-  nfapi_p4_p5_message_header_t *msgFAPI = calloc(1, msg_len);
-  memcpy(msgFAPI, &req->header, msg_len);
   uint8_t tx_messagebufferFAPI[sizeof(_this->tx_message_buffer)];
   int packedMessageLengthFAPI = -1;
   packedMessageLengthFAPI =
-      fapi_nr_p5_message_pack(msgFAPI, msg_len, tx_messagebufferFAPI, sizeof(tx_messagebufferFAPI), &_this->_public.codec_config);
+      fapi_nr_p5_message_pack(msg, msg_len, tx_messagebufferFAPI, sizeof(tx_messagebufferFAPI), &_this->_public.codec_config);
 
   aerial_send_P5_msg(tx_messagebufferFAPI, packedMessageLengthFAPI, msg);
 
