@@ -62,6 +62,7 @@ static nr_nas_msg_snssai_t nas_allowed_nssai[8];
 
 typedef enum {
   NAS_SECURITY_NO_SECURITY_CONTEXT,
+  NAS_SECURITY_UNPROTECTED,
   NAS_SECURITY_INTEGRITY_FAILED,
   NAS_SECURITY_INTEGRITY_PASSED,
   NAS_SECURITY_BAD_INPUT
@@ -71,6 +72,8 @@ security_state_t nas_security_rx_process(nr_ue_nas_t *nas, uint8_t *pdu_buffer, 
 {
   if (nas->security_container == NULL)
     return NAS_SECURITY_NO_SECURITY_CONTEXT;
+  if (pdu_buffer[1] == 0)
+    return NAS_SECURITY_UNPROTECTED;
   /* header is 7 bytes, require at least one byte of payload */
   if (pdu_length < 8)
     return NAS_SECURITY_BAD_INPUT;
@@ -1371,6 +1374,14 @@ void *nas_nrue(void *args_p)
         int pdu_length = NAS_DOWNLINK_DATA_IND(msg_p).nasMsg.length;
 
         security_state_t security_state = nas_security_rx_process(nas, pdu_buffer, pdu_length);
+        /* special cases accepted without protection */
+        if (security_state == NAS_SECURITY_UNPROTECTED) {
+          int msg_type = get_msg_type(pdu_buffer, pdu_length);
+          /* for the moment, only FGS_DEREGISTRATION_ACCEPT is accepted */
+          if (msg_type == FGS_DEREGISTRATION_ACCEPT)
+            security_state = NAS_SECURITY_INTEGRITY_PASSED;
+        }
+
         if (security_state != NAS_SECURITY_INTEGRITY_PASSED
             && security_state != NAS_SECURITY_NO_SECURITY_CONTEXT) {
           LOG_E(NAS, "NAS integrity failed, discard incoming message\n");
