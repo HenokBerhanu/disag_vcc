@@ -395,8 +395,8 @@ int main(int argc, char **argv) {
   cpuf = cpu_freq_GHz;
   set_parallel_conf("PARALLEL_SINGLE_THREAD");
   printf("Detected cpu_freq %f GHz\n",cpu_freq_GHz);
-  AssertFatal((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) != NULL,
-              "Cannot load configuration module, exiting\n");
+  uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY);
+  AssertFatal(uniqCfg != NULL, "Cannot load configuration module, exiting\n");
   logInit();
   set_glog(OAILOG_INFO);
   // enable these lines if you need debug info
@@ -447,7 +447,15 @@ int main(int argc, char **argv) {
   int option_index;
   int res;
 
-  while ((res=getopt_long_only(argc, argv, "", long_options, &option_index)) == 0) {
+  /* disable error messages from getopt_long_only */
+  opterr = 0;
+  while ((res=getopt_long_only(argc, argv, "-", long_options, &option_index)) >= 0) {
+
+    /* ignore configmodule options and their arguments*/
+    /* with these opstring and long_options getopt returns 1 for non-option arguments and '?' for unrecognized long options, refer to 'man 3 getopt' */
+    if (res == 1 || res == '?')
+      continue;
+
     if (options[option_index].voidptr != NULL ) {
       if (long_options[option_index].has_arg==no_argument)
         *(bool *)options[option_index].iptr=1;
