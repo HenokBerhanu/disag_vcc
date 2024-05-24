@@ -634,6 +634,7 @@ static void generateSecurityModeComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
   // set security protected header
   nas_msg.header.protocol_discriminator = FGS_MOBILITY_MANAGEMENT_MESSAGE;
   nas_msg.header.security_header_type = INTEGRITY_PROTECTED_AND_CIPHERED_WITH_NEW_SECU_CTX;
+  nas_msg.header.sequence_number = nas->security.nas_count_ul & 0xff;
   size += 7;
 
   mm_msg = &nas_msg.security_protected.plain.mm_msg;
