@@ -818,10 +818,11 @@ class OaiCiTest():
 			with cls_cmd.getConnection(ue.getHost()) as cmd_ue, cls_cmd.getConnection(EPC.IPAddress) as cmd_svr:
 				port = 5002 + idx
 				# note: some core setups start an iperf3 server automatically, indicated in ci_infra by runIperf3Server: False`
+				t = iperf_time * 1.5
 				if runIperf3Server:
-					cmd_svr.run(f'{svr.getCmdPrefix()} nohup iperf3 -s -B {svrIP} -p {port} -1 {jsonReport} &', timeout=iperf_time*1.5)
+					cmd_svr.run(f'{svr.getCmdPrefix()} nohup timeout -vk3 {t} iperf3 -s -B {svrIP} -p {port} -1 {jsonReport} &', timeout=t)
 				cmd_ue.run(f'rm /tmp/{client_filename}', reportNonZero=False)
-				cmd_ue.run(f'{ue.getCmdPrefix()} {iperf_ue} -B {ueIP} -c {svrIP} -p {port} {iperf_opt} {jsonReport} {serverReport} -O 5 >> /tmp/{client_filename}', timeout=iperf_time*1.5)
+				cmd_ue.run(f'{ue.getCmdPrefix()} timeout -vk3 {t} {iperf_ue} -B {ueIP} -c {svrIP} -p {port} {iperf_opt} {jsonReport} {serverReport} -O 5 >> /tmp/{client_filename}', timeout=t)
 				if svr.getHost() == 'localhost':
 					cmd_ue.run(f'mkdir -p {logPath}')
 					cmd_ue.run(f'cp /tmp/{client_filename} {logPath}/{client_filename}')
