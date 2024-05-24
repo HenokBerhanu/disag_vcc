@@ -473,7 +473,7 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
                  pdu->pusch_config_pdu.tx_request_body.pdu_length);
         }
 
-        harq_process_ul_ue->status = ACTIVE;
+        harq_process_ul_ue->ULstatus = ACTIVE;
         pdu->pdu_type = FAPI_NR_UL_CONFIG_TYPE_DONE; // not handle it any more
       } break;
 
