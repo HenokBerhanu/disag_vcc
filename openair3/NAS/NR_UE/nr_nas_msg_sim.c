@@ -1157,11 +1157,13 @@ static void get_allowed_nssai(nr_nas_msg_snssai_t nssai[8], const uint8_t *pdu_b
       case 0x15: // allowed NSSAI
         length = *pdu_buffer++;
         parse_allowed_nssai(nssai, pdu_buffer, length);
+        pdu_buffer += length;
         break;
 
       default:
-        LOG_W(NAS, "This NAS IEI is not handled when extracting list of allowed NSSAI\n");
-        pdu_buffer = end;
+        LOG_W(NAS, "This NAS IEI (0x%2.2x) is not handled when extracting list of allowed NSSAI\n", type);
+        length = *pdu_buffer++;
+        pdu_buffer += length;
         break;
     }
   }
