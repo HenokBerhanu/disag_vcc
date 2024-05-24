@@ -1291,13 +1291,23 @@ void *nas_nrue(void *args_p)
               NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length);
 
         uint8_t *pdu_buffer = NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.data;
-        int msg_type = get_msg_type(pdu_buffer, NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length);
+        int pdu_length = NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length;
+
+        nr_ue_nas_t *nas = get_ue_nas_info(0);
+
+        security_state_t security_state = nas_security_rx_process(nas, pdu_buffer, pdu_length);
+        if (security_state != NAS_SECURITY_INTEGRITY_PASSED
+            && security_state != NAS_SECURITY_NO_SECURITY_CONTEXT) {
+          LOG_E(NAS, "NAS integrity failed, discard incoming message\n");
+          break;
+        }
+
+        int msg_type = get_msg_type(pdu_buffer, pdu_length);
 
         if (msg_type == REGISTRATION_ACCEPT) {
-          nr_ue_nas_t *nas = get_ue_nas_info(0);
-          handle_registration_accept(instance, nas, pdu_buffer, NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length);
+          handle_registration_accept(instance, nas, pdu_buffer, pdu_length);
         } else if (msg_type == FGS_PDU_SESSION_ESTABLISHMENT_ACC) {
-          capture_pdu_session_establishment_accept_msg(pdu_buffer, NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length);
+          capture_pdu_session_establishment_accept_msg(pdu_buffer, pdu_length);
         }
 
         break;
