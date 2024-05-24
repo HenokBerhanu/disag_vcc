@@ -101,7 +101,7 @@ typedef struct {
   ///path loss including shadow fading in dB
   double path_loss_dB;
   ///additional delay of channel in samples.
-  int32_t channel_offset;
+  uint64_t channel_offset;
   float noise_power_dB;
   ///This parameter (0...1) allows for simple 1st order temporal variation. 0 means a new channel every call, 1 means keep channel constant all the time
   double forgetting_factor;
@@ -307,7 +307,6 @@ typedef struct {
   double ru_amp[NUMBER_OF_RU_MAX];
 } sim_t;
 
-
 channel_desc_t *new_channel_desc_scm(uint8_t nb_tx,
                                      uint8_t nb_rx,
                                      SCM_t channel_model,
@@ -318,7 +317,7 @@ channel_desc_t *new_channel_desc_scm(uint8_t nb_tx,
                                      double maxDoppler,
                                      const corr_level_t corr_level,
                                      double forgetting_factor,
-                                     int32_t channel_offset,
+                                     uint64_t channel_offset,
                                      double path_loss_dB,
                                      float noise_power_dB);
 

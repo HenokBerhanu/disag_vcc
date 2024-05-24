@@ -68,7 +68,7 @@ void rxAddInput( const c16_t *input_sig,
   // Energy in one sample to calibrate input noise
   // the normalized OAI value seems to be 256 as average amplitude (numerical amplification = 1)
   const double noise_per_sample = pow(10,channelDesc->noise_power_dB/10.0) * 256;
-  const int dd = abs(channelDesc->channel_offset);
+  const uint64_t dd = channelDesc->channel_offset;
   const int nbTx=channelDesc->nb_tx;
 
   for (int i=0; i<nbSamples; i++) {
