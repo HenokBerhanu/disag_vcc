@@ -266,23 +266,6 @@ nfapi_nr_pm_list_t init_DL_MIMO_codebook(gNB_MAC_INST *gNB, nr_pdsch_AntennaPort
   return mat;
 }
 
-void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE)
-{
-  /* we assume that this function is mutex-protected from outside */
-  NR_SCHED_ENSURE_LOCKED(&RC.nrmac[0]->sched_lock);
-
-   AssertFatal(CellGroup, "CellGroup is null\n");
-   NR_MAC_CellGroupConfig_t *mac_CellGroupConfig = CellGroup->mac_CellGroupConfig;
-
-   if (mac_CellGroupConfig) {
-     //process_drx_Config(sched_ctrl,mac_CellGroupConfig->drx_Config);
-     //process_schedulingRequestConfig(sched_ctrl,mac_CellGroupConfig->schedulingRequestConfig);
-     //process_bsrConfig(sched_ctrl,mac_CellGroupConfig->bsr_Config);
-     //process_tag_Config(sched_ctrl,mac_CellGroupConfig->tag_Config);
-     //process_phr_Config(sched_ctrl,mac_CellGroupConfig->phr_Config);
-   }
-}
-
 static void config_common(gNB_MAC_INST *nrmac, nr_pdsch_AntennaPorts_t pdsch_AntennaPorts, int pusch_AntennaPorts, NR_ServingCellConfigCommon_t *scc)
 {
   nfapi_nr_config_request_scf_t *cfg = &nrmac->config[0];
@@ -783,7 +766,6 @@ bool nr_mac_prepare_cellgroup_update(gNB_MAC_INST *nrmac, NR_UE_info_t *UE, NR_C
   /* we assume that this function is mutex-protected from outside */
   NR_SCHED_ENSURE_LOCKED(&nrmac->sched_lock);
 
-  process_CellGroup(CellGroup, UE);
   UE->reconfigCellGroup = CellGroup;
   UE->expect_reconfiguration = true;
 

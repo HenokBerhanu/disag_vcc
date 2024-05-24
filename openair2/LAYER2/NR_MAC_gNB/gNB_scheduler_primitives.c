@@ -2967,7 +2967,6 @@ static void nr_mac_apply_cellgroup(gNB_MAC_INST *mac, NR_UE_info_t *UE, frame_t 
 
   NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
 
-  /* Note! we already did process_CellGroup(), so no need to do this again */
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   configure_UE_BWP(mac, scc, sched_ctrl, NULL, UE, -1, -1);
 
@@ -3132,7 +3131,6 @@ void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE)
   NR_CellGroupConfig_t *cellGroupConfig = get_initial_cellGroupConfig(UE->uid, scc, sccd, &mac->radio_config);
 
   UE->CellGroup = cellGroupConfig;
-  process_CellGroup(cellGroupConfig, UE);
 
   /* activate SRB0 */
   nr_rlc_activate_srb0(UE->rnti, UE, send_initial_ul_rrc_message);

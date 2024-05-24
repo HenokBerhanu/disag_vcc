@@ -424,7 +424,6 @@ void nr_sr_reporting(gNB_MAC_INST *nrmac, frame_t frameP, sub_frame_t slotP);
 
 size_t dump_mac_stats(gNB_MAC_INST *gNB, char *output, size_t strlen, bool reset_rsrp);
 
-void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE);
 long get_lcid_from_drbid(int drb_id);
 long get_lcid_from_srbid(int srb_id);
 
