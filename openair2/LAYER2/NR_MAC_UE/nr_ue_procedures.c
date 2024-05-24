@@ -762,8 +762,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
     LOG_E(MAC, "invalid tpc %d\n", dci->tpc);
     return -1;
   }
-  const int tcp[] = {-1, 0, 1, 3};
-  dlsch_pdu->accumulated_delta_PUCCH = tcp[dci->tpc];
+
   // Sanity check for pucch_resource_indicator value received to check for false DCI.
   bool valid = false;
   NR_PUCCH_Config_t *pucch_Config = mac->current_UL_BWP ? mac->current_UL_BWP->pucch_Config : NULL;
@@ -792,12 +791,12 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
                 "PDSCH to HARQ feedback time (%d) needs to be higher than DURATION_RX_TO_TX (%d).\n",
                 1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
                 DURATION_RX_TO_TX);
-
     // set the harq status at MAC for feedback
+    const int tpc[] = {-1, 0, 1, 3};
     set_harq_status(mac,
                     dci->pucch_resource_indicator,
                     dci->harq_pid,
-                    dlsch_pdu->accumulated_delta_PUCCH,
+                    tpc[dci->tpc],
                     1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
                     dci->dai[0].val,
                     dci_ind->n_CCE,
@@ -830,7 +829,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
         dlsch_pdu->harq_process_nbr,
         dci->dai[0].val,
         dlsch_pdu->scaling_factor_S,
-        dlsch_pdu->accumulated_delta_PUCCH,
+        dci->tpc,
         dci->pucch_resource_indicator,
         1 + dci->pdsch_to_harq_feedback_timing_indicator.val);
 
@@ -1015,8 +1014,6 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
     LOG_E(MAC, "invalid tpc %d\n", dci->tpc);
     return -1;
   }
-  const int tcp[] = {-1, 0, 1, 3};
-  dlsch_pdu->accumulated_delta_PUCCH = tcp[dci->tpc];
 
   // Sanity check for pucch_resource_indicator value received to check for false DCI.
   bool valid = false;
@@ -1127,10 +1124,11 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
               DURATION_RX_TO_TX);
 
   // set the harq status at MAC for feedback
+  const int tpc[] = {-1, 0, 1, 3};
   set_harq_status(mac,
                   dci->pucch_resource_indicator,
                   dci->harq_pid,
-                  dlsch_pdu->accumulated_delta_PUCCH,
+                  tpc[dci->tpc],
                   feedback_ti,
                   dci->dai[0].val,
                   dci_ind->n_CCE,
