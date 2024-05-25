@@ -1448,7 +1448,7 @@ static void handle_rrcReconfigurationComplete(const protocol_ctxt_t *const ctxt_
       break;
   }
   UE->xids[xid] = RRC_ACTION_NONE;
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < NR_RRC_TRANSACTION_IDENTIFIER_NUMBER; ++i) {
     if (UE->xids[i] != RRC_ACTION_NONE) {
       LOG_I(RRC, "UE %d: transaction %d still ongoing for action %d\n", UE->rrc_ue_id, i, UE->xids[i]);
     }
