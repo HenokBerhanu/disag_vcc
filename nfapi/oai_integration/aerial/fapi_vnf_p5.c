@@ -351,12 +351,10 @@ int aerial_nr_send_config_request(nfapi_vnf_config_t *config, int p5_idx)
 
   nfapi_p4_p5_message_header_t *msg = &req->header;
   uint16_t msg_len = sizeof(nfapi_nr_config_request_scf_t);
-  nfapi_p4_p5_message_header_t *msgFAPI = calloc(1, msg_len);
-  memcpy(msgFAPI, &req->header, msg_len);
   uint8_t tx_messagebufferFAPI[sizeof(_this->tx_message_buffer)];
   int packedMessageLengthFAPI = -1;
   packedMessageLengthFAPI =
-      fapi_nr_p5_message_pack(msgFAPI, msg_len, tx_messagebufferFAPI, sizeof(tx_messagebufferFAPI), &_this->_public.codec_config);
+      fapi_nr_p5_message_pack(msg, msg_len, tx_messagebufferFAPI, sizeof(tx_messagebufferFAPI), &_this->_public.codec_config);
 
   aerial_send_P5_msg(tx_messagebufferFAPI, packedMessageLengthFAPI, msg);
 
@@ -752,11 +750,8 @@ int oai_fapi_dl_tti_req(nfapi_nr_dl_tti_request_t *dl_config_req)
 
 int oai_fapi_send_end_request(int cell, uint32_t frame, uint32_t slot){
   nfapi_vnf_p7_config_t *p7_config = aerial_vnf.p7_vnfs[0].config;
-  nfapi_nr_slot_indication_scf_t *nr_slot_resp = CALLOC(1, sizeof(*nr_slot_resp));
-  nr_slot_resp->header.message_id = 0x8F;
-  nr_slot_resp->sfn = frame;
-  nr_slot_resp->slot = slot;
-  int retval = fapi_nr_pack_and_send_p7_message((vnf_p7_t *)p7_config, &nr_slot_resp->header);
+  nfapi_nr_slot_indication_scf_t nr_slot_resp = {.header.message_id = 0x8F, .sfn = frame, .slot = slot};
+  int retval = fapi_nr_pack_and_send_p7_message((vnf_p7_t *)p7_config, &nr_slot_resp.header);
   if (retval != 0) {
     LOG_E(PHY, "%s() Problem sending retval:%d\n", __FUNCTION__, retval);
   }

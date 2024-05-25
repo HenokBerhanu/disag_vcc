@@ -358,7 +358,8 @@ int aerial_phy_nr_rx_data_indication(nfapi_nr_rx_data_indication_t *ind)
       rx_ind->pdu_list[j].ul_cqi = ind->pdu_list[j].ul_cqi;
       rx_ind->pdu_list[j].timing_advance = ind->pdu_list[j].timing_advance;
       rx_ind->pdu_list[j].rssi = ind->pdu_list[j].rssi;
-      rx_ind->pdu_list[j].pdu = ind->pdu_list[j].pdu;
+      rx_ind->pdu_list[j].pdu = calloc(rx_ind->pdu_list[j].pdu_length, sizeof(uint8_t));
+      memcpy(rx_ind->pdu_list[j].pdu,ind->pdu_list[j].pdu,ind->pdu_list[j].pdu_length);
       LOG_D(NR_MAC,
             "(%d.%d) Handle %d for index %d, RNTI, %04x, HARQID %d\n",
             ind->sfn,
@@ -472,19 +473,22 @@ int aerial_phy_nr_uci_indication(nfapi_nr_uci_indication_t *ind)
             uci_ind_pdu->sr.sr_payload = CALLOC(1, sizeof(*uci_ind_pdu->sr.sr_payload));
             AssertFatal(uci_ind_pdu->sr.sr_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->sr.sr_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->sr.sr_payload = *ind_pdu->sr.sr_payload;
+            //SCF222.10.02 sr_bit_len values from 1 to 8, payload always just one byte
+            uci_ind_pdu->sr.sr_payload[0] = ind_pdu->sr.sr_payload[0];
           }
           if (ind_pdu->csi_part1.csi_part1_payload) {
-            uci_ind_pdu->csi_part1.csi_part1_payload = CALLOC(1, sizeof(*uci_ind_pdu->csi_part1.csi_part1_payload));
+            uint8_t byte_len = (ind_pdu->csi_part1.csi_part1_bit_len / 8) + 1;
+            uci_ind_pdu->csi_part1.csi_part1_payload = calloc(byte_len, sizeof(uint8_t));
             AssertFatal(uci_ind_pdu->csi_part1.csi_part1_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->csi_part1.csi_part1_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->csi_part1.csi_part1_payload = *ind_pdu->csi_part1.csi_part1_payload;
+            memcpy(uci_ind_pdu->csi_part1.csi_part1_payload,ind_pdu->csi_part1.csi_part1_payload,byte_len);
           }
           if (ind_pdu->csi_part2.csi_part2_payload) {
-            uci_ind_pdu->csi_part2.csi_part2_payload = CALLOC(1, sizeof(*uci_ind_pdu->csi_part2.csi_part2_payload));
+            uint8_t byte_len = (ind_pdu->csi_part2.csi_part2_bit_len / 8) + 1;
+            uci_ind_pdu->csi_part2.csi_part2_payload = calloc(byte_len, sizeof(uint8_t));
             AssertFatal(uci_ind_pdu->csi_part2.csi_part2_payload != NULL,
                         "Memory not allocated for uci_ind_pdu->csi_part2.csi_part2_payload in phy_nr_uci_indication.");
-            *uci_ind_pdu->csi_part2.csi_part2_payload = *ind_pdu->csi_part2.csi_part2_payload;
+            memcpy(uci_ind_pdu->csi_part2.csi_part2_payload,ind_pdu->csi_part2.csi_part2_payload,byte_len);
           }
           break;
         }
@@ -920,8 +924,7 @@ static uint8_t aerial_unpack_nr_rx_data_indication_body(nfapi_nr_rx_data_pdu_t *
   }
 
   // Allocate space for the pdu to be unpacked later
-  uint32_t length = value->pdu_length;
-  value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * length, config);
+  value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * value->pdu_length, config);
 
   return 1;
 }
