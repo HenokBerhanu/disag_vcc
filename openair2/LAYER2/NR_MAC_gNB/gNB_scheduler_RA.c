@@ -1231,7 +1231,7 @@ static void nr_generate_Msg2(module_id_t module_idP,
                                           slotP,
                                           tdd);
   if (ra->Msg3_tda_id < 0 || ra->Msg3_tda_id > 15) {
-    LOG_W(NR_MAC, "UE RNTI %04x %d.%d: infeasible Msg3 TDA\n", ra->rnti, frameP, slotP);
+    LOG_D(NR_MAC, "UE RNTI %04x %d.%d: infeasible Msg3 TDA\n", ra->rnti, frameP, slotP);
     return;
   }
 
