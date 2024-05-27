@@ -278,6 +278,14 @@ int8_t nr_ue_decode_BCCH_DL_SCH(NR_UE_MAC_INST_t *mac,
  * This code contains all the functions needed to process all dci fields.
  * These tables and functions are going to be called by function nr_ue_process_dci
  */
+
+static inline int writeBit(uint8_t *bitmap, int offset, int value, int size)
+{
+  for (int i = offset; i < offset + size; i++)
+    bitmap[i / 8] |= value << (i % 8);
+  return size;
+}
+
 int8_t nr_ue_process_dci_freq_dom_resource_assignment(nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu,
                                                       fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_config_pdu,
                                                       NR_PDSCH_Config_t *pdsch_Config,
@@ -296,26 +304,29 @@ int8_t nr_ue_process_dci_freq_dom_resource_assignment(nfapi_nr_ue_pusch_pdu_t *p
         pdsch_Config->resourceAllocation == NR_PDSCH_Config__resourceAllocation_resourceAllocationType0) {
       // TS 38.214 subclause 5.1.2.2.1 Downlink resource allocation type 0
       dlsch_config_pdu->resource_alloc = 0;
-      memset(dlsch_config_pdu->rb_bitmap, 0, sizeof(dlsch_config_pdu->rb_bitmap));
+      uint8_t *rb_bitmap = dlsch_config_pdu->rb_bitmap;
+      memset(rb_bitmap, 0, sizeof(dlsch_config_pdu->rb_bitmap));
       int P = getRBGSize(n_RB_DLBWP, pdsch_Config->rbg_Size);
-      int n_RBG = frequency_domain_assignment.nbits;
-      int index = 0;
-      for (int i = 0; i < n_RBG; i++) {
+      int currentBit = 0;
+
+      // write first bit sepcial case
+      const int n_RBG = frequency_domain_assignment.nbits;
+      int first_bit_rbg = (frequency_domain_assignment.val >> (n_RBG - 1)) & 0x01;
+      currentBit += writeBit(rb_bitmap, currentBit, first_bit_rbg, P - (start_DLBWP % P));
+
+      // write all bits until last bit special case
+      for (int i = 1; i < n_RBG - 1; i++) {
         // The order of RBG bitmap is such that RBG 0 to RBG n_RBG − 1 are mapped from MSB to LSB
         int bit_rbg = (frequency_domain_assignment.val >> (n_RBG - 1 - i)) & 0x01;
-        int size_RBG;
-        if (i == n_RBG - 1)
-          size_RBG = (start_DLBWP + n_RB_DLBWP) % P > 0 ?
-                     (start_DLBWP + n_RB_DLBWP) % P :
-                     P;
-        else if (i == 0)
-          size_RBG = P - (start_DLBWP % P);
-        else
-          size_RBG = P;
-        for (int j = index; j < size_RBG; j++)
-          dlsch_config_pdu->rb_bitmap[j / 8] |= bit_rbg << (j % 8);
-        index += size_RBG;
+        currentBit += writeBit(rb_bitmap, currentBit, bit_rbg, P);
       }
+
+      // write last bit
+      int last_bit_rbg = frequency_domain_assignment.val & 0x01;
+      const int tmp=(start_DLBWP + n_RB_DLBWP) % P;
+      int last_RBG = tmp ? tmp : P;
+      writeBit(rb_bitmap, currentBit, last_bit_rbg, last_RBG);
+
       dlsch_config_pdu->number_rbs = count_bits(dlsch_config_pdu->rb_bitmap, sizeofArray(dlsch_config_pdu->rb_bitmap));
       // Temporary code to process type0 as type1 when the RB allocation is contiguous
       int state = 0;
