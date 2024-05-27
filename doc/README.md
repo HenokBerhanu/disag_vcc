@@ -19,6 +19,7 @@
 - [FEATURE_SET.md](./FEATURE_SET.md): lists supported features
 - [GET_SOURCES.md](./GET_SOURCES.md): how to download the sources
 - [BUILD.md](./BUILD.md): how to build the sources
+- [code-style-contrib.md](./code-style-contrib.md): overall working practices, code style, and review process
 - [cross-compile.md](./cross-compile.md): how to cross-compile OAI for ARM
 - [clang-format.md](./clang-format.md): how to format the code
 - [sanitizers.md](./dev_tools/sanitizers.md): how to run with ASan/UBSan/MemSAN/TSan
@@ -51,9 +52,11 @@ There is some general information in the [OpenAirInterface Gitlab Wiki](https://
 - [How to run with E2 agent](../openair2/E2AP/README.md)
 
 Legacy unmaintained files:
-- `L2NFAPI_NOS1.md`, `L2NFAPI_S1.md`: old L2simulator, not valid anymore
-- `SystemX-tutorial-design.md`
-- `UL_MIMO.txt`
+- [`L2NFAPI_NOS1.md`](./L2NFAPI_NOS1.md), [`L2NFAPI_S1.md`](./L2NFAPI_S1.md):
+  old L2simulator, not valid anymore
+- [`SystemX-tutorial-design.md`](./SystemX-tutorial-design.md): old, high-level
+  documentation
+- [`UL_MIMO.txt`](./UL_MIMO.txt): UL-MIMO specific notes
 
 # Designs
 
@@ -65,7 +68,7 @@ Legacy unmaintained files:
 - [L1 threads in NR-UE](./nr-ue-design.md)
 
 Legacy unmaintained files:
-- 5Gnas.md
+- [`5Gnas.md`](./5Gnas.md)
 
 # Building and running from images
 
@@ -73,7 +76,7 @@ Legacy unmaintained files:
 - [How to run 5G with the RFsimulator from images](../ci-scripts/yaml_files/5g_rfsimulator/README.md)
 - [How to run 4G with the RFsimulator from images](../ci-scripts/yaml_files/4g_rfsimulator_fdd_05MHz/README.md)
 - [How to run 5G with the L2simulator from images](../ci-scripts/yaml_files/5g_l2sim_tdd/README.md)
-- [How to run images in OpenShift](../openshift/README.md)
+- [How to run physical simulators in OpenShift](../openshift/README.md)
 
 # Libraries
 
@@ -87,7 +90,7 @@ Legacy unmaintained files:
 - The [threadpool](../common/utils/threadPool/thread-pool.md) used in L1
 - The [LDPC implementation](../openair1/PHY/CODING/DOC/LDPCImplementation.md) is a shared library
 
-## SDRs
+## Radios
 
 Some directories under `radio` contain READMEs:
 
