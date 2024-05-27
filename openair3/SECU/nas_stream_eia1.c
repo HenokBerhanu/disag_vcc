@@ -88,24 +88,35 @@ static uint64_t MUL64(uint64_t V, uint64_t P, uint64_t c)
   return result;
 }
 
-/* mask32bit.
-* Input n: an integer in 1-32.
-* Output : a 32 bit mask.
-* Prepares a 32 bit mask with required number of 1 bits on the MSB side.
-*/
-static uint32_t mask32bit(int n)
+/* read a big endian uint64_t at given address (potentially not 64-bits aligned)
+ * don't read more than 'available_bytes'
+ * (use 0 if no byte to read)
+ * (note: the compiler will optimize this, no need to do better)
+ */
+static inline uint64_t U64(uint8_t *p, int available_bytes)
 {
-  uint32_t mask=0x0;
+  uint64_t a = 0;
+  uint64_t b = 0;
+  uint64_t c = 0;
+  uint64_t d = 0;
+  uint64_t e = 0;
+  uint64_t f = 0;
+  uint64_t g = 0;
+  uint64_t h = 0;
+  switch (available_bytes) {
+    case 8: h = p[7]; /* falltrough */
+    case 7: g = p[6]; /* falltrough */
+    case 6: f = p[5]; /* falltrough */
+    case 5: e = p[4]; /* falltrough */
+    case 4: d = p[3]; /* falltrough */
+    case 3: c = p[2]; /* falltrough */
+    case 2: b = p[1]; /* falltrough */
+    case 1: a = p[0];
+  }
 
-  if ( n%32 == 0 )
-    return 0xffffffff;
-
-  while (n--)
-    mask = (mask>>1) ^ 0x80000000;
-
-  return mask;
+  return (a << (32+24)) | (b << (32+16)) | (c << (32+8)) | (d << 32)
+         | (e << 24) | (f << 16) | (g << 8) | h;
 }
-
 
 /*!
  * @brief Create integrity cmac t for a given message.
@@ -125,11 +136,8 @@ void nas_stream_encrypt_eia1(nas_stream_cipher_t const *stream_cipher, uint8_t o
   uint64_t        c;
   uint64_t        M_D_2;
   int             rem_bits;
-  uint32_t        mask = 0;
-  uint32_t        *message;
   uint8_t         *key = (uint8_t *)stream_cipher->context;
 
-  message = (uint32_t*)stream_cipher->message; /* To operate 32 bit message internally. */
   /* Load the Integrity Key for SNOW3G initialization as in section 4.4. */
   memcpy(K+3,key+0,4); /*K[3] = key[0]; we assume
     K[3]=key[0]||key[1]||...||key[31] , with key[0] the
@@ -181,11 +189,14 @@ void nas_stream_encrypt_eia1(nas_stream_cipher_t const *stream_cipher, uint8_t o
   EVAL = 0;
   c = 0x1b;
 
+  AssertFatal(stream_cipher->blength % 8 == 0, "unsupported buffer length\n");
+
+  uint8_t *message = stream_cipher->message;
+
   /* for 0 <= i <= D-3 */
   for (i=0; i<D-2; i++) {
-    V = EVAL ^ ( (uint64_t)hton_int32(message[2*i]) << 32 | (uint64_t)hton_int32(message[2*i+1]) );
+    V = EVAL ^ U64(&message[4 * 2*i], 8);
     EVAL = MUL64(V,P,c);
-    //printf ("Mi: %16X %16X\tEVAL: %16lX\n",hton_int32(message[2*i]),hton_int32(message[2*i+1]), EVAL);
   }
 
   /* for D-2 */
@@ -194,14 +205,7 @@ void nas_stream_encrypt_eia1(nas_stream_cipher_t const *stream_cipher, uint8_t o
   if (rem_bits == 0)
     rem_bits = 64;
 
-  mask = mask32bit(rem_bits%32);
-
-  if (rem_bits > 32) {
-    M_D_2 = ( (uint64_t) hton_int32(message[2*(D-2)]) << 32 ) |
-            (uint64_t) (hton_int32(message[2*(D-2)+1]) &  mask);
-  } else {
-    M_D_2 = ( (uint64_t) hton_int32(message[2*(D-2)]) & mask) << 32 ;
-  }
+  M_D_2 = U64(&message[4 * (2*(D-2))], rem_bits/8);
 
   V = EVAL ^ M_D_2;
   EVAL = MUL64(V,P,c);
