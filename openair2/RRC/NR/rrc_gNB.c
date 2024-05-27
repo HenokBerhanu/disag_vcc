@@ -2366,7 +2366,6 @@ void rrc_gNB_generate_SecurityModeCommand(const protocol_ctxt_t *const ctxt_pP, 
 //-----------------------------------------------------------------------------
 {
   uint8_t buffer[100];
-  uint8_t size;
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
   AssertFatal(!ue_p->as_security_active, "logic error: security already active\n");
 
@@ -2376,11 +2375,11 @@ void rrc_gNB_generate_SecurityModeCommand(const protocol_ctxt_t *const ctxt_pP, 
     T_INT(ctxt_pP->subframe),
     T_INT(ctxt_pP->rntiMaybeUEid));
   NR_IntegrityProtAlgorithm_t integrity_algorithm = (NR_IntegrityProtAlgorithm_t)ue_p->integrity_algorithm;
-  size = do_NR_SecurityModeCommand(ctxt_pP,
-                                   buffer,
-                                   rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id),
-                                   ue_p->ciphering_algorithm,
-                                   integrity_algorithm);
+  int size = do_NR_SecurityModeCommand(ctxt_pP,
+                                       buffer,
+                                       rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id),
+                                       ue_p->ciphering_algorithm,
+                                       integrity_algorithm);
   LOG_DUMPMSG(NR_RRC, DEBUG_RRC, (char *)buffer, size, "[MSG] RRC Security Mode Command\n");
   LOG_I(NR_RRC, "UE %u Logical Channel DL-DCCH, Generate SecurityModeCommand (bytes %d)\n", ue_p->rrc_ue_id, size);
 
@@ -2395,14 +2394,13 @@ rrc_gNB_generate_UECapabilityEnquiry(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t                             buffer[100];
-  uint8_t                             size;
+  uint8_t buffer[100];
 
   T(T_ENB_RRC_UE_CAPABILITY_ENQUIRY, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame), T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rntiMaybeUEid));
   gNB_RRC_UE_t *ue = &ue_context_pP->ue_context;
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
   ue->xids[xid] = RRC_UECAPABILITY_ENQUIRY;
-  size = do_NR_SA_UECapabilityEnquiry(ctxt_pP, buffer, xid);
+  int size = do_NR_SA_UECapabilityEnquiry(ctxt_pP, buffer, xid);
   LOG_I(NR_RRC, "UE %d: Logical Channel DL-DCCH, Generate NR UECapabilityEnquiry (bytes %d, xid %d)\n", ue->rrc_ue_id, size, xid);
 
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
@@ -2470,7 +2468,6 @@ int rrc_gNB_generate_pcch_msg(sctp_assoc_t assoc_id, const NR_SIB1_t *sib1, uint
   uint32_t N;  /* N: min(T,nB). total count of PF in one DRX cycle */
   uint32_t Ns = 0;  /* Ns: max(1,nB/T) */
   uint32_t T;  /* DRX cycle */
-  uint32_t length;
   uint8_t buffer[RRC_BUF_SIZE];
 
   /* get default DRX cycle from configuration */
@@ -2535,9 +2532,7 @@ int rrc_gNB_generate_pcch_msg(sctp_assoc_t assoc_id, const NR_SIB1_t *sib1, uint
   (void) pfoffset; /* not used, suppress warning */
 
   /* Create message for PDCP (DLInformationTransfer_t) */
-  length = do_NR_Paging (instance,
-                         buffer,
-                         tmsi);
+  int length = do_NR_Paging(instance, buffer, tmsi);
 
   if (length == -1) {
     LOG_I(NR_RRC, "do_Paging error\n");
