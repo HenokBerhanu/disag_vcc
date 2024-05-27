@@ -1820,6 +1820,17 @@ static void configure_maccellgroup(NR_UE_MAC_INST_t *mac, const NR_MAC_CellGroup
         int target_ms = 0;
         if (sr->sr_ProhibitTimer)
           target_ms = 1 << *sr->sr_ProhibitTimer;
+        if (mcg->ext4 && mcg->ext4->schedulingRequestConfig_v1700) {
+          const NR_SchedulingRequestConfig_v1700_t *src_v1700 = mcg->ext4->schedulingRequestConfig_v1700;
+          if (src_v1700->schedulingRequestToAddModListExt_v1700) {
+            if (i < src_v1700->schedulingRequestToAddModListExt_v1700->list.count) {
+              const NR_SchedulingRequestToAddModExt_v1700_t *sr_v1700 = src_v1700->schedulingRequestToAddModListExt_v1700->list.array[i];
+              if (sr_v1700->sr_ProhibitTimer_v1700) {
+                target_ms = 192 + 64 * *sr_v1700->sr_ProhibitTimer_v1700;
+              }
+            }
+          }
+        }
         // length of slot is (1/2^scs)ms
         nr_timer_setup(&sr_info->prohibitTimer, target_ms << scs, 1); // 1 slot update rate
       }
