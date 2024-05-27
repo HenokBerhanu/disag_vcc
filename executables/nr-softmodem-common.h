@@ -30,7 +30,6 @@
 #include "PHY/types.h"
 #include <threadPool/thread-pool.h>
 
-#include "s1ap_eNB.h"
 #include "SIMULATION/ETH_TRANSPORT/proto.h"
 
 /* help strings definition for command line options, used in CMDLINE_XXX_DESC macros and printed when -h option is used */

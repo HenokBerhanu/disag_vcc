@@ -41,7 +41,6 @@
 #include "UTIL/OTG/otg.h"
 #include "UTIL/OTG/otg_externs.h"
 #include "intertask_interface.h"
-#include "s1ap_eNB.h"
 #include "ngap_gNB.h"
 #include "sctp_eNB_task.h"
 #include "sctp_default_values.h"
@@ -1303,11 +1302,14 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
   config.do_CSIRS = *GNBParamList.paramarray[0][GNB_DO_CSIRS_IDX].iptr;
   config.do_SRS = *GNBParamList.paramarray[0][GNB_DO_SRS_IDX].iptr;
   config.force_256qam_off = *GNBParamList.paramarray[0][GNB_FORCE256QAMOFF_IDX].iptr;
+  config.force_UL256qam_off = *GNBParamList.paramarray[0][GNB_FORCEUL256QAMOFF_IDX].iptr;
+  config.use_deltaMCS = *GNBParamList.paramarray[0][GNB_USE_DELTA_MCS_IDX].iptr != 0;
   LOG_I(GNB_APP,
-        "CSI-RS %d, SRS %d, 256 QAM %s\n",
+        "CSI-RS %d, SRS %d, 256 QAM %s, delta_MCS %s\n",
         config.do_CSIRS,
         config.do_SRS,
-        config.force_256qam_off ? "force off" : "may be on");
+        config.force_256qam_off ? "force off" : "may be on",
+        config.use_deltaMCS ? "on" : "off");
 
   NR_ServingCellConfigCommon_t *scc = get_scc_config(cfg, config.minRXTXTIME);
   //xer_fprint(stdout, &asn_DEF_NR_ServingCellConfigCommon, scc);

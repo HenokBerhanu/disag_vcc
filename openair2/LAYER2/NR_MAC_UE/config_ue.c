@@ -20,7 +20,7 @@
  */
 
 /* \file config_ue.c
- * \brief UE and eNB configuration performed by RRC or as a consequence of RRC procedures
+ * \brief UE configuration performed by RRC or as a consequence of RRC procedures
  * \author R. Knopp, K.H. HSU
  * \date 2018
  * \version 0.1

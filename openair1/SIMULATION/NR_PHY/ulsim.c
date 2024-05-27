@@ -223,7 +223,13 @@ int main(int argc, char *argv[])
   /* initialize the sin-cos table */
   InitSinLUT();
 
-  while ((c = getopt(argc, argv, "a:b:c:d:ef:g:h:i:k:m:n:op:q:r:s:t:u:v:w:y:z:C:F:G:H:I:M:N:PR:S:T:U:L:ZW:E:X:")) != -1) {
+  while ((c = getopt(argc, argv, "--:a:b:c:d:ef:g:h:i:k:m:n:op:q:r:s:t:u:v:w:y:z:C:F:G:H:I:M:N:PR:S:T:U:L:ZW:E:X:")) != -1) {
+
+    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
+    if (c == 1 || c == '-')
+      continue;
+
     printf("handling optarg %c\n",c);
     switch (c) {
 
@@ -1087,7 +1093,7 @@ int main(int argc, char *argv[])
         ul_config0->pdu_type = FAPI_NR_UL_CONFIG_TYPE_PUSCH;
         nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu = &ul_config0->pusch_config_pdu;
         // Config UL TX PDU
-        pusch_config_pdu->tx_request_body.pdu = ulsch_input_buffer;
+        pusch_config_pdu->tx_request_body.fapiTxPdu = ulsch_input_buffer;
         pusch_config_pdu->tx_request_body.pdu_length = TBS / 8;
         pusch_config_pdu->rnti = n_rnti;
         pusch_config_pdu->pdu_bit_map = pdu_bit_map;

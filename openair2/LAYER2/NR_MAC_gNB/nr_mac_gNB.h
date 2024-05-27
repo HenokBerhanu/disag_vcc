@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include "common/utils/ds/seq_arr.h"
 
 #define NR_SCHED_LOCK(lock)                                        \
   do {                                                             \
@@ -135,6 +136,8 @@ typedef struct nr_mac_config_t {
   int do_CSIRS;
   int do_SRS;
   bool force_256qam_off;
+  bool force_UL256qam_off;
+  bool use_deltaMCS;
   //int pusch_TargetSNRx10;
   //int pucch_TargetSNRx10;
 } nr_mac_config_t;
@@ -383,6 +386,7 @@ typedef struct NR_sched_pusch {
   int time_domain_allocation;
   NR_tda_info_t tda_info;
   NR_pusch_dmrs_t dmrs_info;
+  int phr_txpower_calc;
 } NR_sched_pusch_t;
 
 typedef struct NR_sched_srs {
@@ -515,9 +519,19 @@ typedef struct NR_UE_ul_harq {
 } NR_UE_ul_harq_t;
 
 typedef struct NR_QoS_config_s {
-  uint64_t fiveQI;
-  uint64_t priority;
+  int fiveQI;
+  int priority;
 } NR_QoS_config_t;
+
+typedef struct nr_lc_config {
+  uint8_t lcid;
+  /// priority as specified in 38.321
+  int priority;
+  /// associated NSSAI for DRB
+  nssai_t nssai;
+  /// QoS config for DRB
+  NR_QoS_config_t qos_config[NR_MAX_NUM_QFI];
+} nr_lc_config_t;
 
 /*! \brief scheduling control information set through an API */
 #define MAX_CSI_REPORTS 48
@@ -551,6 +565,9 @@ typedef struct {
 
   /// PHR info: power headroom level (dB)
   int ph;
+  /// PHR info: power headroom level (dB) for 1 PRB
+  int ph0;
+
   /// PHR info: nominal UE transmit power levels (dBm)
   int pcmax;
 
@@ -607,20 +624,15 @@ typedef struct {
   /// UL HARQ processes that await retransmission
   NR_list_t retrans_ul_harq;
   NR_UE_mac_ce_ctrl_t UE_mac_ce_ctrl; // MAC CE related information
-  /// number of active DL LCs
-  uint8_t dl_lc_num;
-  /// order in which DLSCH scheduler should allocate LCs
-  uint8_t dl_lc_ids[NR_MAX_NUM_LCID];
 
   /// Timer for RRC processing procedures
   uint32_t rrc_processing_timer;
 
   /// sri, ul_ri and tpmi based on SRS
   nr_srs_feedback_t srs_feedback;
-  nssai_t dl_lc_nssai[NR_MAX_NUM_LCID];
 
-  // Information about the QoS configuration for each LCID/DRB
-  NR_QoS_config_t qos_config[NR_MAX_NUM_LCID - 4][NR_MAX_NUM_QFI]; // 0 -CCCH and 1- 3 SRBs(0,1,2)
+  /// per-LC configuration
+  seq_arr_t lc_config;
 } NR_UE_sched_ctrl_t;
 
 typedef struct {
@@ -649,6 +661,9 @@ typedef struct NR_mac_stats {
   int cumul_rsrp;
   uint8_t num_rsrp_meas;
   char srs_stats[50]; // Statistics may differ depending on SRS usage
+  int pusch_snrx10;
+  int deltaMCS;
+  int NPRB;
 } NR_mac_stats_t;
 
 typedef struct NR_bler_options {

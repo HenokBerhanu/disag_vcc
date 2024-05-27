@@ -273,7 +273,7 @@ NR_pusch_dmrs_t get_ul_dmrs_params(const NR_ServingCellConfigCommon_t *scc,
                                    const NR_tda_info_t *tda_info,
                                    const int Layers);
 
-uint8_t nr_get_tpc(int target, int snrx10, int incr);
+uint8_t nr_get_tpc(int target, uint8_t cqi, int incr, int tx_power);
 
 int get_spf(nfapi_nr_config_request_scf_t *cfg);
 
@@ -424,7 +424,8 @@ void nr_sr_reporting(gNB_MAC_INST *nrmac, frame_t frameP, sub_frame_t slotP);
 
 size_t dump_mac_stats(gNB_MAC_INST *gNB, char *output, size_t strlen, bool reset_rsrp);
 
-void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_info_t *UE);
+long get_lcid_from_drbid(int drb_id);
+long get_lcid_from_srbid(int srb_id);
 
 void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE);
 void send_initial_ul_rrc_message(int rnti, const uint8_t *sdu, sdu_size_t sdu_len, void *data);
@@ -440,5 +441,11 @@ void nr_mac_reset_ul_failure(NR_UE_sched_ctrl_t *sched_ctrl);
 void nr_mac_check_ul_failure(const gNB_MAC_INST *nrmac, int rnti, NR_UE_sched_ctrl_t *sched_ctrl);
 
 void nr_mac_trigger_reconfiguration(const gNB_MAC_INST *nrmac, const NR_UE_info_t *UE);
+
+void process_addmod_bearers_cellGroupConfig(NR_UE_sched_ctrl_t *sched_ctrl,
+                                            const struct NR_CellGroupConfig__rlc_BearerToAddModList *addmod);
+
+bool nr_mac_add_lcid(NR_UE_sched_ctrl_t *sched_ctrl, const nr_lc_config_t *c);
+bool nr_mac_remove_lcid(NR_UE_sched_ctrl_t *sched_ctrl, long lcid);
 
 #endif /*__LAYER2_NR_MAC_PROTO_H__*/

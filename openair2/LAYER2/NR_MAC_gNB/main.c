@@ -156,29 +156,38 @@ size_t dump_mac_stats(gNB_MAC_INST *gNB, char *output, size_t strlen, bool reset
     for (int i = 1; i < gNB->ul_bler.harq_round_max; i++)
       output += snprintf(output, end - output, "/%"PRIu64, stats->ul.rounds[i]);
 
+    char deltaMCS_str[100]="\0";
+
+    if (UE->current_UL_BWP.pusch_Config && UE->current_UL_BWP.pusch_Config->pusch_PowerControl->deltaMCS) {
+        sprintf(deltaMCS_str,"deltaMCS %d\n",UE->mac_stats.deltaMCS);
+    }
     output += snprintf(output,
                        end - output,
-                       ", ulsch_errors %"PRIu64", ulsch_DTX %d, BLER %.5f MCS (%d) %d\n",
+                       ", ulsch_errors %"PRIu64", ulsch_DTX %d, BLER %.5f MCS (%d) %d (Qm %d %s dB) NPRB %d  SNR %d.%d dB\n",
                        stats->ul.errors,
                        stats->ulsch_DTX,
                        sched_ctrl->ul_bler_stats.bler,
                        UE->current_UL_BWP.mcs_table,
-                       sched_ctrl->ul_bler_stats.mcs);
-
+                       sched_ctrl->ul_bler_stats.mcs,
+                       nr_get_Qm_ul(sched_ctrl->ul_bler_stats.mcs,UE->current_UL_BWP.mcs_table),
+                       deltaMCS_str,
+                       UE->mac_stats.NPRB,
+                       sched_ctrl->pusch_snrx10 / 10,
+                       sched_ctrl->pusch_snrx10 % 10);
     output += snprintf(output,
                        end - output,
                        "UE %04x: MAC:    TX %14"PRIu64" RX %14"PRIu64" bytes\n",
                        UE->rnti, stats->dl.total_bytes, stats->ul.total_bytes);
 
-    for (int i = 0; i < sched_ctrl->dl_lc_num; i++) {
-      int lc_id = sched_ctrl->dl_lc_ids[i];
+    for (int i = 0; i < seq_arr_size(&sched_ctrl->lc_config); i++) {
+      const nr_lc_config_t *c = seq_arr_at(&sched_ctrl->lc_config, i);
       output += snprintf(output,
                          end - output,
                          "UE %04x: LCID %d: TX %14"PRIu64" RX %14"PRIu64" bytes\n",
                          UE->rnti,
-                         lc_id,
-                         stats->dl.lc_bytes[lc_id],
-                         stats->ul.lc_bytes[lc_id]);
+                         c->lcid,
+                         stats->dl.lc_bytes[c->lcid],
+                         stats->ul.lc_bytes[c->lcid]);
     }
   }
   NR_SCHED_UNLOCK(&gNB->UE_info.mutex);

@@ -142,7 +142,7 @@ int8_t nr_ue_scheduled_response_stub(nr_scheduled_response_t *scheduled_response
           nfapi_nr_rx_data_indication_t *rx_ind = CALLOC(1, sizeof(*rx_ind));
           nfapi_nr_crc_indication_t *crc_ind = CALLOC(1, sizeof(*crc_ind));
           nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu = &it->pusch_config_pdu;
-          if (pusch_config_pdu->tx_request_body.pdu) {
+          if (pusch_config_pdu->tx_request_body.fapiTxPdu) {
             rx_ind->header.message_id = NFAPI_NR_PHY_MSG_TYPE_RX_DATA_INDICATION;
             rx_ind->sfn = frame;
             rx_ind->slot = slot;
@@ -154,7 +154,7 @@ int8_t nr_ue_scheduled_response_stub(nr_scheduled_response_t *scheduled_response
               rx_ind->pdu_list[j].harq_id = pusch_config_pdu->pusch_data.harq_process_id;
               rx_ind->pdu_list[j].pdu_length = tx_req_body->pdu_length;
               rx_ind->pdu_list[j].pdu = CALLOC(tx_req_body->pdu_length, sizeof(*rx_ind->pdu_list[j].pdu));
-              memcpy(rx_ind->pdu_list[j].pdu, tx_req_body->pdu, tx_req_body->pdu_length * sizeof(*rx_ind->pdu_list[j].pdu));
+              memcpy(rx_ind->pdu_list[j].pdu, tx_req_body->fapiTxPdu, tx_req_body->pdu_length * sizeof(*rx_ind->pdu_list[j].pdu));
               rx_ind->pdu_list[j].rnti = pusch_config_pdu->rnti;
               /* TODO: Implement channel modeling to abstract TA and CQI. For now,
                  we hard code the values below since they are set in L1 and we are
@@ -461,7 +461,7 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
               pdu->pusch_config_pdu.num_dmrs_cdm_grps_no_data);
 
         memcpy(pusch_pdu, &pdu->pusch_config_pdu, sizeof(*pusch_pdu));
-        if (pdu->pusch_config_pdu.tx_request_body.pdu) {
+        if (pdu->pusch_config_pdu.tx_request_body.fapiTxPdu) {
           LOG_D(PHY,
                 "%d.%d Copying %d bytes to harq_process_ul_ue->a (harq_pid %d)\n",
                 ul_config->frame,
@@ -469,7 +469,7 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
                 pdu->pusch_config_pdu.tx_request_body.pdu_length,
                 current_harq_pid);
           memcpy(harq_process_ul_ue->payload_AB,
-                 pdu->pusch_config_pdu.tx_request_body.pdu,
+                 pdu->pusch_config_pdu.tx_request_body.fapiTxPdu,
                  pdu->pusch_config_pdu.tx_request_body.pdu_length);
         }
 

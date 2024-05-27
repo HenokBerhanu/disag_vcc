@@ -157,7 +157,8 @@ extern RAN_CONTEXT_t RC;
  * This is a helper function for xer_sprint, which directs all incoming data
  * into the provided string.
  */
-static int xer__nr_print2s (const void *buffer, size_t size, void *app_key) {
+static int xer__nr_print2s(const void *buffer, size_t size, void *app_key)
+{
   xer_sprint_string_t *string_buffer = (xer_sprint_string_t *) app_key;
   size_t string_remaining = string_buffer->string_size - string_buffer->string_index;
 
@@ -173,7 +174,8 @@ static int xer__nr_print2s (const void *buffer, size_t size, void *app_key) {
   return 0;
 }
 
-int xer_nr_sprint (char *string, size_t string_size, asn_TYPE_descriptor_t *td, void *sptr) {
+int xer_nr_sprint(char *string, size_t string_size, asn_TYPE_descriptor_t *td, void *sptr)
+{
   asn_enc_rval_t er;
   xer_sprint_string_t string_buffer;
   string_buffer.string = string;
@@ -196,7 +198,7 @@ int xer_nr_sprint (char *string, size_t string_size, asn_TYPE_descriptor_t *td, 
 
 //------------------------------------------------------------------------------
 
-uint8_t do_SIB23_NR(rrc_gNB_carrier_data_t *carrier)
+int do_SIB23_NR(rrc_gNB_carrier_data_t *carrier)
 {
   asn_enc_rval_t enc_rval;
   SystemInformation_IEs__sib_TypeAndInfo__Member *sib2 = NULL;
@@ -516,13 +518,12 @@ int do_RRCSetup(rrc_gNB_ue_context_t *const ue_context_pP,
   return ((enc_rval.encoded + 7) / 8);
 }
 
-uint8_t do_NR_SecurityModeCommand(
+int do_NR_SecurityModeCommand(
   const protocol_ctxt_t *const ctxt_pP,
   uint8_t *const buffer,
   const uint8_t Transaction_id,
   const uint8_t cipheringAlgorithm,
-  NR_IntegrityProtAlgorithm_t integrityProtAlgorithm
-)
+  NR_IntegrityProtAlgorithm_t integrityProtAlgorithm)
 //------------------------------------------------------------------------------
 {
   NR_DL_DCCH_Message_t dl_dcch_msg={0};
@@ -562,9 +563,9 @@ uint8_t do_NR_SecurityModeCommand(
 
 /*TODO*/
 //------------------------------------------------------------------------------
-uint8_t do_NR_SA_UECapabilityEnquiry( const protocol_ctxt_t *const ctxt_pP,
-                                   uint8_t               *const buffer,
-                                   const uint8_t                Transaction_id)
+int do_NR_SA_UECapabilityEnquiry(const protocol_ctxt_t *const ctxt_pP,
+                                 uint8_t               *const buffer,
+                                 const uint8_t         Transaction_id)
 //------------------------------------------------------------------------------
 {
   NR_UE_CapabilityRequestFilterNR_t *sa_band_filter;
@@ -663,17 +664,17 @@ int do_NR_RRCRelease(uint8_t *buffer, size_t buffer_size, uint8_t Transaction_id
 }
 
 //------------------------------------------------------------------------------
-int16_t do_RRCReconfiguration(const gNB_RRC_UE_t *UE,
-                              uint8_t *buffer,
-                              size_t buffer_size,
-                              uint8_t Transaction_id,
-                              NR_SRB_ToAddModList_t *SRB_configList,
-                              NR_DRB_ToAddModList_t *DRB_configList,
-                              NR_DRB_ToReleaseList_t *DRB_releaseList,
-                              NR_SecurityConfig_t *security_config,
-                              NR_MeasConfig_t *meas_config,
-                              struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList *dedicatedNAS_MessageList,
-                              NR_CellGroupConfig_t *cellGroupConfig)
+int do_RRCReconfiguration(const gNB_RRC_UE_t *UE,
+                          uint8_t *buffer,
+                          size_t buffer_size,
+                          uint8_t Transaction_id,
+                          NR_SRB_ToAddModList_t *SRB_configList,
+                          NR_DRB_ToAddModList_t *DRB_configList,
+                          NR_DRB_ToReleaseList_t *DRB_releaseList,
+                          NR_SecurityConfig_t *security_config,
+                          NR_MeasConfig_t *meas_config,
+                          struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList *dedicatedNAS_MessageList,
+                          NR_CellGroupConfig_t *cellGroupConfig)
 //------------------------------------------------------------------------------
 {
   NR_DL_DCCH_Message_t                             dl_dcch_msg={0};
@@ -816,12 +817,10 @@ int do_RRCSetupRequest(uint8_t *buffer, size_t buffer_size, uint8_t *rv)
 }
 
 //------------------------------------------------------------------------------
-uint8_t
-do_NR_RRCReconfigurationComplete_for_nsa(
+int do_NR_RRCReconfigurationComplete_for_nsa(
   uint8_t *buffer,
   size_t buffer_size,
-  NR_RRC_TransactionIdentifier_t Transaction_id
-)
+  NR_RRC_TransactionIdentifier_t Transaction_id)
 //------------------------------------------------------------------------------
 {
   NR_RRCReconfigurationComplete_t rrc_complete_msg;
@@ -849,7 +848,7 @@ do_NR_RRCReconfigurationComplete_for_nsa(
 }
 
 //------------------------------------------------------------------------------
-uint8_t do_NR_RRCReconfigurationComplete(uint8_t *buffer, size_t buffer_size, const uint8_t Transaction_id)
+int do_NR_RRCReconfigurationComplete(uint8_t *buffer, size_t buffer_size, const uint8_t Transaction_id)
 //------------------------------------------------------------------------------
 {
   NR_UL_DCCH_Message_t ul_dcch_msg = {0};
@@ -874,12 +873,12 @@ uint8_t do_NR_RRCReconfigurationComplete(uint8_t *buffer, size_t buffer_size, co
   return((enc_rval.encoded+7)/8);
 }
 
-uint8_t do_RRCSetupComplete(uint8_t *buffer,
-                            size_t buffer_size,
-                            const uint8_t Transaction_id,
-                            uint8_t sel_plmn_id,
-                            const int dedicatedInfoNASLength,
-                            const char *dedicatedInfoNAS)
+int do_RRCSetupComplete(uint8_t *buffer,
+                        size_t buffer_size,
+                        const uint8_t Transaction_id,
+                        uint8_t sel_plmn_id,
+                        const int dedicatedInfoNASLength,
+                        const char *dedicatedInfoNAS)
 {
   NR_UL_DCCH_Message_t ul_dcch_msg = {0};
   ul_dcch_msg.message.present = NR_UL_DCCH_MessageType_PR_c1;
@@ -914,11 +913,11 @@ uint8_t do_RRCSetupComplete(uint8_t *buffer,
   return((enc_rval.encoded+7)/8);
 }
 
-uint8_t do_NR_DLInformationTransfer(uint8_t *buffer,
-                                    size_t buffer_len,
-                                    uint8_t transaction_id,
-                                    uint32_t pdu_length,
-                                    uint8_t *pdu_buffer)
+int do_NR_DLInformationTransfer(uint8_t *buffer,
+                                size_t buffer_len,
+                                uint8_t transaction_id,
+                                uint32_t pdu_length,
+                                uint8_t *pdu_buffer)
 {
   NR_DL_DCCH_Message_t dl_dcch_msg = {0};
   dl_dcch_msg.message.present = NR_DL_DCCH_MessageType_PR_c1;
@@ -944,7 +943,8 @@ uint8_t do_NR_DLInformationTransfer(uint8_t *buffer,
   return (r.encoded + 7) / 8;
 }
 
-uint8_t do_NR_ULInformationTransfer(uint8_t **buffer, uint32_t pdu_length, uint8_t *pdu_buffer) {
+int do_NR_ULInformationTransfer(uint8_t **buffer, uint32_t pdu_length, uint8_t *pdu_buffer)
+{
     ssize_t encoded;
     NR_UL_DCCH_Message_t ul_dcch_msg;
     memset(&ul_dcch_msg, 0, sizeof(NR_UL_DCCH_Message_t));
@@ -967,10 +967,10 @@ uint8_t do_NR_ULInformationTransfer(uint8_t **buffer, uint32_t pdu_length, uint8
     return encoded;
 }
 
-uint8_t do_RRCReestablishmentRequest(uint8_t *buffer,
-                                     NR_ReestablishmentCause_t cause,
-                                     uint32_t cell_id,
-                                     uint16_t c_rnti)
+int do_RRCReestablishmentRequest(uint8_t *buffer,
+                                 NR_ReestablishmentCause_t cause,
+                                 uint32_t cell_id,
+                                 uint16_t c_rnti)
 {
   asn_enc_rval_t enc_rval;
   NR_UL_CCCH_Message_t ul_ccch_msg;
@@ -1182,7 +1182,7 @@ void free_defaultMeasConfig(NR_MeasConfig_t *mc)
   ASN_STRUCT_FREE(asn_DEF_NR_MeasConfig, mc);
 }
 
-uint8_t do_NR_Paging(uint8_t Mod_id, uint8_t *buffer, uint32_t tmsi)
+int do_NR_Paging(uint8_t Mod_id, uint8_t *buffer, uint32_t tmsi)
 {
   LOG_D(NR_RRC, "[gNB %d] do_NR_Paging start\n", Mod_id);
   NR_PCCH_Message_t pcch_msg;

@@ -301,7 +301,7 @@ typedef struct gNB_RRC_UE_s {
   ngap_security_capabilities_t       security_capabilities;
   //NSA block
   /* Number of NSA e_rab */
-  uint8_t                            nb_of_e_rabs;
+  int                                nb_of_e_rabs;
   /* list of pdu session to be setup by RRC layers */
   nr_e_rab_param_t                   e_rab[NB_RB_MAX];//[S1AP_MAX_E_RAB];
   uint32_t                           nsa_gtp_teid[S1AP_MAX_E_RAB];
@@ -339,7 +339,7 @@ typedef struct rrc_gNB_ue_context_s {
 typedef struct {
 
   uint8_t                                   *SIB23;
-  uint8_t                                   sizeof_SIB23;
+  int                                       sizeof_SIB23;
 
 } rrc_gNB_carrier_data_t;
 //---------------------------------------------------

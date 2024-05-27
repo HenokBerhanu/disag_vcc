@@ -123,7 +123,7 @@ void nr_modulation(uint32_t *in,
   uint8_t* in_bytes = (uint8_t*) in;
   uint64_t* in64 = (uint64_t*) in;
   int64_t* out64 = (int64_t*) out;
-  uint32_t i;
+  uint32_t i=0;
 
 #if defined(__SSE2__)
   simde__m128i *nr_mod_table128;
@@ -173,47 +173,49 @@ void nr_modulation(uint32_t *in,
     return;
 
   case 6:
-    for (i = 0; i < length - 3 * 64; i += 3 * 64) {
-      uint64_t x = *in64++;
-      uint64_t x1 = x & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x >> 12) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x >> 24) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x >> 36) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x >> 48) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      uint64_t x2 = (x >> 60);
-      x = *in64++;
-      x2 |= x<<4;
-      x1 = x2 & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 12) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 24) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 36) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 48) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x2 = ((x>>56)&0xf0) | (x2>>60);
-      x = *in64++;
-      x2 |= x<<8;
-      x1 = x2 & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 12) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 24) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 36) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x1 = (x2 >> 48) & 0xfff;
-      *out64++ = nr_64qam_mod_table[x1];
-      x2 = ((x>>52)&0xff0) | (x2>>60);
-      *out64++ = nr_64qam_mod_table[x2];
-    }
+    if (length > (3*64))
+      for (i = 0; i < length - 3 * 64; i += 3 * 64) {
+        uint64_t x = *in64++;
+        uint64_t x1 = x & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x >> 12) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x >> 24) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x >> 36) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x >> 48) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        uint64_t x2 = (x >> 60);
+        x = *in64++;
+        x2 |= x<<4;
+        x1 = x2 & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 12) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 24) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 36) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 48) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x2 = ((x>>56)&0xf0) | (x2>>60);
+        x = *in64++;
+        x2 |= x<<8;
+        x1 = x2 & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 12) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 24) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 36) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x1 = (x2 >> 48) & 0xfff;
+        *out64++ = nr_64qam_mod_table[x1];
+        x2 = ((x>>52)&0xff0) | (x2>>60);
+        *out64++ = nr_64qam_mod_table[x2];
+      }
+    
     while (i + 24 <= length) {
       uint32_t xx = 0;
       memcpy(&xx, in_bytes + i / 8, 3);

@@ -175,7 +175,7 @@ typedef struct {
 
 typedef struct {
   uint16_t pdu_length;
-  uint8_t* pdu;
+  uint8_t* fapiTxPdu;
 } fapi_nr_tx_request_body_t;
 
 ///
@@ -474,7 +474,6 @@ typedef struct {
   vrb_to_prb_mapping_t vrb_to_prb_mapping;
   uint8_t dai;
   double scaling_factor_S;
-  int8_t accumulated_delta_PUCCH;
   uint8_t pucch_resource_id;
   uint8_t pdsch_to_harq_feedback_time_ind;
   uint8_t n_dmrs_cdm_groups;

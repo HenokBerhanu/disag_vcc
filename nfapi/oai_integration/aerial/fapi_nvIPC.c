@@ -116,15 +116,15 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
   // unpack FAPI messages and handle them
   if (vnf_config != 0) {
     // first, unpack the header
-    fapi_phy_api_msg *fapi_msg = calloc(1, sizeof(fapi_phy_api_msg));
-    if (!(pull8(&pReadPackedMessage, &fapi_msg->num_msg, end) && pull8(&pReadPackedMessage, &fapi_msg->opaque_handle, end)
-          && pull16(&pReadPackedMessage, &fapi_msg->message_id, end)
-          && pull32(&pReadPackedMessage, &fapi_msg->message_length, end))) {
+    fapi_phy_api_msg fapi_msg;
+    if (!(pull8(&pReadPackedMessage, &fapi_msg.num_msg, end) && pull8(&pReadPackedMessage, &fapi_msg.opaque_handle, end)
+          && pull16(&pReadPackedMessage, &fapi_msg.message_id, end)
+          && pull32(&pReadPackedMessage, &fapi_msg.message_length, end))) {
       NFAPI_TRACE(NFAPI_TRACE_ERROR, "FAPI message header unpack failed\n");
       return -1;
     }
 
-    switch (fapi_msg->message_id) {
+    switch (fapi_msg.message_id) {
       case NFAPI_NR_PHY_MSG_TYPE_PARAM_RESPONSE:
 
         if (vnf_config->nr_param_resp) {
@@ -210,8 +210,8 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
 
       case NFAPI_NR_PHY_MSG_TYPE_RX_DATA_INDICATION: {
         nfapi_nr_rx_data_indication_t ind;
-        ind.header.message_id = fapi_msg->message_id;
-        ind.header.message_length = fapi_msg->message_length;
+        ind.header.message_id = fapi_msg.message_id;
+        ind.header.message_length = fapi_msg.message_length;
         aerial_unpack_nr_rx_data_indication(
             &pReadPackedMessage,
             end,
@@ -222,20 +222,25 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
         NFAPI_TRACE(NFAPI_TRACE_INFO, "%s: Handling RX Indication\n", __FUNCTION__);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rx_data_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rx_data_indication)(&ind);
+          for (int i = 0; i < ind.number_of_pdus; ++i) {
+            free(ind.pdu_list[i].pdu);
+          }
+          free(ind.pdu_list);
         }
         break;
       }
 
       case NFAPI_NR_PHY_MSG_TYPE_CRC_INDICATION: {
         nfapi_nr_crc_indication_t crc_ind;
-        crc_ind.header.message_id = fapi_msg->message_id;
-        crc_ind.header.message_length = fapi_msg->message_length;
+        crc_ind.header.message_id = fapi_msg.message_id;
+        crc_ind.header.message_length = fapi_msg.message_length;
         aerial_unpack_nr_crc_indication(&pReadPackedMessage,
                                         end,
                                         &crc_ind,
                                         &((vnf_p7_t *)((vnf_info *)vnf_config->user_data)->p7_vnfs->config)->_public.codec_config);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_crc_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_crc_indication)(&crc_ind);
+          free(crc_ind.crc_list);
         }
         break;
       }
@@ -249,6 +254,24 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
 
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_uci_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_uci_indication)(&ind);
+          for (int i = 0; i < ind.num_ucis; i++) {
+            if (ind.uci_list[i].pdu_type == NFAPI_NR_UCI_FORMAT_2_3_4_PDU_TYPE) {
+              if (ind.uci_list[i].pucch_pdu_format_2_3_4.sr.sr_payload) {
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.sr.sr_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.harq.harq_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.harq.harq_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part1.csi_part1_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part1.csi_part1_payload);
+              }
+              if(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part2.csi_part2_payload){
+                free(ind.uci_list[i].pucch_pdu_format_2_3_4.csi_part2.csi_part2_payload);
+              }
+            }
+          }
+          free(ind.uci_list);
+          ind.uci_list = NULL;
         }
 
         break;
@@ -274,12 +297,13 @@ static int ipc_handle_rx_msg(nv_ipc_t *ipc, nv_ipc_msg_t *msg)
                                          &((vnf_p7_t *)((vnf_info *)vnf_config->user_data)->p7_vnfs->config)->_public.codec_config);
         if (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rach_indication) {
           (((vnf_info *)vnf_config->user_data)->p7_vnfs->config->nr_rach_indication)(&ind);
+          free(ind.pdu_list);
         }
         break;
       }
 
       default: {
-        NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s P5 Unknown message ID %d\n", __FUNCTION__, fapi_msg->message_id);
+        NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s P5 Unknown message ID %d\n", __FUNCTION__, fapi_msg.message_id);
 
         break;
       }

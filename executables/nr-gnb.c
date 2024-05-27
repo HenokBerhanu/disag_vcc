@@ -45,7 +45,6 @@
 #include "PHY/INIT/nr_phy_init.h"
 
 #include "PHY/defs_gNB.h"
-#include "SCHED/sched_eNB.h"
 #include "SCHED_NR/sched_nr.h"
 #include "SCHED_NR/fapi_nr_l1.h"
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
@@ -75,10 +74,8 @@
 #include "UTIL/MATH/oml.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "UTIL/OPT/opt.h"
-#include "enb_config.h"
 #include "gnb_paramdef.h"
 
-#include "s1ap_eNB.h"
 #include "SIMULATION/ETH_TRANSPORT/proto.h"
 #include <executables/softmodem-common.h>
 

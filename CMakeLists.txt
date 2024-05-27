@@ -801,7 +801,6 @@ set(PHY_POLARSRC
   ${OPENAIR1_DIR}/PHY/CODING/nr_polar_init.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_bitwise_operations.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_crc_byte.c
-  ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_crc.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_decoder.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_decoding_tools.c
   ${OPENAIR1_DIR}/PHY/CODING/nrPolar_tools/nr_polar_encoder.c
@@ -1458,6 +1457,7 @@ add_library(L2_NR
   ${MAC_NR_SRC}
   ${GNB_APP_SRC}
   )
+target_link_libraries(L2_NR PRIVATE ds alg)
 
 add_library(e1_if
   ${NR_RRC_DIR}/cucp_cuup_direct.c

@@ -59,6 +59,8 @@
 #include "common/ran_context.h"
 #include "nfapi/oai_integration/vendor_ext.h"
 
+#include "common/utils/alg/find.h"
+
 //#define DEBUG_DCI
 
 extern RAN_CONTEXT_t RC;
@@ -2097,6 +2099,7 @@ void delete_nr_ue_data(NR_UE_info_t *UE, NR_COMMON_channels_t *ccPtr, uid_alloca
   ASN_STRUCT_FREE(asn_DEF_NR_CellGroupConfig, UE->reconfigCellGroup);
   ASN_STRUCT_FREE(asn_DEF_NR_UE_NR_Capability, UE->capability);
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+  seq_arr_free(&sched_ctrl->lc_config, NULL);
   destroy_nr_list(&sched_ctrl->available_dl_harq);
   destroy_nr_list(&sched_ctrl->feedback_dl_harq);
   destroy_nr_list(&sched_ctrl->retrans_dl_harq);
@@ -2490,6 +2493,9 @@ NR_UE_info_t *add_new_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rntiP, NR_CellGroupConf
   sched_ctrl->sched_srs.frame = -1;
   sched_ctrl->sched_srs.slot = -1;
 
+  // initialize LCID structure
+  seq_arr_init(&sched_ctrl->lc_config, sizeof(nr_lc_config_t));
+
   // initialize UE BWP information
   NR_UE_DL_BWP_t *dl_bwp = &UE->current_DL_BWP;
   memset(dl_bwp, 0, sizeof(*dl_bwp));
@@ -2667,9 +2673,12 @@ void mac_remove_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rnti)
   delete_nr_ue_data(UE, nr_mac->common_channels, &UE_info->uid_allocator);
 }
 
-uint8_t nr_get_tpc(int target, int snrx10, int incr)
+// all values passed to this function are in dB x10
+uint8_t nr_get_tpc(int target, uint8_t cqi, int incr, int tx_power)
 {
-  // all values passed to this function are in dB x10
+  // al values passed to this function are x10
+  int snrx10 = (cqi * 5) - 640 - (tx_power * 10);
+  LOG_D(NR_MAC, "tpc : target %d, cqi %d, snrx10 %d, tx_power %d\n", target, ((int)cqi * 5) - 640, snrx10, tx_power);
   if (snrx10 > target + incr) return 0; // decrease 1dB
   if (snrx10 < target - (3*incr)) return 3; // increase 3dB
   if (snrx10 < target - incr) return 2; // increase 1dB
@@ -2961,7 +2970,6 @@ static void nr_mac_apply_cellgroup(gNB_MAC_INST *mac, NR_UE_info_t *UE, frame_t 
 
   NR_ServingCellConfigCommon_t *scc = mac->common_channels[0].ServingCellConfigCommon;
 
-  /* Note! we already did process_CellGroup(), so no need to do this again */
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   configure_UE_BWP(mac, scc, sched_ctrl, NULL, UE, -1, -1);
 
@@ -3120,12 +3128,12 @@ void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE)
   NR_SCHED_ENSURE_LOCKED(&mac->sched_lock);
   /* create this UE's initial CellGroup */
   int CC_id = 0;
+  int srb_id = 1;
   const NR_ServingCellConfigCommon_t *scc = mac->common_channels[CC_id].ServingCellConfigCommon;
   const NR_ServingCellConfig_t *sccd = mac->common_channels[CC_id].pre_ServingCellConfig;
   NR_CellGroupConfig_t *cellGroupConfig = get_initial_cellGroupConfig(UE->uid, scc, sccd, &mac->radio_config);
 
   UE->CellGroup = cellGroupConfig;
-  process_CellGroup(cellGroupConfig, UE);
 
   /* activate SRB0 */
   nr_rlc_activate_srb0(UE->rnti, UE, send_initial_ul_rrc_message);
@@ -3133,8 +3141,12 @@ void prepare_initial_ul_rrc_message(gNB_MAC_INST *mac, NR_UE_info_t *UE)
   /* the cellGroup sent to CU specifies there is SRB1, so create it */
   DevAssert(cellGroupConfig->rlc_BearerToAddModList->list.count == 1);
   const NR_RLC_BearerConfig_t *bearer = cellGroupConfig->rlc_BearerToAddModList->list.array[0];
-  DevAssert(bearer->servedRadioBearer->choice.srb_Identity == 1);
+  DevAssert(bearer->servedRadioBearer->choice.srb_Identity == srb_id);
   nr_rlc_add_srb(UE->rnti, bearer->servedRadioBearer->choice.srb_Identity, bearer);
+
+  int priority = bearer->mac_LogicalChannelConfig->ul_SpecificParameters->priority;
+  nr_lc_config_t c = {.lcid = bearer->logicalChannelIdentity, .priority = priority};
+  nr_mac_add_lcid(&UE->UE_sched_ctrl, &c);
 }
 
 void nr_mac_trigger_release_timer(NR_UE_sched_ctrl_t *sched_ctrl, NR_SubcarrierSpacing_t subcarrier_spacing)
@@ -3209,4 +3221,81 @@ void nr_mac_trigger_reconfiguration(const gNB_MAC_INST *nrmac, const NR_UE_info_
     .cause_value = F1AP_CauseRadioNetwork_action_desirable_for_radio_reasons,
   };
   nrmac->mac_rrc.ue_context_modification_required(&required);
+}
+
+/* \brief add bearers from CellGroupConfig.
+ *
+ * This is a kind of hack, as this should be processed through a F1 UE Context
+ * setup request, but some modes do not use that (NSA/do-ra/phy_test).  */
+void process_addmod_bearers_cellGroupConfig(NR_UE_sched_ctrl_t *sched_ctrl, const struct NR_CellGroupConfig__rlc_BearerToAddModList *addmod)
+{
+  if (addmod == NULL)
+    return; /* nothing to do */
+
+  for (int i = 0; i < addmod->list.count; ++i) {
+    const NR_RLC_BearerConfig_t *conf = addmod->list.array[i];
+    int lcid = conf->logicalChannelIdentity;
+    nr_lc_config_t c = {.lcid = lcid};
+    nr_mac_add_lcid(sched_ctrl, &c);
+  }
+}
+
+long get_lcid_from_drbid(int drb_id)
+{
+  return drb_id + 3; /* LCID is DRB + 3 */
+}
+
+long get_lcid_from_srbid(int srb_id)
+{
+  return srb_id;
+}
+
+static bool eq_lcid_config(const void *vval, const void *vit)
+{
+  const nr_lc_config_t *val = (const nr_lc_config_t *)vval;
+  const nr_lc_config_t *it = (const nr_lc_config_t *)vit;
+  return it->lcid == val->lcid;
+}
+
+static int cmp_lc_config(const void *va, const void *vb)
+{
+  const nr_lc_config_t *a = (const nr_lc_config_t *)va;
+  const nr_lc_config_t *b = (const nr_lc_config_t *)vb;
+
+  if (a->priority < b->priority)
+    return -1;
+  if (a->priority == b->priority)
+    return 0;
+  return 1;
+}
+
+bool nr_mac_add_lcid(NR_UE_sched_ctrl_t* sched_ctrl, const nr_lc_config_t *c)
+{
+  elm_arr_t elm = find_if(&sched_ctrl->lc_config, (void *) c, eq_lcid_config);
+  if (elm.found) {
+    LOG_I(NR_MAC, "cannot add LCID %d: already present, updating configuration\n", c->lcid);
+    nr_lc_config_t *exist = (nr_lc_config_t *)elm.it;
+    *exist = *c;
+  } else {
+    LOG_D(NR_MAC, "Add LCID %d\n", c->lcid);
+    seq_arr_push_back(&sched_ctrl->lc_config, (void*) c, sizeof(*c));
+  }
+  void *base = seq_arr_front(&sched_ctrl->lc_config);
+  size_t nmemb = seq_arr_size(&sched_ctrl->lc_config);
+  size_t size = sizeof(*c);
+  qsort(base, nmemb, size, cmp_lc_config);
+  return true;
+}
+
+bool nr_mac_remove_lcid(NR_UE_sched_ctrl_t *sched_ctrl, long lcid)
+{
+  nr_lc_config_t c = {.lcid = lcid};
+  elm_arr_t elm = find_if(&sched_ctrl->lc_config, &c, eq_lcid_config);
+  if (!elm.found) {
+    LOG_E(NR_MAC, "can not remove LC: no such LC with ID %ld\n", lcid);
+    return false;
+  }
+
+  seq_arr_erase(&sched_ctrl->lc_config, elm.it);
+  return true;
 }

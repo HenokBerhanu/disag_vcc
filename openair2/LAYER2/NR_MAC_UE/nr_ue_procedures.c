@@ -278,6 +278,14 @@ int8_t nr_ue_decode_BCCH_DL_SCH(NR_UE_MAC_INST_t *mac,
  * This code contains all the functions needed to process all dci fields.
  * These tables and functions are going to be called by function nr_ue_process_dci
  */
+
+static inline int writeBit(uint8_t *bitmap, int offset, int value, int size)
+{
+  for (int i = offset; i < offset + size; i++)
+    bitmap[i / 8] |= value << (i % 8);
+  return size;
+}
+
 int8_t nr_ue_process_dci_freq_dom_resource_assignment(nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu,
                                                       fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_config_pdu,
                                                       NR_PDSCH_Config_t *pdsch_Config,
@@ -296,26 +304,29 @@ int8_t nr_ue_process_dci_freq_dom_resource_assignment(nfapi_nr_ue_pusch_pdu_t *p
         pdsch_Config->resourceAllocation == NR_PDSCH_Config__resourceAllocation_resourceAllocationType0) {
       // TS 38.214 subclause 5.1.2.2.1 Downlink resource allocation type 0
       dlsch_config_pdu->resource_alloc = 0;
-      memset(dlsch_config_pdu->rb_bitmap, 0, sizeof(dlsch_config_pdu->rb_bitmap));
+      uint8_t *rb_bitmap = dlsch_config_pdu->rb_bitmap;
+      memset(rb_bitmap, 0, sizeof(dlsch_config_pdu->rb_bitmap));
       int P = getRBGSize(n_RB_DLBWP, pdsch_Config->rbg_Size);
-      int n_RBG = frequency_domain_assignment.nbits;
-      int index = 0;
-      for (int i = 0; i < n_RBG; i++) {
+      int currentBit = 0;
+
+      // write first bit sepcial case
+      const int n_RBG = frequency_domain_assignment.nbits;
+      int first_bit_rbg = (frequency_domain_assignment.val >> (n_RBG - 1)) & 0x01;
+      currentBit += writeBit(rb_bitmap, currentBit, first_bit_rbg, P - (start_DLBWP % P));
+
+      // write all bits until last bit special case
+      for (int i = 1; i < n_RBG - 1; i++) {
         // The order of RBG bitmap is such that RBG 0 to RBG n_RBG − 1 are mapped from MSB to LSB
         int bit_rbg = (frequency_domain_assignment.val >> (n_RBG - 1 - i)) & 0x01;
-        int size_RBG;
-        if (i == n_RBG - 1)
-          size_RBG = (start_DLBWP + n_RB_DLBWP) % P > 0 ?
-                     (start_DLBWP + n_RB_DLBWP) % P :
-                     P;
-        else if (i == 0)
-          size_RBG = P - (start_DLBWP % P);
-        else
-          size_RBG = P;
-        for (int j = index; j < size_RBG; j++)
-          dlsch_config_pdu->rb_bitmap[j / 8] |= bit_rbg << (j % 8);
-        index += size_RBG;
+        currentBit += writeBit(rb_bitmap, currentBit, bit_rbg, P);
       }
+
+      // write last bit
+      int last_bit_rbg = frequency_domain_assignment.val & 0x01;
+      const int tmp=(start_DLBWP + n_RB_DLBWP) % P;
+      int last_RBG = tmp ? tmp : P;
+      writeBit(rb_bitmap, currentBit, last_bit_rbg, last_RBG);
+
       dlsch_config_pdu->number_rbs = count_bits(dlsch_config_pdu->rb_bitmap, sizeofArray(dlsch_config_pdu->rb_bitmap));
       // Temporary code to process type0 as type1 when the RB allocation is contiguous
       int state = 0;
@@ -762,8 +773,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
     LOG_E(MAC, "invalid tpc %d\n", dci->tpc);
     return -1;
   }
-  const int tcp[] = {-1, 0, 1, 3};
-  dlsch_pdu->accumulated_delta_PUCCH = tcp[dci->tpc];
+
   // Sanity check for pucch_resource_indicator value received to check for false DCI.
   bool valid = false;
   NR_PUCCH_Config_t *pucch_Config = mac->current_UL_BWP ? mac->current_UL_BWP->pucch_Config : NULL;
@@ -787,23 +797,24 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
     return -1;
   }
 
-  if (dci_ind->rnti != mac->ra.ra_rnti && dci_ind->rnti != SI_RNTI)
+  if (dci_ind->rnti != mac->ra.ra_rnti && dci_ind->rnti != SI_RNTI) {
     AssertFatal(1 + dci->pdsch_to_harq_feedback_timing_indicator.val > DURATION_RX_TO_TX,
                 "PDSCH to HARQ feedback time (%d) needs to be higher than DURATION_RX_TO_TX (%d).\n",
                 1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
                 DURATION_RX_TO_TX);
-
-  // set the harq status at MAC for feedback
-  set_harq_status(mac,
-                  dci->pucch_resource_indicator,
-                  dci->harq_pid,
-                  dlsch_pdu->accumulated_delta_PUCCH,
-                  1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
-                  dci->dai[0].val,
-                  dci_ind->n_CCE,
-                  dci_ind->N_CCE,
-                  frame,
-                  slot);
+    // set the harq status at MAC for feedback
+    const int tpc[] = {-1, 0, 1, 3};
+    set_harq_status(mac,
+                    dci->pucch_resource_indicator,
+                    dci->harq_pid,
+                    tpc[dci->tpc],
+                    1 + dci->pdsch_to_harq_feedback_timing_indicator.val,
+                    dci->dai[0].val,
+                    dci_ind->n_CCE,
+                    dci_ind->N_CCE,
+                    frame,
+                    slot);
+  }
 
   LOG_D(MAC,
         "(nr_ue_procedures.c) rnti = %x dl_config->number_pdus = %d\n",
@@ -829,7 +840,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
         dlsch_pdu->harq_process_nbr,
         dci->dai[0].val,
         dlsch_pdu->scaling_factor_S,
-        dlsch_pdu->accumulated_delta_PUCCH,
+        dci->tpc,
         dci->pucch_resource_indicator,
         1 + dci->pdsch_to_harq_feedback_timing_indicator.val);
 
@@ -1014,8 +1025,6 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
     LOG_E(MAC, "invalid tpc %d\n", dci->tpc);
     return -1;
   }
-  const int tcp[] = {-1, 0, 1, 3};
-  dlsch_pdu->accumulated_delta_PUCCH = tcp[dci->tpc];
 
   // Sanity check for pucch_resource_indicator value received to check for false DCI.
   bool valid = false;
@@ -1126,10 +1135,11 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
               DURATION_RX_TO_TX);
 
   // set the harq status at MAC for feedback
+  const int tpc[] = {-1, 0, 1, 3};
   set_harq_status(mac,
                   dci->pucch_resource_indicator,
                   dci->harq_pid,
-                  dlsch_pdu->accumulated_delta_PUCCH,
+                  tpc[dci->tpc],
                   feedback_ti,
                   dci->dai[0].val,
                   dci_ind->n_CCE,
@@ -2450,8 +2460,7 @@ bool get_downlink_ack(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, PUCCH_sche
     pucch->pucch_resource = acknack_resource;
     LOG_D(MAC, "frame %d slot %d pucch acknack payload %d\n", frame, slot, o_ACK);
   }
-  reverse_n_bits(&o_ACK, number_harq_feedback);
-  pucch->ack_payload = o_ACK;
+  pucch->ack_payload = reverse_bits(o_ACK, number_harq_feedback);
   pucch->n_harq = number_harq_feedback;
 
   return (number_harq_feedback > 0);
@@ -2720,26 +2729,22 @@ uint8_t get_ssb_rsrp_payload(NR_UE_MAC_INST_t *mac,
 
       if (ssbri_bits > 0) {
         ssbi = ssb_rsrp[0][0];
-        reverse_n_bits(&ssbi, ssbri_bits);
-        temp_payload = ssbi;
+        temp_payload = reverse_bits(ssbi, ssbri_bits);
         bits += ssbri_bits;
       }
 
       uint8_t rsrp_idx = get_rsrp_index(ssb_rsrp[1][0]);
-      reverse_n_bits(&rsrp_idx, 7);
-      temp_payload |= (rsrp_idx<<bits);
+      temp_payload |= (reverse_bits(rsrp_idx, 7) << bits);
       bits += 7; // 7 bits for highest RSRP
 
       // from the second SSB, differential report
       for (int i=1; i<nb_meas; i++){
         ssbi = ssb_rsrp[0][i];
-        reverse_n_bits(&ssbi, ssbri_bits);
-        temp_payload = ssbi;
+        temp_payload = reverse_bits(ssbi, ssbri_bits);
         bits += ssbri_bits;
 
         rsrp_idx = get_rsrp_diff_index(ssb_rsrp[1][0],ssb_rsrp[1][i]);
-        reverse_n_bits(&rsrp_idx, 4);
-        temp_payload |= (rsrp_idx<<bits);
+        temp_payload |= (reverse_bits(rsrp_idx, 4) << bits);
         bits += 4; // 7 bits for highest RSRP
       }
       break; // resorce found
@@ -2756,7 +2761,7 @@ uint8_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
                                      NR_CSI_MeasConfig_t *csi_MeasConfig) {
 
   int n_bits = 0;
-  uint32_t temp_payload = 0;
+  uint64_t temp_payload = 0;
 
   for (int csi_resourceidx = 0; csi_resourceidx < csi_MeasConfig->csi_ResourceConfigToAddModList->list.count; csi_resourceidx++) {
 
@@ -2796,17 +2801,15 @@ uint8_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
                          (mac->csirs_measurements.cqi<<cri_bitlen) |
                          0;
 
-          reverse_n_bits((uint8_t *)&temp_payload, n_bits);
+          temp_payload = reverse_bits(temp_payload, n_bits);
 
           LOG_D(NR_MAC, "cri_bitlen = %d\n", cri_bitlen);
           LOG_D(NR_MAC, "ri_bitlen = %d\n", ri_bitlen);
           LOG_D(NR_MAC, "pmi_x1_bitlen = %d\n", pmi_x1_bitlen);
           LOG_D(NR_MAC, "pmi_x2_bitlen = %d\n", pmi_x2_bitlen);
           LOG_D(NR_MAC, "cqi_bitlen = %d\n", cqi_bitlen);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
-
+          LOG_D(NR_MAC, "csi_part1_payload = 0x%lx\n", temp_payload);
           LOG_D(NR_MAC, "n_bits = %d\n", n_bits);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
 
           break;
         }
@@ -2824,7 +2827,7 @@ uint8_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
                                NR_CSI_MeasConfig_t *csi_MeasConfig) {
 
   int n_bits = 0;
-  uint32_t temp_payload = 0;
+  uint64_t temp_payload = 0;
 
   for (int csi_resourceidx = 0; csi_resourceidx < csi_MeasConfig->csi_ResourceConfigToAddModList->list.count; csi_resourceidx++) {
 
@@ -2858,14 +2861,14 @@ uint8_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
             temp_payload = mac->csirs_measurements.rsrp_dBm + 157;
           }
 
-          reverse_n_bits((uint8_t *)&temp_payload, n_bits);
+          temp_payload = reverse_bits(temp_payload, n_bits);
 
           LOG_D(NR_MAC, "cri_ssbri_bitlen = %d\n", cri_ssbri_bitlen);
           LOG_D(NR_MAC, "rsrp_bitlen = %d\n", rsrp_bitlen);
           LOG_D(NR_MAC, "diff_rsrp_bitlen = %d\n", diff_rsrp_bitlen);
 
           LOG_D(NR_MAC, "n_bits = %d\n", n_bits);
-          LOG_D(NR_MAC, "csi_part1_payload = 0x%x\n", temp_payload);
+          LOG_D(NR_MAC, "csi_part1_payload = 0x%lx\n", temp_payload);
 
           break;
         }
