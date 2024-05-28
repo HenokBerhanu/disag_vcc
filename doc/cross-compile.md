@@ -46,11 +46,15 @@ sudo apt-get install -y \
     zlib1g-dev:arm64
 ```
 
+The above enables apt to download packages for arm64. It also installs
+gcc cross-compilers for aarch64 in version 11. This version needs to match the
+versions of gcc defined in the cmake cross-compilation file (`cross-arm.cmake`).
+
 ## Install and Build
 
 ### Install required packages
 
-Use the host compiler to install some dependencies.
+Use the host compiler to install its dependencies.
 
 ```shell
 cd cmake_targets
@@ -85,9 +89,9 @@ be defined in order to tell cmake where the host tools have been built.
 
 ```shell
 cd ../build-cross
-cmake ../../.. -DCMAKE_TOOLCHAIN_FILE=../../../cmake_targets/cross-arm.cmake -DNATIVE_DIR=../build
+cmake ../../.. -GNinja -DCMAKE_TOOLCHAIN_FILE=../../../cmake_targets/cross-arm.cmake -DNATIVE_DIR=../build
 
-make -j`nproc` dlsim ulsim ldpctest polartest smallblocktest nr_pbchsim nr_dlschsim nr_ulschsim nr_dlsim nr_ulsim nr_pucchsim nr_prachsim
-make -j`nproc` lte-softmodem nr-softmodem nr-cuup oairu lte-uesoftmodem nr-uesoftmodem
-make -j`nproc` params_libconfig coding rfsimulator
+ninja -j`nproc` dlsim ulsim ldpctest polartest smallblocktest nr_pbchsim nr_dlschsim nr_ulschsim nr_dlsim nr_ulsim nr_pucchsim nr_prachsim
+ninja -j`nproc` lte-softmodem nr-softmodem nr-cuup oairu lte-uesoftmodem nr-uesoftmodem
+ninja -j`nproc` params_libconfig coding rfsimulator
 ```
