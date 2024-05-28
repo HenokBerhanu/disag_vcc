@@ -21,12 +21,12 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04 to cross-compile for ARM64
+#   Valid for Ubuntu 22.04 to cross-compile for ARM64
 #
 #---------------------------------------------------------------------
 
-# Very important, the focal image shall not be using mirrors. A lot of them do NOT support ARM64.
-FROM ubuntu:focal AS ran-base
+# Very important, the jammy image shall not be using mirrors. A lot of them do NOT support ARM64.
+FROM ubuntu:jammy AS ran-base
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
 # Specifying a working version of SIMDE for ARM:
@@ -37,13 +37,13 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
     #enabling arm64 architecture
     dpkg --add-architecture arm64 && \
-    echo "deb [arch=arm64] http://ports.ubuntu.com/ focal main restricted\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates main restricted\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal universe\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates universe\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal multiverse\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates multiverse\n" \
-         "deb [arch=arm64] http://ports.ubuntu.com/ focal-backports main restricted universe multiverse" \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ jammy main restricted\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main restricted\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy universe\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates universe\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy multiverse\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates multiverse\n" \
+         "deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse" \
          | tee /etc/apt/sources.list.d/arm-cross-compile-sources.list && \
     cp /etc/apt/sources.list "/etc/apt/sources.list.`date`.backup" && \
     sed -i -E "s/(deb)\ (http:.+)/\1\ [arch=amd64]\ \2/" /etc/apt/sources.list && \
@@ -69,8 +69,8 @@ RUN apt-get update && \
       zlib1g-dev:arm64 \
       # cross build libs and compilers
       libc6-dev-i386 \
-      gcc-9-aarch64-linux-gnu \
-      g++-9-aarch64-linux-gnu && \
+      gcc-11-aarch64-linux-gnu \
+      g++-11-aarch64-linux-gnu && \
     apt-get clean
 
 # Add "Tini - A tiny but valid init for containers", https://github.com/krallin/tini

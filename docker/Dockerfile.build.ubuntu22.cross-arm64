@@ -21,7 +21,7 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04 to cross-compile for ARM64
+#   Valid for Ubuntu 22.04 to cross-compile for ARM64
 #
 #---------------------------------------------------------------------
 
@@ -47,6 +47,6 @@ RUN /bin/sh oaienv && \
     ninja dlsim ulsim ldpctest polartest smallblocktest nr_pbchsim nr_dlschsim nr_ulschsim nr_dlsim nr_ulsim nr_pucchsim nr_prachsim lte-softmodem nr-softmodem nr-cuup oairu lte-uesoftmodem nr-uesoftmodem params_libconfig coding rfsimulator > ../../log/all.txt 2>&1; \
     # displaying errors and warnings
     egrep -A3 "warning:|error:" ../../log/all.txt || true && \
-    # will fail only for errors
-    egrep -L "error:" ../../log/all.txt && \
+    # will fail only if string "errors:" is found
+    egrep "error:" -vqz ../../log/all.txt && \
     echo "====== End of log for cross-build executables ======"

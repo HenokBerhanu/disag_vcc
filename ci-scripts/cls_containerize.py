@@ -321,7 +321,7 @@ class Containerize():
 				imageNames.append(('oai-nr-cuup', 'nr-cuup', 'oai-nr-cuup-asan', '--build-arg "BUILD_OPTION=--sanitize"'))
 		result = re.search('build_cross_arm64', self.imageKind)
 		if result is not None:
-			self.dockerfileprefix = '.ubuntu20.cross-arm64'
+			self.dockerfileprefix = '.ubuntu22.cross-arm64'
 		
 		# Workaround for some servers, we need to erase completely the workspace
 		if self.forcedWorkspaceCleanup:

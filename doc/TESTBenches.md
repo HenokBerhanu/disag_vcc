@@ -89,8 +89,8 @@ information on how the images are built.
 - [RAN-ARM-Cross-Compile-Builder](https://jenkins-oai.eurecom.fr/job/RAN-ARM-Cross-Compile-Builder/)
   ~BUILD-ONLY ~4G-LTE ~5G-NR
   - orion: Cross-compilation from Intel to ARM
-  - base image from `Dockerfile.base.ubuntu20.cross-arm64`
-  - build image from `Dockerfile.build.ubuntu20.cross-arm64` (no target images)
+  - base image from `Dockerfile.base.ubuntu22.cross-arm64`
+  - build image from `Dockerfile.build.ubuntu22.cross-arm64` (no target images)
 - [RAN-cppcheck](https://jenkins-oai.eurecom.fr/job/RAN-cppcheck/)
   ~BUILD-ONLY ~4G-LTE ~5G-NR
   - bellatrix

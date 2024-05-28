@@ -5,7 +5,7 @@
 
 ## Environment
 
-- OS: ubuntu 20.04
+- OS: ubuntu 22.04
 
 ### Set up the environment
 
@@ -15,21 +15,21 @@ Set up for install the package for aarch64.
 sudo dpkg --add-architecture arm64
 
 echo -e \
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal main restricted\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates main restricted\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal universe\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates universe\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal multiverse\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal-updates multiverse\n"\
-        "deb [arch=arm64] http://ports.ubuntu.com/ focal-backports main restricted universe multiverse"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy main restricted\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main restricted\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy universe\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates universe\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy multiverse\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates multiverse\n"\
+        "deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse"\
     | sudo tee /etc/apt/sources.list.d/arm-cross-compile-sources.list
 
 sudo cp /etc/apt/sources.list "/etc/apt/sources.list.`date`.backup"
 sudo sed -i -E "s/(deb)\ (http:.+)/\1\ [arch=amd64]\ \2/" /etc/apt/sources.list
 
 sudo apt update
-sudo apt install -y gcc-9-aarch64-linux-gnu \
-                    g++-9-aarch64-linux-gnu
+sudo apt install -y gcc-11-aarch64-linux-gnu \
+                    g++-11-aarch64-linux-gnu
 
 sudo apt-get install -y \
     libatlas-base-dev:arm64 \
