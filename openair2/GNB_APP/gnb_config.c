@@ -85,6 +85,7 @@
 #include "NR_EUTRA-MBSFN-SubframeConfig.h"
 #include "uper_decoder.h"
 #include "uper_encoder.h"
+#include "common/utils/ds/seq_arr.h"
 
 #include "RRC/NR/MESSAGES/asn1_msg.h"
 #include "RRC/NR/nr_rrc_extern.h"
@@ -1593,6 +1594,155 @@ static void check_ssb_raster(uint64_t freq, int band, int scs)
                gscn, freq, band);
 }
 
+static int sort_neighbour_cell_config_by_cell_id(const void *a, const void *b)
+{
+  const neighbour_cell_configuration_t *config_a = (const neighbour_cell_configuration_t *)a;
+  const neighbour_cell_configuration_t *config_b = (const neighbour_cell_configuration_t *)b;
+
+  if (config_a->nr_cell_id < config_b->nr_cell_id) {
+    return -1;
+  } else if (config_a->nr_cell_id > config_b->nr_cell_id) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static void fill_neighbour_cell_configuration(uint8_t gnb_idx, gNB_RRC_INST *rrc)
+{
+  char gnbpath[MAX_OPTNAME_SIZE + 8];
+  sprintf(gnbpath, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, gnb_idx);
+
+  paramdef_t neighbour_list_params[] = GNB_NEIGHBOUR_LIST_PARAM_LIST;
+  paramlist_def_t neighbour_list_param_list = {GNB_CONFIG_STRING_NEIGHBOUR_LIST, NULL, 0};
+
+  config_getlist(config_get_if(), &neighbour_list_param_list, neighbour_list_params, sizeofArray(neighbour_list_params), gnbpath);
+  if (neighbour_list_param_list.numelt < 1)
+    return;
+
+  rrc->neighbour_cell_configuration = malloc(sizeof(seq_arr_t));
+  seq_arr_init(rrc->neighbour_cell_configuration, sizeof(neighbour_cell_configuration_t));
+
+  for (int elm = 0; elm < neighbour_list_param_list.numelt; ++elm) {
+    neighbour_cell_configuration_t *cell = calloc(1, sizeof(neighbour_cell_configuration_t));
+    AssertFatal(cell != NULL, "out of memory\n");
+    cell->nr_cell_id = (uint64_t)*neighbour_list_param_list.paramarray[elm][0].u64ptr;
+
+    char neighbourpath[MAX_OPTNAME_SIZE + 8];
+    sprintf(neighbourpath, "%s.[%i].%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, gnb_idx, GNB_CONFIG_STRING_NEIGHBOUR_LIST, elm);
+    paramdef_t NeighbourCellParams[] = GNBNEIGHBOURCELLPARAMS_DESC;
+    paramlist_def_t NeighbourCellParamList = {GNB_CONFIG_STRING_NEIGHBOUR_CELL_LIST, NULL, 0};
+    config_getlist(config_get_if(), &NeighbourCellParamList, NeighbourCellParams, sizeofArray(NeighbourCellParams), neighbourpath);
+    LOG_D(GNB_APP, "HO LOG: For the Cell: %d Neighbour Cell ELM NUM: %d\n", cell->nr_cell_id, NeighbourCellParamList.numelt);
+    if (NeighbourCellParamList.numelt < 1)
+      continue;
+
+    cell->neighbour_cells = malloc(sizeof(seq_arr_t));
+    AssertFatal(cell->neighbour_cells != NULL, "Memory exhausted!!!");
+    seq_arr_init(cell->neighbour_cells, sizeof(nr_neighbour_gnb_configuration_t));
+    for (int l = 0; l < NeighbourCellParamList.numelt; ++l) {
+      nr_neighbour_gnb_configuration_t *neighbourCell = calloc(1, sizeof(nr_neighbour_gnb_configuration_t));
+      AssertFatal(neighbourCell != NULL, "out of memory\n");
+      neighbourCell->gNB_ID = *(NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_GNB_ID_IDX].uptr);
+      neighbourCell->nrcell_id = (uint64_t) * (NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_NR_CELLID_IDX].u64ptr);
+      neighbourCell->physicalCellId = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_PHYSICAL_ID_IDX].uptr;
+      neighbourCell->subcarrierSpacing = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_SCS_IDX].uptr;
+      neighbourCell->absoluteFrequencySSB = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_ABS_FREQ_SSB_IDX].i64ptr;
+      neighbourCell->tac = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_TAC_IDX].uptr;
+
+      char neighbour_plmn_path[CONFIG_MAXOPTLENGTH];
+      sprintf(neighbour_plmn_path,
+              "%s.%s.[%i].%s",
+              neighbourpath,
+              GNB_CONFIG_STRING_NEIGHBOUR_CELL_LIST,
+              l,
+              GNB_CONFIG_STRING_NEIGHBOUR_PLMN);
+
+      paramdef_t NeighbourPlmn[] = GNBPLMNPARAMS_DESC;
+      config_get(config_get_if(), NeighbourPlmn, sizeofArray(NeighbourPlmn), neighbour_plmn_path);
+
+      neighbourCell->plmn.mcc = *NeighbourPlmn[GNB_MOBILE_COUNTRY_CODE_IDX].uptr;
+      neighbourCell->plmn.mnc = *NeighbourPlmn[GNB_MOBILE_NETWORK_CODE_IDX].uptr;
+      neighbourCell->plmn.mnc_digit_length = *NeighbourPlmn[GNB_MNC_DIGIT_LENGTH].uptr;
+      seq_arr_push_back(cell->neighbour_cells, neighbourCell, sizeof(nr_neighbour_gnb_configuration_t));
+    }
+
+    seq_arr_push_back(rrc->neighbour_cell_configuration, cell, sizeof(neighbour_cell_configuration_t));
+  }
+  void *base = seq_arr_front(rrc->neighbour_cell_configuration);
+  size_t nmemb = seq_arr_size(rrc->neighbour_cell_configuration);
+  size_t element_size = sizeof(neighbour_cell_configuration_t);
+
+  qsort(base, nmemb, element_size, sort_neighbour_cell_config_by_cell_id);
+}
+
+static void fill_measurement_configuration(uint8_t gnb_idx, gNB_RRC_INST *rrc)
+{
+  char measurement_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(measurement_path, "%s.[%i].%s", GNB_CONFIG_STRING_GNB_LIST, gnb_idx, GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION);
+
+  nr_measurement_configuration_t *measurementConfig = &rrc->measurementConfiguration;
+  // Periodical Event Configuration
+  char periodic_event_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(periodic_event_path,
+          "%s.[%i].%s.%s",
+          GNB_CONFIG_STRING_GNB_LIST,
+          gnb_idx,
+          GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION,
+          MEASUREMENT_EVENTS_PERIODICAL);
+  paramdef_t Periodical_EventParams[] = MEASUREMENT_PERIODICAL_GLOBALPARAMS_DESC;
+  config_get(config_get_if(), Periodical_EventParams, sizeofArray(Periodical_EventParams), periodic_event_path);
+  if (*Periodical_EventParams[MEASUREMENT_EVENTS_ENABLE_IDX].i64ptr) {
+    nr_per_event_t *periodic_event = (nr_per_event_t *)calloc(1, sizeof(nr_per_event_t));
+    periodic_event->includeBeamMeasurements = *Periodical_EventParams[MEASUREMENT_EVENTS_INCLUDE_BEAM_MEAS_IDX].i64ptr;
+    periodic_event->maxReportCells = *Periodical_EventParams[MEASUREMENT_EVENTS_MAX_RS_INDEX_TO_REPORT].i64ptr;
+
+    measurementConfig->per_event = periodic_event;
+  }
+
+  // A2 Event Configuration
+  char a2_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(a2_path,
+          "%s.[%i].%s.%s",
+          GNB_CONFIG_STRING_GNB_LIST,
+          gnb_idx,
+          GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION,
+          MEASUREMENT_EVENTS_A2);
+  paramdef_t A2_EventParams[] = MEASUREMENT_A2_GLOBALPARAMS_DESC;
+  config_get(config_get_if(), A2_EventParams, sizeofArray(A2_EventParams), a2_path);
+  if (*A2_EventParams[MEASUREMENT_EVENTS_ENABLE_IDX].i64ptr) {
+    nr_a2_event_t *a2_event = (nr_a2_event_t *)calloc(1, sizeof(nr_a2_event_t));
+    a2_event->threshold_RSRP = *A2_EventParams[MEASUREMENT_EVENTS_A2_THRESHOLD_IDX].i64ptr;
+    a2_event->timeToTrigger = *A2_EventParams[MEASUREMENT_EVENTS_TIMETOTRIGGER_IDX].i64ptr;
+
+    measurementConfig->a2_event = a2_event;
+  }
+  // A3 Event Configuration
+  paramlist_def_t A3_EventList = {MEASUREMENT_EVENTS_A3, NULL, 0};
+  paramdef_t A3_EventParams[] = MEASUREMENT_A3_GLOBALPARAMS_DESC;
+  config_getlist(config_get_if(), &A3_EventList, A3_EventParams, sizeofArray(A3_EventParams), measurement_path);
+  LOG_D(GNB_APP, "HO LOG: A3 Configuration Exists: %d\n", A3_EventList.numelt);
+
+  if (A3_EventList.numelt < 1)
+    return;
+
+  measurementConfig->a3_event_list = malloc(sizeof(seq_arr_t));
+  seq_arr_init(measurementConfig->a3_event_list, sizeof(nr_a3_event_t));
+  for (int i = 0; i < A3_EventList.numelt; i++) {
+    nr_a3_event_t *a3_event = (nr_a3_event_t *)calloc(1, sizeof(nr_a3_event_t));
+    AssertFatal(a3_event != NULL, "out of memory\n");
+    a3_event->cell_id = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_CELL_ID_IDX].i64ptr;
+    a3_event->timeToTrigger = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_TIMETOTRIGGER_IDX].i64ptr;
+    a3_event->a3_offset = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_OFFSET_IDX].i64ptr;
+    a3_event->hysteresis = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_HYSTERESIS_IDX].i64ptr;
+
+    if (a3_event->cell_id == -1)
+      measurementConfig->is_default_a3_configuration_exists = true;
+
+    seq_arr_push_back(measurementConfig->a3_event_list, a3_event, sizeof(nr_a3_event_t));
+  }
+}
+
 void RCconfig_NRRRC(gNB_RRC_INST *rrc)
 {
 
@@ -1682,7 +1832,10 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
         char gnbpath[MAX_OPTNAME_SIZE + 8];
         sprintf(gnbpath,"%s.[%i]",GNB_CONFIG_STRING_GNB_LIST,k);
 
-	
+        fill_neighbour_cell_configuration(k, rrc);
+
+        fill_measurement_configuration(k, rrc);
+
         paramdef_t PLMNParams[] = GNBPLMNPARAMS_DESC;
 
         paramlist_def_t PLMNParamList = {GNB_CONFIG_STRING_PLMN_LIST, NULL, 0};
