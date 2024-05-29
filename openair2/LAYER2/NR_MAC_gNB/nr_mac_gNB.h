@@ -128,6 +128,12 @@ typedef struct nr_pdsch_AntennaPorts_t {
   int XP;
 } nr_pdsch_AntennaPorts_t;
 
+typedef struct nr_mac_timers {
+  int sr_ProhibitTimer;
+  int sr_TransMax;
+  int sr_ProhibitTimer_v1700;
+} nr_mac_timers_t;
+
 typedef struct nr_mac_config_t {
   int sib1_tda;
   nr_pdsch_AntennaPorts_t pdsch_AntennaPorts;
@@ -140,6 +146,7 @@ typedef struct nr_mac_config_t {
   bool use_deltaMCS;
   //int pusch_TargetSNRx10;
   //int pucch_TargetSNRx10;
+  nr_mac_timers_t timer_config;
 } nr_mac_config_t;
 
 typedef struct NR_preamble_ue {

@@ -325,6 +325,30 @@ typedef enum {
 
 /*---------------------------------------------------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------------------------------------------------*/
+/* TIMERS configuration parameters section name */
+#define GNB_CONFIG_STRING_TIMERS_CONFIG                  "TIMERS"
+
+/* TIMERS configuration parameters names   */
+#define GNB_CONFIG_STRING_TIMERS_SR_PROHIBIT_TIMER       "sr_ProhibitTimer"
+#define GNB_CONFIG_STRING_TIMERS_SR_TRANS_MAX            "sr_TransMax"
+#define GNB_CONFIG_STRING_TIMERS_SR_PROHIBIT_TIMER_V1700 "sr_ProhibitTimer_v1700"
+
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
+/*                                            TIMERS configuration parameters                                                          */
+/*   optname                                          helpstr   paramflags    XXXptr       defXXXval         type           numelt     */
+/*-------------------------------------------------------------------------------------------------------------------------------------*/
+#define GNB_TIMERS_PARAMS_DESC {  \
+{GNB_CONFIG_STRING_TIMERS_SR_PROHIBIT_TIMER,          NULL,     0,            .iptr=NULL,  .defintval=0,     TYPE_INT,      0},       \
+{GNB_CONFIG_STRING_TIMERS_SR_TRANS_MAX,               NULL,     0,            .iptr=NULL,  .defintval=64,    TYPE_INT,      0},       \
+{GNB_CONFIG_STRING_TIMERS_SR_PROHIBIT_TIMER_V1700,    NULL,     0,            .iptr=NULL,  .defintval=0,     TYPE_INT,      0},       \
+}
+
+#define GNB_TIMERS_SR_PROHIBIT_TIMER_IDX       0
+#define GNB_TIMERS_SR_TRANS_MAX_IDX            1
+#define GNB_TIMERS_SR_PROHIBIT_TIMER_V1700_IDX 2
+
+/*---------------------------------------------------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------------------------------------------------*/
 /* SCTP configuration parameters section name */
 #define GNB_CONFIG_STRING_SCTP_CONFIG                    "SCTP"
 

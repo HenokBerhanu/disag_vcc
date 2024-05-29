@@ -2282,7 +2282,102 @@ static NR_PhysicalCellGroupConfig_t *configure_phy_cellgroup(void)
   return physicalCellGroupConfig;
 }
 
-static NR_MAC_CellGroupConfig_t *configure_mac_cellgroup(void)
+static long *get_sr_ProhibitTimer(const nr_mac_timers_t *timer_config)
+{
+  if (timer_config->sr_ProhibitTimer == 0)
+    return NULL;
+
+  long *ret = calloc(1, sizeof(*ret));
+  switch (timer_config->sr_ProhibitTimer) {
+    case 1:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms1;
+      break;
+    case 2:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms2;
+      break;
+    case 4:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms4;
+      break;
+    case 8:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms8;
+      break;
+    case 16:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms16;
+      break;
+    case 32:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms32;
+      break;
+    case 64:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms64;
+      break;
+    case 128:
+      *ret = NR_SchedulingRequestToAddMod__sr_ProhibitTimer_ms128;
+      break;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for sr_ProhibitTimer!\n");
+  }
+  return ret;
+}
+
+static long get_sr_TransMax(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->sr_TransMax) {
+    case 4:
+      return NR_SchedulingRequestToAddMod__sr_TransMax_n4;
+    case 8:
+      return NR_SchedulingRequestToAddMod__sr_TransMax_n8;
+    case 16:
+      return NR_SchedulingRequestToAddMod__sr_TransMax_n16;
+    case 32:
+      return NR_SchedulingRequestToAddMod__sr_TransMax_n32;
+    case 64:
+      return NR_SchedulingRequestToAddMod__sr_TransMax_n64;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for sr_TransMax!\n");
+  }
+}
+
+static long *get_sr_ProhibitTimer_v1700(const nr_mac_timers_t *timer_config)
+{
+  if (timer_config->sr_ProhibitTimer_v1700 == 0)
+    return NULL;
+
+  long *ret = calloc(1, sizeof(*ret));
+  switch (timer_config->sr_ProhibitTimer_v1700) {
+    case 192:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms192;
+      break;
+    case 256:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms256;
+      break;
+    case 320:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms320;
+      break;
+    case 384:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms384;
+      break;
+    case 448:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms448;
+      break;
+    case 512:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms512;
+      break;
+    case 576:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms576;
+      break;
+    case 640:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms640;
+      break;
+    case 1082:
+      *ret = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms1082;
+      break;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for sr_ProhibitTimer_v1700!\n");
+  }
+  return ret;
+}
+
+static NR_MAC_CellGroupConfig_t *configure_mac_cellgroup(const nr_mac_timers_t *timer_config)
 {
   NR_MAC_CellGroupConfig_t * mac_CellGroupConfig = calloc(1, sizeof(*mac_CellGroupConfig));
   AssertFatal(mac_CellGroupConfig != NULL, "Couldn't allocate mac-CellGroupConfig. Out of memory!\n");
@@ -2303,20 +2398,21 @@ static NR_MAC_CellGroupConfig_t *configure_mac_cellgroup(void)
   mac_CellGroupConfig->schedulingRequestConfig->schedulingRequestToAddModList = CALLOC(1,sizeof(*mac_CellGroupConfig->schedulingRequestConfig->schedulingRequestToAddModList));
   struct NR_SchedulingRequestToAddMod *schedulingrequestlist = CALLOC(1,sizeof(*schedulingrequestlist));
   schedulingrequestlist->schedulingRequestId = 0;
-  schedulingrequestlist->sr_ProhibitTimer = NULL;
-  schedulingrequestlist->sr_TransMax = NR_SchedulingRequestToAddMod__sr_TransMax_n64;
+  schedulingrequestlist->sr_ProhibitTimer = get_sr_ProhibitTimer(timer_config);
+  schedulingrequestlist->sr_TransMax = get_sr_TransMax(timer_config);
   asn1cSeqAdd(&(mac_CellGroupConfig->schedulingRequestConfig->schedulingRequestToAddModList->list),schedulingrequestlist);
 
-  mac_CellGroupConfig->ext4 = calloc(1, sizeof(*mac_CellGroupConfig->ext4));
-  mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700 =
-      calloc(1, sizeof(*mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700));
-  mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700 =
-      calloc(1, sizeof(*mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700));
-  struct NR_SchedulingRequestToAddModExt_v1700 *schedulingrequestlist_v1700 = calloc(1, sizeof(*schedulingrequestlist_v1700));
-  schedulingrequestlist_v1700->sr_ProhibitTimer_v1700 = calloc(1, sizeof(*schedulingrequestlist_v1700->sr_ProhibitTimer_v1700));
-  *schedulingrequestlist_v1700->sr_ProhibitTimer_v1700 = NR_SchedulingRequestToAddModExt_v1700__sr_ProhibitTimer_v1700_ms576;
-  asn1cSeqAdd(&(mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700->list),
-              schedulingrequestlist_v1700);
+  if (timer_config->sr_ProhibitTimer_v1700 != 0) {
+    mac_CellGroupConfig->ext4 = calloc(1, sizeof(*mac_CellGroupConfig->ext4));
+    mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700 =
+        calloc(1, sizeof(*mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700));
+    mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700 =
+        calloc(1, sizeof(*mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700));
+    struct NR_SchedulingRequestToAddModExt_v1700 *schedulingrequestlist_v1700 = calloc(1, sizeof(*schedulingrequestlist_v1700));
+    schedulingrequestlist_v1700->sr_ProhibitTimer_v1700 = get_sr_ProhibitTimer_v1700(timer_config);
+    asn1cSeqAdd(&(mac_CellGroupConfig->ext4->schedulingRequestConfig_v1700->schedulingRequestToAddModListExt_v1700->list),
+                schedulingrequestlist_v1700);
+  }
 
   mac_CellGroupConfig->skipUplinkTxDynamic=false;
   mac_CellGroupConfig->ext1 = NULL;
@@ -2584,8 +2680,8 @@ NR_CellGroupConfig_t *get_initial_cellGroupConfig(int uid,
   cellGroupConfig->rlc_BearerToReleaseList = NULL;
 
   /* mac CellGroup Config */
-  cellGroupConfig->mac_CellGroupConfig = configure_mac_cellgroup();
-  
+  cellGroupConfig->mac_CellGroupConfig = configure_mac_cellgroup(&configuration->timer_config);
+
   cellGroupConfig->physicalCellGroupConfig = configure_phy_cellgroup();
 
   cellGroupConfig->spCellConfig = get_initial_SpCellConfig(uid, scc, servingcellconfigdedicated, configuration);
@@ -2798,7 +2894,7 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
   secondaryCellGroup->rlc_BearerToAddModList = calloc(1, sizeof(*secondaryCellGroup->rlc_BearerToAddModList));
   asn1cSeqAdd(&secondaryCellGroup->rlc_BearerToAddModList->list, RLC_BearerConfig);
 
-  secondaryCellGroup->mac_CellGroupConfig = configure_mac_cellgroup();
+  secondaryCellGroup->mac_CellGroupConfig = configure_mac_cellgroup(&configuration->timer_config);
   secondaryCellGroup->physicalCellGroupConfig = configure_phy_cellgroup();
   secondaryCellGroup->spCellConfig = calloc(1, sizeof(*secondaryCellGroup->spCellConfig));
   secondaryCellGroup->spCellConfig->servCellIndex = calloc(1, sizeof(*secondaryCellGroup->spCellConfig->servCellIndex));

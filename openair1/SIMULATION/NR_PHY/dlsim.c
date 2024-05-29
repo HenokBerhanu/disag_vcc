@@ -643,7 +643,10 @@ int main(int argc, char **argv)
                                 .minRXTXTIME = 6,
                                 .do_CSIRS = 0,
                                 .do_SRS = 0,
-                                .force_256qam_off = false};
+                                .force_256qam_off = false,
+                                .timer_config.sr_ProhibitTimer = 0,
+                                .timer_config.sr_TransMax = 64,
+                                .timer_config.sr_ProhibitTimer_v1700 = 0};
 
   RC.nb_nr_macrlc_inst = 1;
   RC.nb_nr_mac_CC = (int*)malloc(RC.nb_nr_macrlc_inst*sizeof(int));
