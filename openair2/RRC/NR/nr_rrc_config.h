@@ -38,6 +38,9 @@
 struct nr_mac_config_t;
 typedef struct nr_mac_config_t nr_mac_config_t;
 
+struct nr_mac_timers;
+typedef struct nr_mac_timers nr_mac_timers_t;
+
 void nr_rrc_config_dl_tda(struct NR_PDSCH_TimeDomainResourceAllocationList *pdsch_TimeDomainAllocationList,
                           frame_type_t frame_type,
                           NR_TDD_UL_DL_ConfigCommon_t *tdd_UL_DL_ConfigurationCommon,
@@ -63,7 +66,11 @@ int encode_MeasurementTimingConfiguration(const struct NR_MeasurementTimingConfi
 void free_MeasurementTimingConfiguration(struct NR_MeasurementTimingConfiguration *mtc);
 
 #define NR_MAX_SIB_LENGTH 2976 // 3GPP TS 38.331 section 5.2.1
-NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc, const f1ap_plmn_t *plmn, uint64_t cellID, int tac);
+NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc,
+                                      const f1ap_plmn_t *plmn,
+                                      uint64_t cellID,
+                                      int tac,
+                                      const nr_mac_timers_t *timer_config);
 void free_SIB1_NR(NR_BCCH_DL_SCH_Message_t *sib1);
 int encode_SIB1_NR(NR_BCCH_DL_SCH_Message_t *sib1, uint8_t *buffer, int max_buffer_size);
 

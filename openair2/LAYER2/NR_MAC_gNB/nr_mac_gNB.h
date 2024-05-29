@@ -132,6 +132,13 @@ typedef struct nr_mac_timers {
   int sr_ProhibitTimer;
   int sr_TransMax;
   int sr_ProhibitTimer_v1700;
+  int t300;
+  int t301;
+  int t310;
+  int n310;
+  int t311;
+  int n311;
+  int t319;
 } nr_mac_timers_t;
 
 typedef struct nr_mac_config_t {

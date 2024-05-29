@@ -1970,7 +1970,175 @@ void free_MeasurementTimingConfiguration(NR_MeasurementTimingConfiguration_t *mt
   ASN_STRUCT_FREE(asn_DEF_NR_MeasurementTimingConfiguration, mtc);
 }
 
-NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc, const f1ap_plmn_t *plmn, uint64_t cellID, int tac)
+static long get_NR_UE_TimersAndConstants_t300(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->t300) {
+    case 100:
+      return NR_UE_TimersAndConstants__t300_ms100;
+    case 200:
+      return NR_UE_TimersAndConstants__t300_ms200;
+    case 300:
+      return NR_UE_TimersAndConstants__t300_ms300;
+    case 400:
+      return NR_UE_TimersAndConstants__t300_ms400;
+    case 600:
+      return NR_UE_TimersAndConstants__t300_ms600;
+    case 1000:
+      return NR_UE_TimersAndConstants__t300_ms1000;
+    case 1500:
+      return NR_UE_TimersAndConstants__t300_ms1500;
+    case 2000:
+      return NR_UE_TimersAndConstants__t300_ms2000;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for t300!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_t301(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->t301) {
+    case 100:
+      return NR_UE_TimersAndConstants__t301_ms100;
+    case 200:
+      return NR_UE_TimersAndConstants__t301_ms200;
+    case 300:
+      return NR_UE_TimersAndConstants__t301_ms300;
+    case 400:
+      return NR_UE_TimersAndConstants__t301_ms400;
+    case 600:
+      return NR_UE_TimersAndConstants__t301_ms600;
+    case 1000:
+      return NR_UE_TimersAndConstants__t301_ms1000;
+    case 1500:
+      return NR_UE_TimersAndConstants__t301_ms1500;
+    case 2000:
+      return NR_UE_TimersAndConstants__t301_ms2000;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for t301!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_t310(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->t310) {
+    case 0:
+      return NR_UE_TimersAndConstants__t310_ms0;
+    case 50:
+      return NR_UE_TimersAndConstants__t310_ms50;
+    case 100:
+      return NR_UE_TimersAndConstants__t310_ms100;
+    case 200:
+      return NR_UE_TimersAndConstants__t310_ms200;
+    case 500:
+      return NR_UE_TimersAndConstants__t310_ms500;
+    case 1000:
+      return NR_UE_TimersAndConstants__t310_ms1000;
+    case 2000:
+      return NR_UE_TimersAndConstants__t310_ms2000;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for t310!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_n310(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->n310) {
+    case 1:
+      return NR_UE_TimersAndConstants__n310_n1;
+    case 2:
+      return NR_UE_TimersAndConstants__n310_n2;
+    case 3:
+      return NR_UE_TimersAndConstants__n310_n3;
+    case 4:
+      return NR_UE_TimersAndConstants__n310_n4;
+    case 6:
+      return NR_UE_TimersAndConstants__n310_n6;
+    case 8:
+      return NR_UE_TimersAndConstants__n310_n8;
+    case 10:
+      return NR_UE_TimersAndConstants__n310_n10;
+    case 20:
+      return NR_UE_TimersAndConstants__n310_n20;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for n310!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_t311(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->t311) {
+    case 1000:
+      return NR_UE_TimersAndConstants__t311_ms1000;
+    case 3000:
+      return NR_UE_TimersAndConstants__t311_ms3000;
+    case 5000:
+      return NR_UE_TimersAndConstants__t311_ms5000;
+    case 10000:
+      return NR_UE_TimersAndConstants__t311_ms10000;
+    case 15000:
+      return NR_UE_TimersAndConstants__t311_ms15000;
+    case 20000:
+      return NR_UE_TimersAndConstants__t311_ms20000;
+    case 30000:
+      return NR_UE_TimersAndConstants__t311_ms30000;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for t311!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_n311(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->n311) {
+    case 1:
+      return NR_UE_TimersAndConstants__n311_n1;
+    case 2:
+      return NR_UE_TimersAndConstants__n311_n2;
+    case 3:
+      return NR_UE_TimersAndConstants__n311_n3;
+    case 4:
+      return NR_UE_TimersAndConstants__n311_n4;
+    case 5:
+      return NR_UE_TimersAndConstants__n311_n5;
+    case 6:
+      return NR_UE_TimersAndConstants__n311_n6;
+    case 8:
+      return NR_UE_TimersAndConstants__n311_n8;
+    case 10:
+      return NR_UE_TimersAndConstants__n311_n10;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for n311!\n");
+  }
+}
+
+static long get_NR_UE_TimersAndConstants_t319(const nr_mac_timers_t *timer_config)
+{
+  switch (timer_config->t319) {
+    case 100:
+      return NR_UE_TimersAndConstants__t319_ms100;
+    case 200:
+      return NR_UE_TimersAndConstants__t319_ms200;
+    case 300:
+      return NR_UE_TimersAndConstants__t319_ms300;
+    case 400:
+      return NR_UE_TimersAndConstants__t319_ms400;
+    case 600:
+      return NR_UE_TimersAndConstants__t319_ms600;
+    case 1000:
+      return NR_UE_TimersAndConstants__t319_ms1000;
+    case 1500:
+      return NR_UE_TimersAndConstants__t319_ms1500;
+    case 2000:
+      return NR_UE_TimersAndConstants__t319_ms2000;
+    default:
+      AssertFatal(1 == 0, "Invalid value configured for t319!\n");
+  }
+}
+
+NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc,
+                                      const f1ap_plmn_t *plmn,
+                                      uint64_t cellID,
+                                      int tac,
+                                      const nr_mac_timers_t *timer_config)
 {
   AssertFatal(cellID < (1l << 36), "cellID must fit within 36 bits, but is %lu\n", cellID);
 
@@ -2226,13 +2394,13 @@ NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc, c
   // ue-TimersAndConstants
   sib1->ue_TimersAndConstants = CALLOC(1,sizeof(struct NR_UE_TimersAndConstants));
   AssertFatal(sib1->ue_TimersAndConstants != NULL, "out of memory\n");
-  sib1->ue_TimersAndConstants->t300 = NR_UE_TimersAndConstants__t300_ms400;
-  sib1->ue_TimersAndConstants->t301 = NR_UE_TimersAndConstants__t301_ms400;
-  sib1->ue_TimersAndConstants->t310 = NR_UE_TimersAndConstants__t310_ms2000;
-  sib1->ue_TimersAndConstants->n310 = NR_UE_TimersAndConstants__n310_n10;
-  sib1->ue_TimersAndConstants->t311 = NR_UE_TimersAndConstants__t311_ms3000;
-  sib1->ue_TimersAndConstants->n311 = NR_UE_TimersAndConstants__n311_n1;
-  sib1->ue_TimersAndConstants->t319 = NR_UE_TimersAndConstants__t319_ms400;
+  sib1->ue_TimersAndConstants->t300 = get_NR_UE_TimersAndConstants_t300(timer_config);
+  sib1->ue_TimersAndConstants->t301 = get_NR_UE_TimersAndConstants_t301(timer_config);
+  sib1->ue_TimersAndConstants->t310 = get_NR_UE_TimersAndConstants_t310(timer_config);
+  sib1->ue_TimersAndConstants->n310 = get_NR_UE_TimersAndConstants_n310(timer_config);
+  sib1->ue_TimersAndConstants->t311 = get_NR_UE_TimersAndConstants_t311(timer_config);
+  sib1->ue_TimersAndConstants->n311 = get_NR_UE_TimersAndConstants_n311(timer_config);
+  sib1->ue_TimersAndConstants->t319 = get_NR_UE_TimersAndConstants_t319(timer_config);
 
   // uac-BarringInfo
   /*sib1->uac_BarringInfo = CALLOC(1, sizeof(struct NR_SIB1__uac_BarringInfo));
