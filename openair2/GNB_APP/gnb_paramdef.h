@@ -125,6 +125,7 @@ typedef enum {
 #define GNB_CONFIG_STRING_ULPRBBLACKLIST                "ul_prbblacklist"
 #define GNB_CONFIG_STRING_UMONDEFAULTDRB                "um_on_default_drb"
 #define GNB_CONFIG_STRING_FORCE256QAMOFF                "force_256qam_off"
+#define GNB_CONFIG_STRING_MAXMIMOLAYERS                 "maxMIMO_layers"
 #define GNB_CONFIG_STRING_ENABLE_SDAP                   "enable_sdap"
 #define GNB_CONFIG_STRING_DRBS                          "drbs"
 #define GNB_CONFIG_STRING_USE_DELTA_MCS                 "use_deltaMCS"
@@ -136,6 +137,7 @@ typedef enum {
 
 #define GNB_CONFIG_HLP_STRING_ENABLE_SDAP               "enable the SDAP layer\n"
 #define GNB_CONFIG_HLP_FORCE256QAMOFF                   "suppress activation of 256 QAM despite UE support"
+#define GNB_CONFIG_HLP_MAXMIMOLAYERS                    "limit on maxMIMO-layers for DL"
 #define GNB_CONFIG_HLP_STRING_DRBS                      "Number of total DRBs to establish, including the mandatory for PDU SEssion (default=1)\n"
 #define GNB_CONFIG_HLP_GNB_DU_ID "defines the gNB-DU ID (only applicable for DU)"
 #define GNB_CONFIG_HLP_GNB_CU_UP_ID "defines the gNB-CU-UP ID (only applicable for CU-UP)"
@@ -177,6 +179,7 @@ typedef enum {
 {GNB_CONFIG_STRING_GNB_CU_UP_ID, GNB_CONFIG_HLP_GNB_CU_UP_ID, 0,      .u64ptr=NULL, .defint64val=1,               TYPE_UINT64,    0},  \
 {GNB_CONFIG_STRING_USE_DELTA_MCS, GNB_CONFIG_HLP_USE_DELTA_MCS,     0,            .iptr=NULL,  .defintval=0,                 TYPE_INT,       0},  \
 {GNB_CONFIG_STRING_FORCEUL256QAMOFF, GNB_CONFIG_HLP_FORCEUL256QAMOFF,     0,            .iptr=NULL,  .defintval=0,                 TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_MAXMIMOLAYERS, GNB_CONFIG_HLP_MAXMIMOLAYERS, 0,      .iptr=NULL, .defintval=-1,               TYPE_INT,    0},  \
 }
 // clang-format on
 
@@ -212,6 +215,7 @@ typedef enum {
 #define GNB_GNB_CU_UP_ID_IDX            28
 #define GNB_USE_DELTA_MCS_IDX           29
 #define GNB_FORCEUL256QAMOFF_IDX        30
+#define GNB_MAXMIMOLAYERS_IDX           31
 
 #define TRACKING_AREA_CODE_OKRANGE {0x0001,0xFFFD}
 #define GNBPARAMS_CHECK {                                         \
