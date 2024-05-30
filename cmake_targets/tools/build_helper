@@ -667,7 +667,10 @@ install_asn1c_from_source(){
     # GIT_SSL_NO_VERIFY=true git clone https://gitlab.eurecom.fr/oai/asn1c.git /tmp/asn1c
     git clone https://github.com/mouse07410/asn1c /tmp/asn1c
     cd /tmp/asn1c
-    git checkout vlm_master
+    #git checkout vlm_master
+    # hotfix: current vlm_master (5fa129cf3161da9ff2d67341e6277e818c0f5d6a)
+    # breaks F1, NG, so use the one before.
+    git checkout 940dd5fa9f3917913fd487b13dfddfacd0ded06e
     # Showing which version is used
     git log -n1
     autoreconf -iv
