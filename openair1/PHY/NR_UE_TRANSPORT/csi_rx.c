@@ -40,9 +40,6 @@
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
 #include "PHY/NR_UE_ESTIMATION/filt16a_32.h"
 
-// 10*log10(pow(2,30))
-#define pow_2_30_dB 90
-
 // Additional memory allocation, because of applying the filter and the memory offset to ensure memory alignment
 #define FILTER_MARGIN 32
 
@@ -254,7 +251,7 @@ int nr_get_csi_rs_signal(const PHY_VARS_NR_UE *ue,
 
 
   *rsrp = rsrp_sum/meas_count;
-  *rsrp_dBm = dB_fixed(*rsrp) + 30 - pow_2_30_dB
+  *rsrp_dBm = dB_fixed(*rsrp) + 30 - SQ15_SQUARED_NORM_FACTOR_DB
       - ((int)openair0_cfg[0].rx_gain[0] - (int)openair0_cfg[0].rx_gain_offset[0]) - dB_fixed(ue->frame_parms.ofdm_symbol_size);
 
 #ifdef NR_CSIRS_DEBUG
