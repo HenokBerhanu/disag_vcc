@@ -251,7 +251,7 @@ void nr_gnb_measurements(PHY_VARS_gNB *gNB,
 
   ulsch_measurements->wideband_cqi_tot = dB_fixed2(rx_power_tot, meas->n0_power_tot);
   ulsch_measurements->rx_rssi_dBm =
-      rx_power_avg_dB + 30 - 10 * log10(pow(2, 30)) - (rx_gain - rx_gain_offset) - dB_fixed(fp->ofdm_symbol_size);
+      rx_power_avg_dB + 30 - SQ15_SQUARED_NORM_FACTOR_DB - (rx_gain - rx_gain_offset) - dB_fixed(fp->ofdm_symbol_size);
 
   LOG_D(PHY,
         "[RNTI %04x] RSSI %d dBm/RE, RSSI (digital) %d dB (N_RB_UL %d), WBand CQI tot %d dB, N0 Power tot %d, RX Power tot %d\n",

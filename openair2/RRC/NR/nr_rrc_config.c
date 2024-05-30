@@ -512,7 +512,8 @@ static void config_csiim(int do_csirs,
 
 void set_dl_maxmimolayers(NR_PDSCH_ServingCellConfig_t *pdsch_servingcellconfig,
                           const NR_ServingCellConfigCommon_t *scc,
-                          const NR_UE_NR_Capability_t *uecap)
+                          const NR_UE_NR_Capability_t *uecap,
+			  int maxMIMO_layers)
 {
 
   if(!pdsch_servingcellconfig->ext1)
@@ -536,7 +537,10 @@ void set_dl_maxmimolayers(NR_PDSCH_ServingCellConfig_t *pdsch_servingcellconfig,
           supported_bw_comparison(bw_mhz, &dl_fs->supportedBandwidthDL, dl_fs->channelBW_90mhz) &&
           dl_fs->maxNumberMIMO_LayersPDSCH) {
         long ue_supported_layers = (2 << *dl_fs->maxNumberMIMO_LayersPDSCH);
-        *pdsch_servingcellconfig->ext1->maxMIMO_Layers = NR_MAX_SUPPORTED_DL_LAYERS < ue_supported_layers ? NR_MAX_SUPPORTED_DL_LAYERS : ue_supported_layers;
+        if (maxMIMO_layers == -1) 
+          *pdsch_servingcellconfig->ext1->maxMIMO_Layers = NR_MAX_SUPPORTED_DL_LAYERS < ue_supported_layers ? NR_MAX_SUPPORTED_DL_LAYERS : ue_supported_layers;
+        else 
+          *pdsch_servingcellconfig->ext1->maxMIMO_Layers = maxMIMO_layers < ue_supported_layers ? maxMIMO_layers : ue_supported_layers;
         return;
       }
     }
@@ -2397,7 +2401,7 @@ static NR_SpCellConfig_t *get_initial_SpCellConfig(int uid,
   pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH = calloc(1, sizeof(*pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH));
   *pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH = NR_PDSCH_ServingCellConfig__nrofHARQ_ProcessesForPDSCH_n16;
   pdsch_servingcellconfig->pucch_Cell = NULL;
-  set_dl_maxmimolayers(pdsch_servingcellconfig, scc, NULL);
+  set_dl_maxmimolayers(pdsch_servingcellconfig, scc, NULL, configuration->maxMIMO_layers);
 
   // Downlink BWPs
   int n_dl_bwp = 0;
@@ -2600,7 +2604,7 @@ void update_cellGroupConfig(NR_CellGroupConfig_t *cellGroupConfig,
   NR_SpCellConfig_t *SpCellConfig = cellGroupConfig->spCellConfig;
 
   NR_PDSCH_ServingCellConfig_t *pdsch_servingcellconfig = SpCellConfig->spCellConfigDedicated->pdsch_ServingCellConfig->choice.setup;
-  set_dl_maxmimolayers(pdsch_servingcellconfig, scc, uecap);
+  set_dl_maxmimolayers(pdsch_servingcellconfig, scc, uecap, configuration->maxMIMO_layers);
 
   NR_CSI_MeasConfig_t *csi_MeasConfig = SpCellConfig->spCellConfigDedicated->csi_MeasConfig->choice.setup;
   for (int report = 0; report < csi_MeasConfig->csi_ReportConfigToAddModList->list.count; report++) {
@@ -2979,7 +2983,7 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
   pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH = calloc(1, sizeof(*pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH));
   *pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH = NR_PDSCH_ServingCellConfig__nrofHARQ_ProcessesForPDSCH_n16;
   pdsch_servingcellconfig->pucch_Cell = NULL;
-  set_dl_maxmimolayers(pdsch_servingcellconfig, servingcellconfigcommon, uecap);
+  set_dl_maxmimolayers(pdsch_servingcellconfig, servingcellconfigcommon, uecap, configuration->maxMIMO_layers);
   pdsch_servingcellconfig->ext1->processingType2Enabled = NULL;
 
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->csi_MeasConfig = NULL;

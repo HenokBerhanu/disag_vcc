@@ -213,12 +213,10 @@ static void nr_dlsch_channel_compensation(uint32_t rx_size_symbol,
 */
 static void nr_dlsch_channel_level(uint32_t rx_size_symbol,
                                    int32_t dl_ch_estimates_ext[][rx_size_symbol],
-                                   NR_DL_FRAME_PARMS *frame_parms,
+                                   uint8_t n_rx,
                                    uint8_t n_tx,
                                    int32_t avg[MAX_ANT][MAX_ANT],
-                                   uint8_t symbol,
-                                   uint32_t len,
-                                   unsigned short nb_rb);
+                                   uint32_t len);
 
 void nr_dlsch_scale_channel(uint32_t rx_size_symbol,
                             int32_t dl_ch_estimates_ext[][rx_size_symbol],
@@ -441,8 +439,11 @@ int nr_rx_pdsch(PHY_VARS_NR_UE *ue,
     if (meas_enabled)
       start_meas(&meas);
     if (first_symbol_flag) {
-      int32_t avg[MAX_ANT][MAX_ANT];
-      nr_dlsch_channel_level(rx_size_symbol, dl_ch_estimates_ext, frame_parms, nl, avg, symbol, nb_re_pdsch, nb_rb_pdsch);
+      int32_t avg[MAX_ANT][MAX_ANT] = {};
+      if (nb_re_pdsch)
+        nr_dlsch_channel_level(rx_size_symbol, dl_ch_estimates_ext, frame_parms->nb_antennas_rx, nl, avg, nb_re_pdsch);
+      else
+        LOG_E(NR_PHY, "Average channel level is 0: nb_rb_pdsch = %d, nb_re_pdsch = %d\n", nb_rb_pdsch, nb_re_pdsch);
       int avgs = 0;
       int32_t median[MAX_ANT][MAX_ANT];
       for (int aatx = 0; aatx < nl; aatx++)
@@ -1001,33 +1002,35 @@ void nr_dlsch_scale_channel(uint32_t rx_size_symbol,
 }
 
 
-//compute average channel_level on each (TX,RX) antenna pair
+/** @brief This function computes the average channel level over all allocated RBs
+ *         and antennas (TX/RX) in order to compute output shift for compensated signal
+    @param rx_size_symbol
+    @param dl_ch_estimates_ext Channel estimates in allocated RBs
+    @param n_rx number of antennas in RX
+    @param n_tx number of antennas in TX
+    @param avg Pointer to average signal strength
+    @param len Number of allocated PDSCH REs
+*/
 void nr_dlsch_channel_level(uint32_t rx_size_symbol,
                             int32_t dl_ch_estimates_ext[][rx_size_symbol],
-                            NR_DL_FRAME_PARMS *frame_parms,
+                            uint8_t n_rx,
                             uint8_t n_tx,
                             int32_t avg[MAX_ANT][MAX_ANT],
-                            uint8_t symbol,
-                            uint32_t len,
-                            unsigned short nb_rb)
+                            uint32_t len)
 {
   simde__m128i *dl_ch128, avg128D;
-
   //nb_rb*nre = y * 2^x
   int16_t x = factor2(len);
-  //x = (x>4) ? 4 : x;
   int16_t y = (len)>>x;
-  //printf("len = %d = %d * 2^(%d)\n",len,y,x);
-  uint32_t nb_rb_0 = len/12 + ((len%12)?1:0);
-
-  AssertFatal(y!=0,"Cannot divide by zero: in function %s of file %s\n", __func__, __FILE__);
+  LOG_D(NR_PHY, "%s: %d = %d * 2^(%d)\n", __func__, len, y, x);
+  uint32_t nb_rb_0 = len / NR_NB_SC_PER_RB + ((len % NR_NB_SC_PER_RB) ? 1 : 0);
 
   for (int aatx = 0; aatx < n_tx; aatx++) {
-    for (int aarx = 0; aarx < frame_parms->nb_antennas_rx; aarx++) {
+    for (int aarx = 0; aarx < n_rx; aarx++) {
       //clear average level
       avg128D = simde_mm_setzero_si128();
 
-      dl_ch128 = (simde__m128i *)dl_ch_estimates_ext[(aatx * frame_parms->nb_antennas_rx) + aarx];
+      dl_ch128 = (simde__m128i *)dl_ch_estimates_ext[(aatx * n_rx) + aarx];
 
       for (int rb = 0; rb < nb_rb_0; rb++) {
         avg128D = simde_mm_add_epi32(avg128D,simde_mm_srai_epi32(simde_mm_madd_epi16(dl_ch128[0],dl_ch128[0]),x));

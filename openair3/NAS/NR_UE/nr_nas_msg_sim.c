@@ -149,7 +149,7 @@ static int fill_imeisv(FGSMobileIdentity *mi, const uicc_t *uicc)
   mi->imeisv.digitsv1 = getImeisvDigit(uicc, i++);
   mi->imeisv.digitsv2 = getImeisvDigit(uicc, i++);
   mi->imeisv.spare  = 0x0f;
-  mi->imeisv.oddeven = 1;
+  mi->imeisv.oddeven = 0;
   return 19;
 }
 
