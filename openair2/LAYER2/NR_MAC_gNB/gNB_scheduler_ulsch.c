@@ -111,6 +111,65 @@ static int compute_ph_factor(int mu, int tbs_bits, int rb, int n_layers, int n_s
   return ((int)roundf(delta_tf + bw_factor));
 }
 
+/* \brief over-estimate the BSR index, given real_index.
+ *
+ * BSR does not account for headers, so we need to estimate. See 38.321
+ * 6.1.3.1: "The size of the RLC headers and MAC subheaders are not considered
+ * in the buffer size computation." */
+static int overestim_bsr_index(int real_index)
+{
+  /* if UE reports BSR 0, it means "no data"; otherwise, overestimate to
+   * account for headers */
+  const int add_overestim = 1;
+  return real_index > 0 ? real_index + add_overestim : real_index;
+}
+
+static int estimate_ul_buffer_short_bsr(const NR_BSR_SHORT *bsr)
+{
+  /* NOTE: the short BSR might be for different LCGID than 0, but we do not
+   * differentiate them */
+  int rep_idx = bsr->Buffer_size;
+  int estim_idx = overestim_bsr_index(rep_idx);
+  int max = sizeofArray(NR_SHORT_BSR_TABLE);
+  int idx = min(estim_idx, max);
+  int estim_size = NR_SHORT_BSR_TABLE[idx];
+  LOG_D(NR_MAC, "short BSR LCGID %d index %d estim index %d size %d\n", bsr->LcgID, rep_idx, estim_idx, estim_size);
+  return estim_size;
+}
+
+static int estimate_ul_buffer_long_bsr(const NR_BSR_LONG *bsr)
+{
+  LOG_D(NR_MAC,
+        "LONG BSR, LCG ID(7-0) %d/%d/%d/%d/%d/%d/%d/%d\n",
+        bsr->LcgID7,
+        bsr->LcgID6,
+        bsr->LcgID5,
+        bsr->LcgID4,
+        bsr->LcgID3,
+        bsr->LcgID2,
+        bsr->LcgID1,
+        bsr->LcgID0);
+  bool bsr_active[8] = {bsr->LcgID0 != 0, bsr->LcgID1 != 0, bsr->LcgID2 != 0, bsr->LcgID3 != 0, bsr->LcgID4 != 0, bsr->LcgID5 != 0, bsr->LcgID6 != 0, bsr->LcgID7 != 0};
+
+  int estim_size = 0;
+  int max = sizeofArray(NR_LONG_BSR_TABLE);
+  uint8_t *payload = ((uint8_t*) bsr) + 1;
+  int m = 0;
+  const int total_lcgids = 8; /* see 38.321 6.1.3.1 */
+  for (int n = 0; n < total_lcgids; n++) {
+    if (!bsr_active[n])
+      continue;
+    int rep_idx = payload[m];
+    int estim_idx = overestim_bsr_index(rep_idx);
+    int idx = min(estim_idx, max);
+    estim_size += NR_LONG_BSR_TABLE[idx];
+
+    LOG_D(NR_MAC, "LONG BSR LCGID/m %d/%d Index %d estim index %d size %d", n, m, rep_idx, estim_idx, estim_size);
+    m++;
+  }
+  return estim_size;
+}
+
 //  For both UL-SCH except:
 //   - UL-SCH: fixed-size MAC CE(known by LCID)
 //   - UL-SCH: padding
@@ -166,7 +225,6 @@ static int nr_process_mac_pdu(instance_t module_idP,
     LOG_D(NR_MAC, "In %s: received UL-SCH sub-PDU with LCID 0x%x in %d.%d (remaining PDU length %d)\n", __func__, rx_lcid, frameP, slot, pdu_len);
 
     unsigned char *ce_ptr;
-    int n_Lcg = 0;
 
     switch(rx_lcid){
       //  MAC CE
@@ -192,17 +250,8 @@ static int nr_process_mac_pdu(instance_t module_idP,
         }
         /* Extract short BSR value */
         ce_ptr = &pduP[mac_subheader_len];
-        NR_BSR_SHORT *bsr_s = (NR_BSR_SHORT *) ce_ptr;
-        sched_ctrl->estimated_ul_buffer = 0;
-        sched_ctrl->estimated_ul_buffer = NR_SHORT_BSR_TABLE[bsr_s->Buffer_size];
-        LOG_D(NR_MAC,
-              "SHORT BSR at %4d.%2d, LCG ID %d, BS Index %d, BS value < %d, est buf %d\n",
-              frameP,
-              slot,
-              bsr_s->LcgID,
-              bsr_s->Buffer_size,
-              NR_SHORT_BSR_TABLE[bsr_s->Buffer_size],
-              sched_ctrl->estimated_ul_buffer);
+        sched_ctrl->estimated_ul_buffer = estimate_ul_buffer_short_bsr((NR_BSR_SHORT *)ce_ptr);
+        LOG_D(NR_MAC, "SHORT BSR at %4d.%2d, est buf %d\n", frameP, slot, sched_ctrl->estimated_ul_buffer);
         break;
       case UL_SCH_LCID_L_BSR:
       case UL_SCH_LCID_L_TRUNCATED_BSR:
@@ -219,32 +268,8 @@ static int nr_process_mac_pdu(instance_t module_idP,
         }
         /* Extract long BSR value */
         ce_ptr = &pduP[mac_subheader_len];
-        NR_BSR_LONG *bsr_l = (NR_BSR_LONG *) ce_ptr;
-        sched_ctrl->estimated_ul_buffer = 0;
-
-        n_Lcg = bsr_l->LcgID7 + bsr_l->LcgID6 + bsr_l->LcgID5 + bsr_l->LcgID4 +
-                bsr_l->LcgID3 + bsr_l->LcgID2 + bsr_l->LcgID1 + bsr_l->LcgID0;
-
-        LOG_D(NR_MAC, "LONG BSR, LCG ID(7-0) %d/%d/%d/%d/%d/%d/%d/%d\n",
-              bsr_l->LcgID7, bsr_l->LcgID6, bsr_l->LcgID5, bsr_l->LcgID4,
-              bsr_l->LcgID3, bsr_l->LcgID2, bsr_l->LcgID1, bsr_l->LcgID0);
-
-        for (int n = 0; n < n_Lcg; n++){
-          LOG_D(NR_MAC, "LONG BSR, %d/%d (n/n_Lcg), BS Index %d, BS value < %d",
-                n, n_Lcg, pduP[mac_subheader_len + 1 + n],
-                NR_LONG_BSR_TABLE[pduP[mac_subheader_len + 1 + n]]);
-          sched_ctrl->estimated_ul_buffer += NR_LONG_BSR_TABLE[pduP[mac_subheader_len + 1 + n]];
-          LOG_D(NR_MAC,
-                "LONG BSR at %4d.%2d, %d/%d (n/n_Lcg), BS Index %d, BS value < %d, total %d\n",
-                frameP,
-                slot,
-                n,
-                n_Lcg,
-                pduP[mac_subheader_len + 1 + n],
-                NR_LONG_BSR_TABLE[pduP[mac_subheader_len + 1 + n]],
-                sched_ctrl->estimated_ul_buffer);
-        }
-
+        sched_ctrl->estimated_ul_buffer = estimate_ul_buffer_long_bsr((NR_BSR_LONG *)ce_ptr);
+        LOG_D(NR_MAC, "LONG BSR at %4d.%2d, estim buf %d\n", frameP, slot, sched_ctrl->estimated_ul_buffer);
         break;
 
       case UL_SCH_LCID_C_RNTI:
