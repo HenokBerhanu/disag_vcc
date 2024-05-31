@@ -102,6 +102,8 @@ typedef struct {
   stream_security_container_t *security_container;
   Guti5GSMobileIdentity_t *guti;
   bool termination_procedure;
+  uint8_t  *registration_request_buf;
+  uint32_t  registration_request_len;
 } nr_ue_nas_t;
 
 typedef enum fgs_protocol_discriminator_e {
