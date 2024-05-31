@@ -130,7 +130,7 @@ static int estimate_ul_buffer_short_bsr(const NR_BSR_SHORT *bsr)
    * differentiate them */
   int rep_idx = bsr->Buffer_size;
   int estim_idx = overestim_bsr_index(rep_idx);
-  int max = sizeofArray(NR_SHORT_BSR_TABLE);
+  int max = sizeofArray(NR_SHORT_BSR_TABLE) - 1;
   int idx = min(estim_idx, max);
   int estim_size = NR_SHORT_BSR_TABLE[idx];
   LOG_D(NR_MAC, "short BSR LCGID %d index %d estim index %d size %d\n", bsr->LcgID, rep_idx, estim_idx, estim_size);
@@ -152,7 +152,7 @@ static int estimate_ul_buffer_long_bsr(const NR_BSR_LONG *bsr)
   bool bsr_active[8] = {bsr->LcgID0 != 0, bsr->LcgID1 != 0, bsr->LcgID2 != 0, bsr->LcgID3 != 0, bsr->LcgID4 != 0, bsr->LcgID5 != 0, bsr->LcgID6 != 0, bsr->LcgID7 != 0};
 
   int estim_size = 0;
-  int max = sizeofArray(NR_LONG_BSR_TABLE);
+  int max = sizeofArray(NR_LONG_BSR_TABLE) - 1;
   uint8_t *payload = ((uint8_t*) bsr) + 1;
   int m = 0;
   const int total_lcgids = 8; /* see 38.321 6.1.3.1 */
