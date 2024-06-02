@@ -237,7 +237,7 @@ void nr_decode_pucch0(PHY_VARS_gNB *gNB,
   uint8_t index=0;
 
   int nb_re_pucch = 12*pucch_pdu->prb_size;  // prb size is 1
-  int signal_energy = 0, signal_energy_ant0 = 0;
+  int64_t signal_energy = 0, signal_energy_ant0 = 0;
 
   for (int l=0; l<pucch_pdu->nr_of_symbols; l++) {
     uint8_t l2 = l + pucch_pdu->start_symbol_index;
