@@ -162,7 +162,7 @@ void gNB_I0_measurements(PHY_VARS_gNB *gNB,int slot, int first_symb,int num_symb
     } //rb
   } // symb
   int nb_rb=0;
-  int32_t n0_subband_tot=0;
+  int64_t n0_subband_tot=0;
   int32_t n0_subband_tot_perANT[frame_parms->nb_antennas_rx];
 
   memset(n0_subband_tot_perANT, 0, sizeof(n0_subband_tot_perANT));
