@@ -199,6 +199,7 @@ int main(int argc, char **argv)
   uint16_t Nid_cell=0;
   uint64_t SSB_positions=0x01;
   int ssb_subcarrier_offset = 0;
+  int ssb_scan_threads = 0;
 
   channel_desc_t *gNB2UE;
   get_softmodem_params()->sa = 1;
@@ -500,8 +501,9 @@ int main(int argc, char **argv)
   set_tdd_config_nr(&gNB->gNB_config, mu, 7, 6, 2, 4);
   phy_init_nr_gNB(gNB);
   frame_parms->ssb_start_subcarrier = 12 * gNB->gNB_config.ssb_table.ssb_offset_point_a.value + ssb_subcarrier_offset;
+  initFloatingCoresTpool(ssb_scan_threads, &nrUE_params.Tpool, false, "UE-tpool");
 
-  uint8_t n_hf = 0;
+  int n_hf = 0;
   int cyclic_prefix_type = NFAPI_CP_NORMAL;
 
   double fs=0, eps;
@@ -615,7 +617,7 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
-  nr_gold_pbch(UE);
+  nr_gold_pbch(UE->nr_gold_pbch, Nid_cell, frame_parms->Lmax);
 
   processingData_L1tx_t msgDataTx;
   // generate signal
@@ -766,13 +768,16 @@ int main(int argc, char **argv)
       }
 
       if (n_trials==1) {
-	LOG_M("rxsig0.m","rxs0", UE->common_vars.rxdata[0],frame_parms->samples_per_frame,1,1);
-	if (gNB->frame_parms.nb_antennas_tx>1)
-	  LOG_M("rxsig1.m","rxs1", UE->common_vars.rxdata[1],frame_parms->samples_per_frame,1,1);
+        LOG_M("rxsig0.m", "rxs0", UE->common_vars.rxdata[0], frame_parms->samples_per_frame, 1, 1);
+        if (gNB->frame_parms.nb_antennas_tx > 1)
+          LOG_M("rxsig1.m", "rxs1", UE->common_vars.rxdata[1], frame_parms->samples_per_frame, 1, 1);
       }
       if (UE->is_synchronized == 0) {
-	UE_nr_rxtx_proc_t proc={0};
-        nr_initial_sync_t ret = nr_initial_sync(&proc, UE, 1, 0);
+        UE_nr_rxtx_proc_t proc = {0};
+        nr_gscn_info_t gscnInfo[MAX_GSCN_BAND] = {0};
+        const int numGscn = 1;
+        gscnInfo[0].ssbFirstSC = frame_parms->ssb_start_subcarrier;
+        nr_initial_sync_t ret = nr_initial_sync(&proc, UE, 1, 0, gscnInfo, numGscn);
         printf("nr_initial_sync1 returns %s\n", ret.cell_detected ? "cell detected" : "cell not detected");
         if (!ret.cell_detected)
           n_errors++;
@@ -795,8 +800,9 @@ int main(int argc, char **argv)
         for (int i = UE->symbol_offset + 1; i < UE->symbol_offset + 4; i++) {
           nr_slot_fep(UE, frame_parms, &proc, i % frame_parms->symbols_per_slot, rxdataF, link_type_dl);
 
-          nr_pbch_channel_estimation(UE,
-                                     &UE->frame_parms,
+          nr_pbch_channel_estimation(&UE->frame_parms,
+                                     &UE->SL_UE_PHY_PARAMS,
+                                     UE->nr_gold_pbch,
                                      estimateSz,
                                      dl_ch_estimates,
                                      dl_ch_estimates_time,
@@ -805,12 +811,29 @@ int main(int argc, char **argv)
                                      i - (UE->symbol_offset + 1),
                                      ssb_index % 8,
                                      n_hf,
+                                     frame_parms->ssb_start_subcarrier,
                                      rxdataF,
                                      false,
                                      frame_parms->Nid_cell);
         }
         fapiPbch_t result;
-        ret = nr_rx_pbch(UE, &proc, estimateSz, dl_ch_estimates, frame_parms, ssb_index % 8, &result, rxdataF);
+        int ret_ssb_idx;
+        int ret_symbol_offset;
+        ret = nr_rx_pbch(UE,
+                         &proc,
+                         true,
+                         estimateSz,
+                         dl_ch_estimates,
+                         frame_parms,
+                         ssb_index % 8,
+                         frame_parms->ssb_start_subcarrier,
+                         Nid_cell,
+                         &result,
+                         &n_hf,
+                         &ret_ssb_idx,
+                         &ret_symbol_offset,
+                         frame_parms->samples_per_frame_wCP,
+                         rxdataF);
 
         if (ret == 0) {
           // UE->rx_ind.rx_indication_body->mib_pdu.ssb_index;  //not yet detected automatically

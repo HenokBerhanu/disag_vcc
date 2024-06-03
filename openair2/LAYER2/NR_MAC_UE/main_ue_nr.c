@@ -98,12 +98,12 @@ void nr_ue_mac_default_configs(NR_UE_MAC_INST_t *mac)
   mac->scheduling_info.prohibitPHR_Timer = NR_PHR_Config__phr_ProhibitTimer_sf10;
 }
 
-void nr_ue_send_synch_request(NR_UE_MAC_INST_t *mac, module_id_t module_id, int cc_id, int cell_id)
+void nr_ue_send_synch_request(NR_UE_MAC_INST_t *mac, module_id_t module_id, int cc_id, const fapi_nr_synch_request_t *sync_req)
 {
   // Sending to PHY a request to resync
   mac->synch_request.Mod_id = module_id;
   mac->synch_request.CC_id = cc_id;
-  mac->synch_request.synch_req.target_Nid_cell = cell_id;
+  mac->synch_request.synch_req = *sync_req;
   mac->if_module->synch_request(&mac->synch_request);
 }
 

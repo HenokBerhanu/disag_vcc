@@ -94,12 +94,6 @@
  *
  */
 
-typedef enum {
-  pss = 0,
-  pbch = 1,
-  si = 2
-} sync_mode_t;
-
 static void *NRUE_phy_stub_standalone_pnf_task(void *arg);
 
 static size_t dump_L1_UE_meas_stats(PHY_VARS_NR_UE *ue, char *output, size_t max_len)
@@ -348,46 +342,18 @@ static void *NRUE_phy_stub_standalone_pnf_task(void *arg)
  * \param arg is a pointer to a \ref PHY_VARS_NR_UE structure.
  */
 
-typedef nr_rxtx_thread_data_t syncData_t;
+typedef struct {
+  PHY_VARS_NR_UE *UE;
+  UE_nr_rxtx_proc_t proc;
+  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND];
+  int numGscn;
+  int rx_offset;
+} syncData_t;
 
 static void UE_synch(void *arg) {
-  syncData_t *syncD=(syncData_t *) arg;
-  int i, hw_slot_offset;
+  syncData_t *syncD = (syncData_t *)arg;
   PHY_VARS_NR_UE *UE = syncD->UE;
-  sync_mode_t sync_mode = pbch;
-  //int CC_id = UE->CC_id;
-  static int freq_offset = 0;
   UE->is_synchronized = 0;
-
-  if (UE->UE_scan == 0) {
-
-    for (i=0; i<openair0_cfg[UE->rf_map.card].rx_num_channels; i++) {
-
-      LOG_I( PHY, "[SCHED][UE] Check absolute frequency DL %f, UL %f (RF card %d, oai_exit %d, channel %d, rx_num_channels %d)\n",
-        openair0_cfg[UE->rf_map.card].rx_freq[UE->rf_map.chain+i],
-        openair0_cfg[UE->rf_map.card].tx_freq[UE->rf_map.chain+i],
-        UE->rf_map.card,
-        oai_exit,
-        i,
-        openair0_cfg[0].rx_num_channels);
-
-    }
-
-    sync_mode = pbch;
-  } else {
-    LOG_E(PHY,"Fixme!\n");
-    /*
-    for (i=0; i<openair0_cfg[UE->rf_map.card].rx_num_channels; i++) {
-      downlink_frequency[UE->rf_map.card][UE->rf_map.chain+i] = bands_to_scan.band_info[CC_id].dl_min;
-      uplink_frequency_offset[UE->rf_map.card][UE->rf_map.chain+i] =
-        bands_to_scan.band_info[CC_id].ul_min-bands_to_scan.band_info[CC_id].dl_min;
-      openair0_cfg[UE->rf_map.card].rx_freq[UE->rf_map.chain+i] = downlink_frequency[CC_id][i];
-      openair0_cfg[UE->rf_map.card].tx_freq[UE->rf_map.chain+i] =
-        downlink_frequency[CC_id][i]+uplink_frequency_offset[CC_id][i];
-      openair0_cfg[UE->rf_map.card].rx_gain[UE->rf_map.chain+i] = UE->rx_total_gain_dB;
-    }
-    */
-  }
 
   if (UE->target_Nid_cell != -1) {
     LOG_W(NR_PHY, "Starting re-sync detection for target Nid_cell %i\n", UE->target_Nid_cell);
@@ -395,87 +361,32 @@ static void UE_synch(void *arg) {
     LOG_W(NR_PHY, "Starting sync detection\n");
   }
 
-  switch (sync_mode) {
-    /*
-    case pss:
-      LOG_I(PHY,"[SCHED][UE] Scanning band %d (%d), freq %u\n",bands_to_scan.band_info[current_band].band, current_band,bands_to_scan.band_info[current_band].dl_min+current_offset);
-      //lte_sync_timefreq(UE,current_band,bands_to_scan.band_info[current_band].dl_min+current_offset);
-      current_offset += 20000000; // increase by 20 MHz
+  LOG_I(PHY, "[UE thread Synch] Running Initial Synch \n");
 
-      if (current_offset > bands_to_scan.band_info[current_band].dl_max-bands_to_scan.band_info[current_band].dl_min) {
-        current_band++;
-        current_offset=0;
-      }
+  uint64_t dl_carrier, ul_carrier;
+  nr_get_carrier_frequencies(UE, &dl_carrier, &ul_carrier);
+  nr_initial_sync_t ret = nr_initial_sync(&syncD->proc, UE, 2, get_softmodem_params()->sa, syncD->gscnInfo, syncD->numGscn);
+  if (ret.cell_detected) {
+    syncD->rx_offset = ret.rx_offset;
+    const int freq_offset = UE->common_vars.freq_offset; // frequency offset computed with pss in initial sync
+    const int hw_slot_offset =
+        ((ret.rx_offset << 1) / UE->frame_parms.samples_per_subframe * UE->frame_parms.slots_per_subframe)
+        + round((float)((ret.rx_offset << 1) % UE->frame_parms.samples_per_subframe) / UE->frame_parms.samples_per_slot0);
 
-      if (current_band==bands_to_scan.nbands) {
-        current_band=0;
-        oai_exit=1;
-      }
+    // rerun with new cell parameters and frequency-offset
+    // todo: the freq_offset computed on DL shall be scaled before being applied to UL
+    nr_rf_card_config_freq(&openair0_cfg[UE->rf_map.card], ul_carrier, dl_carrier, freq_offset);
 
-      for (i=0; i<openair0_cfg[UE->rf_map.card].rx_num_channels; i++) {
-        downlink_frequency[UE->rf_map.card][UE->rf_map.chain+i] = bands_to_scan.band_info[current_band].dl_min+current_offset;
-        uplink_frequency_offset[UE->rf_map.card][UE->rf_map.chain+i] = bands_to_scan.band_info[current_band].ul_min-bands_to_scan.band_info[0].dl_min + current_offset;
-        openair0_cfg[UE->rf_map.card].rx_freq[UE->rf_map.chain+i] = downlink_frequency[CC_id][i];
-        openair0_cfg[UE->rf_map.card].tx_freq[UE->rf_map.chain+i] = downlink_frequency[CC_id][i]+uplink_frequency_offset[CC_id][i];
-        openair0_cfg[UE->rf_map.card].rx_gain[UE->rf_map.chain+i] = UE->rx_total_gain_dB;
+    LOG_I(PHY,
+          "Got synch: hw_slot_offset %d, carrier off %d Hz, rxgain %f (DL %f Hz, UL %f Hz)\n",
+          hw_slot_offset,
+          freq_offset,
+          openair0_cfg[UE->rf_map.card].rx_gain[0],
+          openair0_cfg[UE->rf_map.card].rx_freq[0],
+          openair0_cfg[UE->rf_map.card].tx_freq[0]);
 
-        if (UE->UE_scan_carrier) {
-          openair0_cfg[UE->rf_map.card].autocal[UE->rf_map.chain+i] = 1;
-        }
-      }
-
-      break;
-    */
-    case pbch:
-      LOG_I(PHY, "[UE thread Synch] Running Initial Synch \n");
-
-      uint64_t dl_carrier, ul_carrier;
-      nr_get_carrier_frequencies(UE, &dl_carrier, &ul_carrier);
-      nr_initial_sync_t ret = nr_initial_sync(&syncD->proc, UE, 2, get_softmodem_params()->sa);
-      if (ret.cell_detected) {
-        syncD->rx_offset = ret.rx_offset;
-        freq_offset = UE->common_vars.freq_offset; // frequency offset computed with pss in initial sync
-        hw_slot_offset =
-            ((ret.rx_offset << 1) / UE->frame_parms.samples_per_subframe * UE->frame_parms.slots_per_subframe)
-            + round((float)((ret.rx_offset << 1) % UE->frame_parms.samples_per_subframe) / UE->frame_parms.samples_per_slot0);
-
-        // rerun with new cell parameters and frequency-offset
-        // todo: the freq_offset computed on DL shall be scaled before being applied to UL
-        nr_rf_card_config_freq(&openair0_cfg[UE->rf_map.card], ul_carrier, dl_carrier, freq_offset);
-
-        LOG_I(PHY,"Got synch: hw_slot_offset %d, carrier off %d Hz, rxgain %f (DL %f Hz, UL %f Hz)\n",
-              hw_slot_offset,
-              freq_offset,
-              openair0_cfg[UE->rf_map.card].rx_gain[0],
-              openair0_cfg[UE->rf_map.card].rx_freq[0],
-              openair0_cfg[UE->rf_map.card].tx_freq[0]);
-
-        UE->rfdevice.trx_set_freq_func(&UE->rfdevice,&openair0_cfg[0]);
-        if (UE->UE_scan_carrier == 1)
-          UE->UE_scan_carrier = 0;
-        else
-          UE->is_synchronized = 1;
-      } else {
-        if (UE->UE_scan_carrier == 1) {
-
-          if (freq_offset >= 0)
-            freq_offset += 100;
-
-          freq_offset *= -1;
-
-          nr_rf_card_config_freq(&openair0_cfg[UE->rf_map.card], ul_carrier, dl_carrier, freq_offset);
-
-          LOG_I(PHY, "Initial sync failed: trying carrier off %d Hz\n", freq_offset);
-
-          UE->rfdevice.trx_set_freq_func(&UE->rfdevice,&openair0_cfg[0]);
-        }
-      }
-      break;
-
-    case si:
-    default:
-      break;
-
+    UE->rfdevice.trx_set_freq_func(&UE->rfdevice, &openair0_cfg[0]);
+    UE->is_synchronized = 1;
   }
 }
 
@@ -609,6 +520,7 @@ static int UE_dl_preprocessing(PHY_VARS_NR_UE *UE, const UE_nr_rxtx_proc_t *proc
     // Start synchronization with a target gNB
     if (UE->synch_request.received_synch_request == 1) {
       UE->is_synchronized = 0;
+      UE->UE_scan_carrier = UE->synch_request.synch_req.ssb_bw_scan;
       UE->target_Nid_cell = UE->synch_request.synch_req.target_Nid_cell;
       clean_UE_harq(UE);
       UE->synch_request.received_synch_request = 0;
@@ -803,16 +715,16 @@ void *UE_thread(void *arg)
         delNotifiedFIFO_elt(res);
         stream_status = STREAM_STATUS_UNSYNC;
       } else {
-	if (IS_SOFTMODEM_IQPLAYER || IS_SOFTMODEM_IQRECORDER) {
-	  // For IQ recorder-player we force synchronization to happen in 280 ms
-	  while (trashed_frames != 28) {
-	    readFrame(UE, &sync_timestamp, true);
-	    trashed_frames += 2;
-	  }
-	} else {
-	  readFrame(UE, &sync_timestamp, true);
-	  trashed_frames += 2;
-	}
+        if (IS_SOFTMODEM_IQPLAYER || IS_SOFTMODEM_IQRECORDER) {
+          // For IQ recorder-player we force synchronization to happen in 280 ms
+          while (trashed_frames != 28) {
+            readFrame(UE, &sync_timestamp, true);
+            trashed_frames += 2;
+          }
+        } else {
+          readFrame(UE, &sync_timestamp, true);
+          trashed_frames += 2;
+        }
         continue;
       }
     }
@@ -823,6 +735,20 @@ void *UE_thread(void *arg)
       readFrame(UE, &sync_timestamp, false);
       notifiedFIFO_elt_t *Msg = newNotifiedFIFO_elt(sizeof(syncData_t), 0, &nf, UE_synch);
       syncData_t *syncMsg = (syncData_t *)NotifiedFifoData(Msg);
+      NR_DL_FRAME_PARMS *fp = &UE->frame_parms;
+      if (UE->UE_scan_carrier) {
+        // Get list of GSCN in this band for UE's bandwidth and center frequency.
+        LOG_W(PHY, "UE set to scan all GSCN in current bandwidth\n");
+        syncMsg->numGscn =
+            get_scan_ssb_first_sc(fp->dl_CarrierFreq, fp->N_RB_DL, fp->nr_band, fp->numerology_index, syncMsg->gscnInfo);
+      } else {
+        LOG_W(PHY, "SSB position provided\n");
+        nr_gscn_info_t *g = syncMsg->gscnInfo;
+        g->ssbFirstSC = fp->ssb_start_subcarrier;
+        g->gscn = 0;
+        g->ssRef = 0;
+        syncMsg->numGscn = 1;
+      }
       syncMsg->UE = UE;
       memset(&syncMsg->proc, 0, sizeof(syncMsg->proc));
       pushTpool(&(get_nrUE_params()->Tpool), Msg);

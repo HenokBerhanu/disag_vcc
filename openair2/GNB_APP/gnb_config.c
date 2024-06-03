@@ -96,71 +96,6 @@
 
 extern uint16_t sf_ahead;
 
-// synchronization raster per band tables (Rel.15)
-// (38.101-1 Table 5.4.3.3-1 and 38.101-2 Table 5.4.3.3-1)
-// band nb, sub-carrier spacing index, Range of gscn (First, Step size, Last)
-const sync_raster_t sync_raster[] = {
-  {1, 0, 5279, 1, 5419},
-  {2, 0, 4829, 1, 4969},
-  {3, 0, 4517, 1, 4693},
-  {5, 0, 2177, 1, 2230},
-  {5, 1, 2183, 1, 2224},
-  {7, 0, 6554, 1, 6718},
-  {8, 0, 2318, 1, 2395},
-  {12, 0, 1828, 1, 1858},
-  {13, 0, 1871, 1, 1885},
-  {14, 0, 1901, 1, 1915},
-  {18, 0, 2156, 1, 2182},
-  {20, 0, 1982, 1, 2047},
-  {24, 0, 3818, 1, 3892},
-  {24, 1, 3824, 1, 3886},
-  {25, 0, 4829, 1, 4981},
-  {26, 0, 2153, 1, 2230},
-  {28, 0, 1901, 1, 2002},
-  {29, 0, 1798, 1, 1813},
-  {30, 0, 5879, 1, 5893},
-  {34, 0, 5030, 1, 5056},
-  {34, 1, 5036, 1, 5050},
-  {38, 0, 6431, 1, 6544},
-  {38, 1, 6437, 1, 6538},
-  {39, 0, 4706, 1, 4795},
-  {39, 1, 4712, 1, 4789},
-  {40, 1, 5762, 1, 5989},
-  {41, 0, 6246, 3, 6717},
-  {41, 1, 6252, 3, 6714},
-  {48, 1, 7884, 1, 7982},
-  {50, 0, 3584, 1, 3787},
-  {51, 0, 3572, 1, 3574},
-  {53, 0, 6215, 1, 6232},
-  {53, 1, 6221, 1, 6226},
-  {65, 0, 5279, 1, 5494},
-  {66, 0, 5279, 1, 5494},
-  {66, 1, 5285, 1, 5488},
-  {67, 0, 1850, 1, 1888},
-  {70, 0, 4993, 1, 5044},
-  {71, 0, 1547, 1, 1624},
-  {74, 0, 3692, 1, 3790},
-  {75, 0, 3584, 1, 3787},
-  {76, 0, 3572, 1, 3574},
-  {77, 1, 7711, 1, 8329},
-  {78, 1, 7711, 1, 8051},
-  {79, 1, 8480, 16, 8880},
-  {85, 0, 1826, 1, 1858},
-  {90, 1, 6252, 1, 6714},
-  {91, 0, 3572, 1, 3574},
-  {92, 0, 3584, 1, 3787},
-  {93, 0, 3572, 1, 3574},
-  {94, 0, 3584, 1, 3587},
-  {257, 3, 22388, 1, 22558},
-  {257, 4, 22390, 2, 22556},
-  {258, 3, 22257, 1, 22443},
-  {258, 4, 22258, 2, 22442},
-  {260, 3, 22995, 1, 23166},
-  {260, 4, 22996, 2, 23164},
-  {261, 3, 22446, 1, 22492},
-  {261, 4, 22446, 2, 22490},
-};
-
 extern int config_check_band_frequencies(int ind, int16_t band, uint64_t downlink_frequency,
                                          int32_t uplink_frequency_offset, uint32_t  frame_type);
 
@@ -960,8 +895,6 @@ void RCconfig_NR_L1(void)
   }
 }
 
-static void check_ssb_raster(uint64_t freq, int band, int scs);
-
 static NR_ServingCellConfigCommon_t *get_scc_config(configmodule_interface_t *cfg, int minRXTXTIME)
 {
   NR_ServingCellConfigCommon_t *scc = calloc(1,sizeof(*scc));
@@ -1541,56 +1474,6 @@ void config_security(gNB_RRC_INST *rrc)
           *sec_params[SECURITY_CONFIG_DO_DRB_INTEGRITY_IDX].strptr);
     exit(1);
   }
-}
-
-// Section 5.4.3 of 38.101-1 and -2
-static void check_ssb_raster(uint64_t freq, int band, int scs)
-{
-  int start_gscn = 0, step_gscn = 0, end_gscn = 0;
-  for (int i = 0; i < sizeof(sync_raster) / sizeof(sync_raster_t); i++) {
-    if (sync_raster[i].band == band &&
-        sync_raster[i].scs_index == scs) {
-      start_gscn = sync_raster[i].first_gscn;
-      step_gscn = sync_raster[i].step_gscn;
-      end_gscn = sync_raster[i].last_gscn;
-      break;
-    }
-  }
-  AssertFatal(start_gscn != 0, "Couldn't find band %d with SCS %d\n", band, scs);
-  int gscn;
-  if (freq < 3000000000) {
-    int N = 0;
-    int M = 0;
-    for (int k = 0; k < 3; k++) {
-      M = (k << 1) + 1;
-      if ((freq - M * 50000) % 1200000 == 0) {
-        N = (freq - M * 50000) / 1200000;
-        break;
-      }
-    }
-    AssertFatal(N != 0, "SSB frequency %lu Hz not on the synchronization raster (N * 1200kHz + M * 50 kHz)\n",
-                freq);
-    gscn = (3 * N) + (M - 3) / 2;
-  }
-  else if (freq < 24250000000) {
-    AssertFatal((freq - 3000000000) % 1440000 == 0,
-                "SSB frequency %lu Hz not on the synchronization raster (3000 MHz + N * 1.44 MHz)\n",
-                freq);
-    gscn = ((freq - 3000000000) / 1440000) + 7499;
-  }
-  else {
-    AssertFatal((freq - 24250080000) % 17280000 == 0,
-                "SSB frequency %lu Hz not on the synchronization raster (24250.08 MHz + N * 17.28 MHz)\n",
-                freq);
-    gscn = ((freq - 24250080000) / 17280000) + 22256;
-  }
-  AssertFatal(gscn >= start_gscn && gscn <= end_gscn,
-              "GSCN %d corresponding to SSB frequency %lu does not belong to GSCN range for band %d\n",
-              gscn, freq, band);
-  int rel_gscn = gscn - start_gscn;
-  AssertFatal(rel_gscn % step_gscn == 0,
-              "GSCN %d corresponding to SSB frequency %lu not in accordance with GSCN step for band %d\n",
-               gscn, freq, band);
 }
 
 void RCconfig_NRRRC(gNB_RRC_INST *rrc)

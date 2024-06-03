@@ -57,15 +57,18 @@ void nr_pdcch_channel_estimation(PHY_VARS_NR_UE *ue,
                                  c16_t pdcch_dl_ch_estimates[][pdcch_est_size],
                                  c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
 
-c32_t nr_pbch_dmrs_correlation(const PHY_VARS_NR_UE *ue,
+c32_t nr_pbch_dmrs_correlation(const NR_DL_FRAME_PARMS *fp,
                                const UE_nr_rxtx_proc_t *proc,
                                const int symbol,
                                const int dmrss,
+                               const int Nid_cell,
+                               const int ssb_start_subcarrier,
                                const uint32_t nr_gold_pbch[NR_PBCH_DMRS_LENGTH_DWORD],
-                               const c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
+                               const c16_t rxdataF[][fp->samples_per_slot_wCP]);
 
-int nr_pbch_channel_estimation(PHY_VARS_NR_UE *ue,
-                               NR_DL_FRAME_PARMS *fp,
+int nr_pbch_channel_estimation(const NR_DL_FRAME_PARMS *fp,
+                               const sl_nr_ue_phy_params_t *sl_phy_params,
+                               const uint32_t nr_gold_pbch[2][64][NR_PBCH_DMRS_LENGTH_DWORD],
                                int estimateSz,
                                struct complex16 dl_ch_estimates[][estimateSz],
                                struct complex16 dl_ch_estimates_time[][fp->ofdm_symbol_size],
@@ -74,7 +77,8 @@ int nr_pbch_channel_estimation(PHY_VARS_NR_UE *ue,
                                int dmrss,
                                uint8_t ssb_index,
                                uint8_t n_hf,
-                               c16_t rxdataF[][fp->samples_per_slot_wCP],
+                               int ssb_start_subcarrier,
+                               const c16_t rxdataF[][fp->samples_per_slot_wCP],
                                bool sidelink,
                                uint16_t Nid);
 

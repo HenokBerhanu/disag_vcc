@@ -291,12 +291,19 @@ int rx_sss(PHY_VARS_NR_UE *phy_vars_ue,int32_t *tot_metric,uint8_t *flip_max,uin
 
 int nr_rx_pbch(PHY_VARS_NR_UE *ue,
                const UE_nr_rxtx_proc_t *proc,
-               const int estimateSz,
+               bool is_synchronized,
+               int estimateSz,
                struct complex16 dl_ch_estimates[][estimateSz],
-               NR_DL_FRAME_PARMS *frame_parms,
+               const NR_DL_FRAME_PARMS *frame_parms,
                uint8_t i_ssb,
+               int ssb_start_subcarrier,
+               int Nid_cell,
                fapiPbch_t *result,
-               c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP]);
+               int *half_frame_bit,
+               int *ssb_index,
+               int *ret_symbol_offset,
+               int rxdataFSize,
+               const struct complex16 rxdataF[][rxdataFSize]);
 
 #ifndef modOrder
 #define modOrder(I_MCS,I_TBS) ((I_MCS-I_TBS)*2+2) // Find modulation order from I_TBS and I_MCS
@@ -319,11 +326,12 @@ int dump_ue_stats(PHY_VARS_NR_UE *phy_vars_ue,
 @param n_frames
   @param sa current running mode
 */
-typedef struct {
-  bool cell_detected;
-  int rx_offset;
-} nr_initial_sync_t;
-nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc, PHY_VARS_NR_UE *phy_vars_ue, int n_frames, int sa);
+nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
+                                  PHY_VARS_NR_UE *phy_vars_ue,
+                                  int n_frames,
+                                  int sa,
+                                  nr_gscn_info_t gscnInfo[MAX_GSCN_BAND],
+                                  int numGscn);
 
 /*!
   \brief This function gets the carrier frequencies either from FP or command-line-set global variables, depending on the
@@ -435,13 +443,13 @@ nr_initial_sync_t sl_nr_slss_search(PHY_VARS_NR_UE *UE, UE_nr_rxtx_proc_t *proc,
 
 // Reuse already existing PBCH functions
 int nr_pbch_channel_level(struct complex16 dl_ch_estimates_ext[][PBCH_MAX_RE_PER_SYMBOL],
-                          NR_DL_FRAME_PARMS *frame_parms,
+                          const NR_DL_FRAME_PARMS *frame_parms,
                           int nb_re);
 void nr_pbch_channel_compensation(struct complex16 rxdataF_ext[][PBCH_MAX_RE_PER_SYMBOL],
                                   struct complex16 dl_ch_estimates_ext[][PBCH_MAX_RE_PER_SYMBOL],
                                   int nb_re,
                                   struct complex16 rxdataF_comp[][PBCH_MAX_RE_PER_SYMBOL],
-                                  NR_DL_FRAME_PARMS *frame_parms,
+                                  const NR_DL_FRAME_PARMS *frame_parms,
                                   uint8_t output_shift);
 void nr_pbch_unscrambling(int16_t *demod_pbch_e,
                           uint16_t Nid,

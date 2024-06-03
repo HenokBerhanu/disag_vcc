@@ -830,7 +830,7 @@ int main(int argc, char **argv)
 
   init_nr_ue_transport(UE);
 
-  nr_gold_pbch(UE);
+  nr_gold_pbch(UE->nr_gold_pbch, frame_parms->Nid_cell, frame_parms->Lmax);
 
   // compute the scramblingID_pdcch and the gold pdcch
   UE->scramblingID_pdcch = frame_parms->Nid_cell;

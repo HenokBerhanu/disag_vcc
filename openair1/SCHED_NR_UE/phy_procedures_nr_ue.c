@@ -371,13 +371,21 @@ static int nr_ue_pbch_procedures(PHY_VARS_NR_UE *ue,
 
   LOG_D(PHY,"[UE  %d] Frame %d Slot %d, Trying PBCH (NidCell %d, gNB_id %d)\n",ue->Mod_id,frame_rx,nr_slot_rx,ue->frame_parms.Nid_cell,gNB_id);
   fapiPbch_t result;
+  int hf_frame_bit, ssb_index, symb_offset;
   ret = nr_rx_pbch(ue,
                    proc,
+                   ue->is_synchronized,
                    estimateSz,
                    dl_ch_estimates,
                    &ue->frame_parms,
-                   (ue->frame_parms.ssb_index)&7,
+                   (ue->frame_parms.ssb_index) & 7,
+                   ue->frame_parms.ssb_start_subcarrier,
+                   ue->frame_parms.Nid_cell,
                    &result,
+                   &hf_frame_bit,
+                   &ssb_index,
+                   &symb_offset,
+                   ue->frame_parms.samples_per_frame_wCP,
                    rxdataF);
 
   if (ret==0) {
@@ -868,8 +876,9 @@ int pbch_pdcch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_
             nr_slot_fep(ue, fp, proc, (ssb_start_symbol + i) % (fp->symbols_per_slot), rxdataF, link_type_dl);
 
             start_meas(&ue->dlsch_channel_estimation_stats);
-            nr_pbch_channel_estimation(ue,
-                                       &ue->frame_parms,
+            nr_pbch_channel_estimation(&ue->frame_parms,
+                                       NULL,
+                                       ue->nr_gold_pbch,
                                        estimateSz,
                                        dl_ch_estimates,
                                        dl_ch_estimates_time,
@@ -878,10 +887,20 @@ int pbch_pdcch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_
                                        i - 1,
                                        ssb_index & 7,
                                        ssb_slot_2 == nr_slot_rx,
+                                       fp->ssb_start_subcarrier,
                                        rxdataF,
                                        false,
                                        fp->Nid_cell);
             stop_meas(&ue->dlsch_channel_estimation_stats);
+
+            if (i - 1 == 2)
+              UEscopeCopy(ue,
+                          pbchDlChEstimateTime,
+                          (void *)dl_ch_estimates_time,
+                          sizeof(c16_t),
+                          fp->nb_antennas_rx,
+                          fp->ofdm_symbol_size,
+                          0);
           }
 
           nr_ue_ssb_rsrp_measurements(ue, ssb_index, proc, rxdataF);

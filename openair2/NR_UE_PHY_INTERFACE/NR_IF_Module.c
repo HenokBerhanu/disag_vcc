@@ -1038,6 +1038,7 @@ static int handle_bcch_bch(NR_UE_MAC_INST_t *mac,
   mac->mib_ssb = ssb_index;
   mac->physCellId = cell_id;
   mac->mib_additional_bits = additional_bits;
+  mac->ssb_start_subcarrier = ssb_start_subcarrier;
   if(ssb_length == 64)
     mac->frequency_range = FR2;
   else

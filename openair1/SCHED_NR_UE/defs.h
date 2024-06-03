@@ -81,12 +81,6 @@
 #define DAQ_AGC_ON 1
 #define DAQ_AGC_OFF 0
 
-
-typedef struct {
-  uint8_t decoded_output[3]; // PBCH paylod not larger than 3B
-  uint8_t xtra_byte;
-} fapiPbch_t;
-
 /** @addtogroup _PHY_PROCEDURES_
  * @{
  */
