@@ -1,9 +1,17 @@
 services:
     oai-nr-ue:
         image: oai-nr-ue:latest
-        privileged: true
         network_mode: host
         container_name: oai-nr-ue
+        cap_drop:
+            - ALL
+        cap_add:
+            - NET_ADMIN  # for interface bringup
+            - NET_RAW    # for ping
+            - SYS_NICE   # for performance
+            - IPC_LOCK   # for memory locking
+        devices:
+             - /dev/net/tun:/dev/net/tun
         ulimits:
           core: -1 # for core dumps
         #entrypoint: /bin/bash -c "sleep infinity"

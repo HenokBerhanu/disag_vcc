@@ -24,6 +24,7 @@
 - [clang-format.md](./clang-format.md): how to format the code
 - [sanitizers.md](./dev_tools/sanitizers.md): how to run with ASan/UBSan/MemSAN/TSan
 - [environment-variables.md](./environment-variables.md): the environment variables used by OAI
+- [tuning_and_security.md](./tuning_and_security.md): performance and security considerations
 
 There is some general information in the [OpenAirInterface Gitlab Wiki](https://gitlab.eurecom.fr/oai/openairinterface5g/-/wikis/home)
 
@@ -50,6 +51,7 @@ There is some general information in the [OpenAirInterface Gitlab Wiki](https://
 - [How to use the positioning reference signal (PRS)](./RUN_NR_PRS.md)
 - [How to use device-to-device communication (D2D, 4G)](./d2d_emulator_setup.txt)
 - [How to run with E2 agent](../openair2/E2AP/README.md)
+- [How to run the physical simulators](./physical-simulators.md)
 
 Legacy unmaintained files:
 - [`L2NFAPI_NOS1.md`](./L2NFAPI_NOS1.md), [`L2NFAPI_S1.md`](./L2NFAPI_S1.md):

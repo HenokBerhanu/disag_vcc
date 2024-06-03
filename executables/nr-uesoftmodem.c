@@ -456,14 +456,6 @@ ldpc_interface_t ldpc_interface = {0}, ldpc_interface_offload = {0};
 
 int main(int argc, char **argv)
 {
-  int set_exe_prio = 1;
-  if (checkIfFedoraDistribution())
-    if (checkIfGenericKernelOnFedora())
-      if (checkIfInsideContainer())
-        set_exe_prio = 0;
-  if (set_exe_prio)
-    set_priority(79);
-
   start_background_system();
 
   if ((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) == NULL) {
@@ -487,6 +479,10 @@ int main(int argc, char **argv)
   initTpool(get_softmodem_params()->threadPoolConfig, &(nrUE_params.Tpool), cpumeas(CPUMEAS_GETSTATE));
   //randominit (0);
   set_taus_seed (0);
+
+  if (!has_cap_sys_nice())
+    LOG_W(UTIL,
+          "no SYS_NICE capability: cannot set thread priority and affinity, consider running with sudo for optimum performance\n");
 
   cpuf=get_cpu_freq_GHz();
   itti_init(TASK_MAX, tasks_info);
@@ -567,7 +563,7 @@ int main(int argc, char **argv)
     }
 
     init_openair0();
-    set_latency_target();
+    lock_memory_to_ram();
 
     if(IS_SOFTMODEM_DOSCOPE_QT) {
       load_softscope("nrqt",PHY_vars_UE_g[0][0]);

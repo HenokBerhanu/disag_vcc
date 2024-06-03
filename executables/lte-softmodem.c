@@ -448,7 +448,7 @@ int main ( int argc, char **argv )
 
   mode = normal_txrx;
   logInit();
-  set_latency_target();
+  lock_memory_to_ram();
   printf("Reading in command-line options\n");
   get_options(uniqCfg);
 
@@ -518,7 +518,6 @@ int main ( int argc, char **argv )
   // init UE_PF_PO and mutex lock
   pthread_mutex_init(&ue_pf_po_mutex, NULL);
   memset (&UE_PF_PO[0][0], 0, sizeof(UE_PF_PO_t)*MAX_MOBILES_PER_ENB*MAX_NUM_CCs);
-  mlockall(MCL_CURRENT | MCL_FUTURE);
   pthread_cond_init(&sync_cond,NULL);
   pthread_mutex_init(&sync_mutex, NULL);
 

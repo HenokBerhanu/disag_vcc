@@ -54,7 +54,6 @@ void *aerial_vnf_nr_aerial_p7_start_thread(void *ptr)
 
 void *aerial_vnf_nr_p7_thread_start(void *ptr)
 {
-  // set_thread_priority(79);
   int s;
   cpu_set_t cpuset;
 
@@ -62,8 +61,6 @@ void *aerial_vnf_nr_p7_thread_start(void *ptr)
   s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
   if (s != 0)
     printf("failed to set afinity\n");
-
-  set_priority(79);
 
   pthread_attr_t ptAttr;
   if (pthread_attr_setschedpolicy(&ptAttr, SCHED_RR) != 0) {
@@ -115,7 +112,7 @@ void *aerial_vnf_nr_p7_thread_start(void *ptr)
   p7_vnf->config->allocate_p7_vendor_ext = &aerial_phy_allocate_p7_vendor_ext;
   p7_vnf->config->deallocate_p7_vendor_ext = &aerial_phy_deallocate_p7_vendor_ext;
   NFAPI_TRACE(NFAPI_TRACE_INFO, "[VNF] Creating VNF NFAPI P7 start thread %s\n", __FUNCTION__);
-  pthread_create(&vnf_aerial_p7_start_pthread, NULL, &aerial_vnf_nr_aerial_p7_start_thread, p7_vnf->config);
+  threadCreate(&vnf_aerial_p7_start_pthread, &aerial_vnf_nr_aerial_p7_start_thread, p7_vnf->config, "aerial_p7_start", -1, OAI_PRIORITY_RT);
   return 0;
 }
 
@@ -227,7 +224,7 @@ int aerial_pnf_nr_start_resp_cb(nfapi_vnf_config_t *config, int p5_idx, nfapi_nr
 
   if (p7_vnf->thread_started == 0) {
     pthread_t vnf_p7_thread;
-    pthread_create(&vnf_p7_thread, NULL, &aerial_vnf_nr_p7_thread_start, p7_vnf);
+    threadCreate(&vnf_p7_thread, &aerial_vnf_nr_p7_thread_start, p7_vnf, "aerial_p7_thread", -1, OAI_PRIORITY_RT);
     p7_vnf->thread_started = 1;
   } else {
     // P7 thread already running.
@@ -570,7 +567,7 @@ void aerial_configure_nr_fapi_vnf()
 
   if (p7_vnf->thread_started == 0) {
     pthread_t vnf_p7_thread;
-    pthread_create(&vnf_p7_thread, NULL, &aerial_vnf_nr_p7_thread_start, p7_vnf);
+    threadCreate(&vnf_p7_thread, &aerial_vnf_nr_p7_thread_start, p7_vnf, "aerial_p7_thread", -1, OAI_PRIORITY_RT);
     p7_vnf->thread_started = 1;
   } else {
     // P7 thread already running.

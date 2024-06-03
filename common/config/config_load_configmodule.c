@@ -208,9 +208,11 @@ int config_cmdlineonly_get(configmodule_interface_t *cfg, paramdef_t *cfgoptions
     }
   } /* for loop on options */
 
-  printf("[CONFIG] %s: %i/%i parameters successfully set \n",
-         ((prefix == NULL)?"(root)":prefix),
-         numdefvals,numoptions );
+  printf_params(cfg,
+                "[CONFIG] %s: %i/%i parameters successfully set \n",
+                prefix == NULL ? "(root)" : prefix,
+                numdefvals,
+                numoptions);
 
   if (fatalerror == 1) {
     fprintf(stderr,"[CONFIG] fatal errors found when assigning %s parameters \n",
@@ -341,9 +343,20 @@ configmodule_interface_t *load_configmodule(int argc,
       atoken = strtok_r(NULL,":",&strtokctx);
     }
 
-    printf("[CONFIG] get parameters from %s ", cfgmode);
     for (i = 0; i < cfgptr->num_cfgP; i++) {
-      printf("%s ", cfgptr->cfgP[i]);
+      /* check if that file actually exists */
+      if (access(cfgptr->cfgP[i], F_OK) != 0) {
+        fprintf(stderr, "error: file %s does not exist\n", cfgptr->cfgP[i]);
+        for (int j = 0; j < cfgptr->num_cfgP; ++j)
+          free(cfgptr->cfgP[j]);
+        free(modeparams);
+        free(cfgptr->cfgmode);
+        free(cfgptr->argv_info);
+        free(cfgptr);
+        if (cfgmode != NULL)
+          free(cfgmode);
+        return NULL;
+      }
     }
 
   if (cfgptr->rtflags & CONFIG_PRINTPARAMS) {
