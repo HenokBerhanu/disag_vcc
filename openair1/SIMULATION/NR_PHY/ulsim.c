@@ -607,7 +607,17 @@ int main(int argc, char *argv[])
                                 .minRXTXTIME = 0,
                                 .do_CSIRS = 0,
                                 .do_SRS = 0,
-                                .force_256qam_off = false};
+                                .force_256qam_off = false,
+                                .timer_config.sr_ProhibitTimer = 0,
+                                .timer_config.sr_TransMax = 64,
+                                .timer_config.sr_ProhibitTimer_v1700 = 0,
+                                .timer_config.t300 = 400,
+                                .timer_config.t301 = 400,
+                                .timer_config.t310 = 2000,
+                                .timer_config.n310 = 10,
+                                .timer_config.t311 = 3000,
+                                .timer_config.n311 = 1,
+                                .timer_config.t319 = 400};
 
   RC.nb_nr_macrlc_inst = 1;
   RC.nb_nr_mac_CC = (int*)malloc(RC.nb_nr_macrlc_inst*sizeof(int));

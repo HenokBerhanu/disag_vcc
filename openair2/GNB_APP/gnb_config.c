@@ -214,7 +214,10 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //ratematchpattern->patternType.choice.bitmaps->periodicityAndPattern->choice.n40.buf       = MALLOC(5);
   //ratematchpattern->subcarrierSpacing           = CALLOC(1,sizeof(NR_SubcarrierSpacing_t));
   //ratematchpatternid                            = CALLOC(1,sizeof(NR_RateMatchPatternId_t));
-  
+
+  scc->ext2 = CALLOC(1, sizeof(*scc->ext2));
+  scc->ext2->ntn_Config_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17));
+  scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17));
 }
 
 void fill_scc_sim(NR_ServingCellConfigCommon_t *scc,uint64_t *ssb_bitmap,int N_RB_DL,int N_RB_UL,int mu_dl,int mu_ul) {
@@ -406,6 +409,13 @@ void fix_scc(NR_ServingCellConfigCommon_t *scc,uint64_t ssbmap) {
   // check pucch_ResourceConfig
   AssertFatal(*scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->pucch_ResourceCommon < 2,
 	      "pucch_ResourceConfig should be 0 or 1 for now\n");
+
+  if(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 == 0) {
+    free(scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17);
+    free(scc->ext2->ntn_Config_r17);
+    free(scc->ext2);
+    scc->ext2 = NULL;
+  }
 }
 
 /* Function to allocate dedicated serving cell config strutures */
@@ -1248,6 +1258,35 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
         config.maxMIMO_layers);
   int tot_ant = config.pdsch_AntennaPorts.N1 * config.pdsch_AntennaPorts.N2 * config.pdsch_AntennaPorts.XP;
   AssertFatal(config.maxMIMO_layers != 0 && config.maxMIMO_layers <= tot_ant, "Invalid maxMIMO_layers %d\n", config.maxMIMO_layers);
+
+  paramdef_t Timers_Params[] = GNB_TIMERS_PARAMS_DESC;
+  char aprefix[MAX_OPTNAME_SIZE * 2 + 8];
+  sprintf(aprefix, "%s.[0].%s", GNB_CONFIG_STRING_GNB_LIST, GNB_CONFIG_STRING_TIMERS_CONFIG);
+  config_get(config_get_if(), Timers_Params, sizeofArray(Timers_Params), aprefix);
+
+  config.timer_config.sr_ProhibitTimer = *Timers_Params[GNB_TIMERS_SR_PROHIBIT_TIMER_IDX].iptr;
+  config.timer_config.sr_TransMax = *Timers_Params[GNB_TIMERS_SR_TRANS_MAX_IDX].iptr;
+  config.timer_config.sr_ProhibitTimer_v1700 = *Timers_Params[GNB_TIMERS_SR_PROHIBIT_TIMER_V1700_IDX].iptr;
+  config.timer_config.t300 = *Timers_Params[GNB_TIMERS_T300_IDX].iptr;
+  config.timer_config.t301 = *Timers_Params[GNB_TIMERS_T301_IDX].iptr;
+  config.timer_config.t310 = *Timers_Params[GNB_TIMERS_T310_IDX].iptr;
+  config.timer_config.n310 = *Timers_Params[GNB_TIMERS_N310_IDX].iptr;
+  config.timer_config.t311 = *Timers_Params[GNB_TIMERS_T311_IDX].iptr;
+  config.timer_config.n311 = *Timers_Params[GNB_TIMERS_N311_IDX].iptr;
+  config.timer_config.t319 = *Timers_Params[GNB_TIMERS_T319_IDX].iptr;
+  LOG_I(GNB_APP,
+        "sr_ProhibitTimer %d, sr_TransMax %d, sr_ProhibitTimer_v1700 %d, "
+        "t300 %d, t301 %d, t310 %d, n310 %d, t311 %d, n311 %d, t319 %d\n",
+        config.timer_config.sr_ProhibitTimer,
+        config.timer_config.sr_TransMax,
+        config.timer_config.sr_ProhibitTimer_v1700,
+        config.timer_config.t300,
+        config.timer_config.t301,
+        config.timer_config.t310,
+        config.timer_config.n310,
+        config.timer_config.t311,
+        config.timer_config.n311,
+        config.timer_config.t319);
 
   NR_ServingCellConfigCommon_t *scc = get_scc_config(cfg, config.minRXTXTIME);
   //xer_fprint(stdout, &asn_DEF_NR_ServingCellConfigCommon, scc);
