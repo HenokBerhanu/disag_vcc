@@ -897,9 +897,7 @@ class Containerize():
 		mySSH.command(f'docker compose --file ci-docker-compose.yml up -d -- {svcName}', '\$', 30)
 
 		# Checking Status
-		grep = ''
-		if svcName != '': grep = f' | grep -A3 --color=never {svcName}'
-		mySSH.command(f'docker compose --file ci-docker-compose.yml config {grep}', '\$', 5)
+		mySSH.command(f'docker compose --file ci-docker-compose.yml config {svcName}', '\$', 5)
 		result = re.search('container_name: (?P<container_name>[a-zA-Z0-9\-\_]+)', mySSH.getBefore())
 		unhealthyNb = 0
 		healthyNb = 0
