@@ -28,6 +28,23 @@
 #include "openair2/F1AP/f1ap_ids.h"
 #include "executables/softmodem-common.h"
 
+int get_dl_band(const struct f1ap_served_cell_info_t *cell_info)
+{
+  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.freqinfo.band : cell_info->fdd.dl_freqinfo.band;
+}
+
+int get_ssb_scs(const struct f1ap_served_cell_info_t *cell_info)
+{
+  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.tbw.scs : cell_info->fdd.dl_tbw.scs;
+}
+
+int get_ssb_arfcn(const struct nr_rrc_du_container_t *du)
+{
+  DevAssert(du != NULL && du->mtc != NULL);
+  /* format has been verified when accepting MeasurementTimingConfiguration */
+  NR_MeasTimingList_t *mtlist = du->mtc->criticalExtensions.choice.c1->choice.measTimingConf->measTiming;
+  return mtlist->list.array[0]->frequencyAndTiming->carrierFreq;
+}
 
 static int du_compare(const nr_rrc_du_container_t *a, const nr_rrc_du_container_t *b)
 {

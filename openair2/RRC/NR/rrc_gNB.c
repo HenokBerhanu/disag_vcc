@@ -176,24 +176,6 @@ void nr_rrc_transfer_protected_rrc_message(const gNB_RRC_INST *rrc,
                        &data);
 }
 
-static int get_dl_band(const f1ap_served_cell_info_t *cell_info)
-{
-  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.freqinfo.band : cell_info->fdd.dl_freqinfo.band;
-}
-
-static int get_ssb_scs(const f1ap_served_cell_info_t *cell_info)
-{
-  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.tbw.scs : cell_info->fdd.dl_tbw.scs;
-}
-
-static int get_ssb_arfcn(const nr_rrc_du_container_t *du)
-{
-  DevAssert(du != NULL && du->mtc != NULL);
-  /* format has been verified when accepting MeasurementTimingConfiguration */
-  NR_MeasTimingList_t *mtlist = du->mtc->criticalExtensions.choice.c1->choice.measTimingConf->measTiming;
-  return mtlist->list.array[0]->frequencyAndTiming->carrierFreq;
-}
-
 ///---------------------------------------------------------------------------------------------------------------///
 ///---------------------------------------------------------------------------------------------------------------///
 
