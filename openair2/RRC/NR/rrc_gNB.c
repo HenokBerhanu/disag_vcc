@@ -141,6 +141,42 @@ static void freeDRBlist(NR_DRB_ToAddModList_t *list)
   return;
 }
 
+const neighbour_cell_configuration_t *get_neighbour_config(int serving_cell_nr_cellid)
+{
+  const gNB_RRC_INST *rrc = RC.nrrrc[0];
+  seq_arr_t *neighbour_cell_configuration = rrc->neighbour_cell_configuration;
+  if (!neighbour_cell_configuration)
+    return NULL;
+
+  for (int cellIdx = 0; cellIdx < neighbour_cell_configuration->size; cellIdx++) {
+    neighbour_cell_configuration_t *neighbour_config =
+        (neighbour_cell_configuration_t *)seq_arr_at(neighbour_cell_configuration, cellIdx);
+    if (neighbour_config->nr_cell_id == serving_cell_nr_cellid)
+      return neighbour_config;
+  }
+  return NULL;
+}
+
+const nr_neighbour_gnb_configuration_t *get_neighbour_cell_information(int serving_cell_nr_cellid, int neighbour_cell_phy_id)
+{
+  const gNB_RRC_INST *rrc = RC.nrrrc[0];
+  seq_arr_t *neighbour_cell_configuration = rrc->neighbour_cell_configuration;
+  for (int cellIdx = 0; cellIdx < neighbour_cell_configuration->size; cellIdx++) {
+    neighbour_cell_configuration_t *neighbour_config =
+        (neighbour_cell_configuration_t *)seq_arr_at(neighbour_cell_configuration, cellIdx);
+    if (!neighbour_config)
+      continue;
+
+    for (int neighbourIdx = 0; neighbourIdx < neighbour_config->neighbour_cells->size; neighbourIdx++) {
+      nr_neighbour_gnb_configuration_t *neighbour =
+          (nr_neighbour_gnb_configuration_t *)seq_arr_at(neighbour_config->neighbour_cells, neighbourIdx);
+      if (neighbour != NULL && neighbour->physicalCellId == neighbour_cell_phy_id)
+        return neighbour;
+    }
+  }
+  return NULL;
+}
+
 typedef struct deliver_dl_rrc_message_data_s {
   const gNB_RRC_INST *rrc;
   f1ap_dl_rrc_message_t *dl_rrc;
@@ -174,24 +210,6 @@ void nr_rrc_transfer_protected_rrc_message(const gNB_RRC_INST *rrc,
                        (unsigned char *const)buffer,
                        rrc_deliver_dl_rrc_message,
                        &data);
-}
-
-static int get_dl_band(const f1ap_served_cell_info_t *cell_info)
-{
-  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.freqinfo.band : cell_info->fdd.dl_freqinfo.band;
-}
-
-static int get_ssb_scs(const f1ap_served_cell_info_t *cell_info)
-{
-  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.tbw.scs : cell_info->fdd.dl_tbw.scs;
-}
-
-static int get_ssb_arfcn(const nr_rrc_du_container_t *du)
-{
-  DevAssert(du != NULL && du->mtc != NULL);
-  /* format has been verified when accepting MeasurementTimingConfiguration */
-  NR_MeasTimingList_t *mtlist = du->mtc->criticalExtensions.choice.c1->choice.measTimingConf->measTiming;
-  return mtlist->list.array[0]->frequencyAndTiming->carrierFreq;
 }
 
 ///---------------------------------------------------------------------------------------------------------------///
@@ -522,13 +540,24 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
   DevAssert(du != NULL);
   f1ap_served_cell_info_t *cell_info = &du->setup_req->cell[0].info;
   NR_MeasConfig_t *measconfig = NULL;
+
   if (du->mtc != NULL) {
     int scs = get_ssb_scs(cell_info);
     int band = get_dl_band(cell_info);
     const NR_MeasTimingList_t *mtlist = du->mtc->criticalExtensions.choice.c1->choice.measTimingConf->measTiming;
     const NR_MeasTiming_t *mt = mtlist->list.array[0];
-    measconfig = get_defaultMeasConfig(mt, band, scs);
+    const neighbour_cell_configuration_t *neighbour_config = get_neighbour_config(cell_info->nr_cellid);
+    seq_arr_t *neighbour_cells = NULL;
+    if (neighbour_config)
+      neighbour_cells = neighbour_config->neighbour_cells;
+
+    measconfig = get_MeasConfig(mt, band, scs, &rrc->measurementConfiguration, neighbour_cells);
   }
+
+  if (ue_p->measConfig)
+    free_MeasConfig(ue_p->measConfig);
+
+  ue_p->measConfig = measconfig;
 
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   NR_SRB_ToAddModList_t *SRBs = createSRBlist(ue_p, false);
@@ -545,8 +574,7 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
                                    measconfig,
                                    dedicatedNAS_MessageList,
                                    cellGroupConfig);
-  LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)buffer,size,"[MSG] RRC Reconfiguration\n");
-  free_defaultMeasConfig(measconfig);
+  LOG_DUMPMSG(NR_RRC, DEBUG_RRC, (char *)buffer, size, "[MSG] RRC Reconfiguration\n");
   freeSRBlist(SRBs);
   freeDRBlist(DRBs);
   ASN_STRUCT_FREE(asn_DEF_NR_DRB_ToReleaseList, ue_p->DRB_ReleaseList);
@@ -1166,14 +1194,9 @@ fallback_rrc_setup:
   return;
 }
 
-static void rrc_gNB_process_MeasurementReport(rrc_gNB_ue_context_t *ue_context, NR_MeasurementReport_t *measurementReport)
+static void process_Periodical_Measurement_Report(rrc_gNB_ue_context_t *ue_context, NR_MeasurementReport_t *measurementReport)
 {
-  if (LOG_DEBUGFLAG(DEBUG_ASN1))
-    xer_fprint(stdout, &asn_DEF_NR_MeasurementReport, (void *)measurementReport);
-
-  DevAssert(measurementReport->criticalExtensions.present == NR_MeasurementReport__criticalExtensions_PR_measurementReport
-            && measurementReport->criticalExtensions.choice.measurementReport != NULL);
-
+  // LOG_I(NR_RRC, "Periodical Event Report! Do Nothing for now...\n");
   gNB_RRC_UE_t *ue_ctxt = &ue_context->ue_context;
   ASN_STRUCT_FREE(asn_DEF_NR_MeasResults, ue_ctxt->measResults);
   ue_ctxt->measResults = NULL;
@@ -1184,6 +1207,141 @@ static void rrc_gNB_process_MeasurementReport(rrc_gNB_ue_context_t *ue_context, 
   /* we "keep" the measurement report, so set to 0 */
   free(measurementReport->criticalExtensions.choice.measurementReport);
   measurementReport->criticalExtensions.choice.measurementReport = NULL;
+}
+
+static void process_Event_Based_Measurement_Report(NR_ReportConfigNR_t *report, NR_MeasurementReport_t *measurementReport)
+{
+  NR_EventTriggerConfig_t *event_triggered = report->reportType.choice.eventTriggered;
+
+  int servingCellRSRP = 0;
+  int neighbourCellRSRP = 0;
+  int servingCellId = -1;
+
+  switch (event_triggered->eventId.present) {
+    case NR_EventTriggerConfig__eventId_PR_eventA2:
+      LOG_I(NR_RRC, "\nHO LOG: Event A2 (Serving becomes worse than threshold)\n");
+      break;
+
+    case NR_EventTriggerConfig__eventId_PR_eventA3: {
+      LOG_I(NR_RRC, "\nHO LOG: Event A3 Report - Neighbour Becomes Better than Serving!\n");
+      const NR_MeasResults_t *measResults = &measurementReport->criticalExtensions.choice.measurementReport->measResults;
+
+      for (int serving_cell_idx = 0; serving_cell_idx < measResults->measResultServingMOList.list.count; serving_cell_idx++) {
+        const NR_MeasResultServMO_t *meas_result_serv_MO = measResults->measResultServingMOList.list.array[serving_cell_idx];
+        servingCellId = *(meas_result_serv_MO->measResultServingCell.physCellId);
+        if (meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsSSB_Cell) {
+          servingCellRSRP = *(meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsSSB_Cell->rsrp) - 157;
+        } else {
+          servingCellRSRP = *(meas_result_serv_MO->measResultServingCell.measResult.cellResults.resultsCSI_RS_Cell->rsrp) - 157;
+        }
+        LOG_D(NR_RRC, "Serving Cell RSRP: %d\n", servingCellRSRP);
+      }
+
+      if (measResults->measResultNeighCells == NULL)
+        break;
+
+      if (measResults->measResultNeighCells->present != NR_MeasResults__measResultNeighCells_PR_measResultListNR)
+        break;
+
+      const NR_MeasResultListNR_t *measResultListNR = measResults->measResultNeighCells->choice.measResultListNR;
+      for (int neigh_meas_idx = 0; neigh_meas_idx < measResultListNR->list.count; neigh_meas_idx++) {
+        const NR_MeasResultNR_t *meas_result_neigh_cell = (measResultListNR->list.array[neigh_meas_idx]);
+        const int neighbourCellId = *(meas_result_neigh_cell->physCellId);
+
+        // TS 138 133 Table 10.1.6.1-1: SS-RSRP and CSI-RSRP measurement report mapping
+        const struct NR_MeasResultNR__measResult__cellResults *cellResults = &(meas_result_neigh_cell->measResult.cellResults);
+
+        if (cellResults->resultsSSB_Cell) {
+          neighbourCellRSRP = *(cellResults->resultsSSB_Cell->rsrp) - 157;
+        } else {
+          neighbourCellRSRP = *(cellResults->resultsCSI_RS_Cell->rsrp) - 157;
+        }
+
+        LOG_I(NR_RRC,
+              "HO LOG: Measurement Report has came for the neighbour: %d with RSRP: %d\n",
+              neighbourCellId,
+              neighbourCellRSRP);
+
+        const f1ap_served_cell_info_t *neighbour_cell_du_context = get_cell_information_by_phycellId(neighbourCellId);
+        const f1ap_served_cell_info_t *serving_cell_du_context = get_cell_information_by_phycellId(servingCellId);
+        const nr_neighbour_gnb_configuration_t *neighbour =
+            get_neighbour_cell_information(serving_cell_du_context->nr_cellid, neighbourCellId);
+        // CU does not have f1 connection with neighbour cell context. So  check does serving cell has this phyCellId as a
+        // neighbour.
+        if (!neighbour_cell_du_context && neighbour) {
+          // No F1 connection but static neighbour configuration is available
+          const nr_a3_event_t *a3_event_configuration = get_a3_configuration(neighbour->nrcell_id);
+          // Additional check - This part can be modified according to additional cell specific Handover Margin
+          if (a3_event_configuration
+              && ((a3_event_configuration->a3_offset + a3_event_configuration->hysteresis)
+                  < (neighbourCellRSRP - servingCellRSRP))) {
+            LOG_D(NR_RRC, "HO LOG: Trigger N2 HO for the neighbour gnb: %u cell: %lu\n", neighbour->gNB_ID, neighbour->nrcell_id);
+          }
+        }
+      }
+
+    } break;
+    default:
+      LOG_D(NR_RRC, "NR_EventTriggerConfig__eventId_PR_NOTHING or Other event report\n");
+      break;
+  }
+}
+
+static void rrc_gNB_process_MeasurementReport(rrc_gNB_ue_context_t *ue_context, NR_MeasurementReport_t *measurementReport)
+{
+  LOG_D(NR_RRC, "Process Measurement Report\n");
+  if (LOG_DEBUGFLAG(DEBUG_ASN1))
+    xer_fprint(stdout, &asn_DEF_NR_MeasurementReport, (void *)measurementReport);
+
+  DevAssert(measurementReport->criticalExtensions.present == NR_MeasurementReport__criticalExtensions_PR_measurementReport
+            && measurementReport->criticalExtensions.choice.measurementReport != NULL);
+
+  gNB_RRC_UE_t *ue_ctxt = &ue_context->ue_context;
+  NR_MeasConfig_t *meas_config = ue_ctxt->measConfig;
+  if (meas_config == NULL) {
+    LOG_I(NR_RRC, "Unexpected Measurement Report from UE with id: %d\n", ue_ctxt->rrc_ue_id);
+    return;
+  }
+
+  NR_MeasurementReport_IEs_t *measurementReport_IEs = measurementReport->criticalExtensions.choice.measurementReport;
+  const NR_MeasId_t measId = measurementReport_IEs->measResults.measId;
+
+  NR_MeasIdToAddMod_t *meas_id_s = NULL;
+  for (int meas_idx = 0; meas_idx < meas_config->measIdToAddModList->list.count; meas_idx++) {
+    if (measId == meas_config->measIdToAddModList->list.array[meas_idx]->measId) {
+      meas_id_s = meas_config->measIdToAddModList->list.array[meas_idx];
+      break;
+    }
+  }
+
+  if (meas_id_s == NULL) {
+    LOG_E(NR_RRC, "Incoming Meas ID with id: %d Can not Found!\n", (int)measId);
+    return;
+  }
+
+  LOG_D(NR_RRC, "HO LOG: Meas Id is found: %d\n", (int)meas_id_s->measId);
+
+  struct NR_ReportConfigToAddMod__reportConfig *report_config = NULL;
+  for (int rep_id = 0; rep_id < meas_config->reportConfigToAddModList->list.count; rep_id++) {
+    if (meas_id_s->reportConfigId == meas_config->reportConfigToAddModList->list.array[rep_id]->reportConfigId) {
+      report_config = &meas_config->reportConfigToAddModList->list.array[rep_id]->reportConfig;
+    }
+  }
+
+  if (report_config == NULL) {
+    LOG_E(NR_RRC, "There is no related report configuration for this measId!\n");
+    return;
+  }
+
+  if (report_config->choice.reportConfigNR->reportType.present == NR_ReportConfigNR__reportType_PR_periodical)
+    return process_Periodical_Measurement_Report(ue_context, measurementReport);
+
+  if (report_config->choice.reportConfigNR->reportType.present != NR_ReportConfigNR__reportType_PR_eventTriggered) {
+    LOG_D(NR_RRC, "Incoming Report Type: %d is not supported! \n", report_config->choice.reportConfigNR->reportType.present);
+    return;
+  }
+
+  process_Event_Based_Measurement_Report(report_config->choice.reportConfigNR, measurementReport);
 }
 
 static int handle_rrcReestablishmentComplete(const protocol_ctxt_t *const ctxt_pP,
@@ -1801,6 +1959,7 @@ static void rrc_delete_ue_data(gNB_RRC_UE_t *UE)
   ASN_STRUCT_FREE(asn_DEF_NR_UE_NR_Capability, UE->UE_Capability_nr);
   ASN_STRUCT_FREE(asn_DEF_NR_CellGroupConfig, UE->masterCellGroup);
   ASN_STRUCT_FREE(asn_DEF_NR_MeasResults, UE->measResults);
+  free_MeasConfig(UE->measConfig);
 }
 
 void rrc_remove_ue(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p)

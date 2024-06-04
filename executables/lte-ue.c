@@ -195,11 +195,6 @@ void init_thread(int sched_runtime,
                  char *name) {
   int settingPriority = 1;
 
-  if (checkIfFedoraDistribution())
-    if (checkIfGenericKernelOnFedora())
-      if (checkIfInsideContainer())
-        settingPriority = 0;
-
   if (settingPriority) {
     if (CPU_COUNT(cpuset) > 0)
       AssertFatal( 0 == pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), cpuset), "");

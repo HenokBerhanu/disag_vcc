@@ -169,6 +169,7 @@ information on how the images are built.
   ~4G-LTE ~5G-NR
   - cluster (`Asterix-OC-oaicicd-session` resource), tests in OpenShift Cluster
   - unitary simulators (`nr_dlsim`, etc.)
+  - see [`./physical-simulators.md`](./physical-simulators.md) for an overview
 - [RAN-RF-Sim-Test-4G](https://jenkins-oai.eurecom.fr/job/RAN-RF-Sim-Test-4G/)
   ~4G-LTE
   - obelix (eNB, lteUE, OAI EPC)

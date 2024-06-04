@@ -85,6 +85,7 @@
 #include "NR_EUTRA-MBSFN-SubframeConfig.h"
 #include "uper_decoder.h"
 #include "uper_encoder.h"
+#include "common/utils/ds/seq_arr.h"
 
 #include "RRC/NR/MESSAGES/asn1_msg.h"
 #include "RRC/NR/nr_rrc_extern.h"
@@ -95,71 +96,6 @@
 #endif
 
 extern uint16_t sf_ahead;
-
-// synchronization raster per band tables (Rel.15)
-// (38.101-1 Table 5.4.3.3-1 and 38.101-2 Table 5.4.3.3-1)
-// band nb, sub-carrier spacing index, Range of gscn (First, Step size, Last)
-const sync_raster_t sync_raster[] = {
-  {1, 0, 5279, 1, 5419},
-  {2, 0, 4829, 1, 4969},
-  {3, 0, 4517, 1, 4693},
-  {5, 0, 2177, 1, 2230},
-  {5, 1, 2183, 1, 2224},
-  {7, 0, 6554, 1, 6718},
-  {8, 0, 2318, 1, 2395},
-  {12, 0, 1828, 1, 1858},
-  {13, 0, 1871, 1, 1885},
-  {14, 0, 1901, 1, 1915},
-  {18, 0, 2156, 1, 2182},
-  {20, 0, 1982, 1, 2047},
-  {24, 0, 3818, 1, 3892},
-  {24, 1, 3824, 1, 3886},
-  {25, 0, 4829, 1, 4981},
-  {26, 0, 2153, 1, 2230},
-  {28, 0, 1901, 1, 2002},
-  {29, 0, 1798, 1, 1813},
-  {30, 0, 5879, 1, 5893},
-  {34, 0, 5030, 1, 5056},
-  {34, 1, 5036, 1, 5050},
-  {38, 0, 6431, 1, 6544},
-  {38, 1, 6437, 1, 6538},
-  {39, 0, 4706, 1, 4795},
-  {39, 1, 4712, 1, 4789},
-  {40, 1, 5762, 1, 5989},
-  {41, 0, 6246, 3, 6717},
-  {41, 1, 6252, 3, 6714},
-  {48, 1, 7884, 1, 7982},
-  {50, 0, 3584, 1, 3787},
-  {51, 0, 3572, 1, 3574},
-  {53, 0, 6215, 1, 6232},
-  {53, 1, 6221, 1, 6226},
-  {65, 0, 5279, 1, 5494},
-  {66, 0, 5279, 1, 5494},
-  {66, 1, 5285, 1, 5488},
-  {67, 0, 1850, 1, 1888},
-  {70, 0, 4993, 1, 5044},
-  {71, 0, 1547, 1, 1624},
-  {74, 0, 3692, 1, 3790},
-  {75, 0, 3584, 1, 3787},
-  {76, 0, 3572, 1, 3574},
-  {77, 1, 7711, 1, 8329},
-  {78, 1, 7711, 1, 8051},
-  {79, 1, 8480, 16, 8880},
-  {85, 0, 1826, 1, 1858},
-  {90, 1, 6252, 1, 6714},
-  {91, 0, 3572, 1, 3574},
-  {92, 0, 3584, 1, 3787},
-  {93, 0, 3572, 1, 3574},
-  {94, 0, 3584, 1, 3587},
-  {257, 3, 22388, 1, 22558},
-  {257, 4, 22390, 2, 22556},
-  {258, 3, 22257, 1, 22443},
-  {258, 4, 22258, 2, 22442},
-  {260, 3, 22995, 1, 23166},
-  {260, 4, 22996, 2, 23164},
-  {261, 3, 22446, 1, 22492},
-  {261, 4, 22446, 2, 22490},
-};
 
 extern int config_check_band_frequencies(int ind, int16_t band, uint64_t downlink_frequency,
                                          int32_t uplink_frequency_offset, uint32_t  frame_type);
@@ -279,7 +215,10 @@ void prepare_scc(NR_ServingCellConfigCommon_t *scc) {
   //ratematchpattern->patternType.choice.bitmaps->periodicityAndPattern->choice.n40.buf       = MALLOC(5);
   //ratematchpattern->subcarrierSpacing           = CALLOC(1,sizeof(NR_SubcarrierSpacing_t));
   //ratematchpatternid                            = CALLOC(1,sizeof(NR_RateMatchPatternId_t));
-  
+
+  scc->ext2 = CALLOC(1, sizeof(*scc->ext2));
+  scc->ext2->ntn_Config_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17));
+  scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 = CALLOC(1, sizeof(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17));
 }
 
 void fill_scc_sim(NR_ServingCellConfigCommon_t *scc,uint64_t *ssb_bitmap,int N_RB_DL,int N_RB_UL,int mu_dl,int mu_ul) {
@@ -471,6 +410,13 @@ void fix_scc(NR_ServingCellConfigCommon_t *scc,uint64_t ssbmap) {
   // check pucch_ResourceConfig
   AssertFatal(*scc->uplinkConfigCommon->initialUplinkBWP->pucch_ConfigCommon->choice.setup->pucch_ResourceCommon < 2,
 	      "pucch_ResourceConfig should be 0 or 1 for now\n");
+
+  if(*scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17 == 0) {
+    free(scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17);
+    free(scc->ext2->ntn_Config_r17);
+    free(scc->ext2);
+    scc->ext2 = NULL;
+  }
 }
 
 /* Function to allocate dedicated serving cell config strutures */
@@ -960,8 +906,6 @@ void RCconfig_NR_L1(void)
   }
 }
 
-static void check_ssb_raster(uint64_t freq, int band, int scs);
-
 static NR_ServingCellConfigCommon_t *get_scc_config(configmodule_interface_t *cfg, int minRXTXTIME)
 {
   NR_ServingCellConfigCommon_t *scc = calloc(1,sizeof(*scc));
@@ -1316,6 +1260,35 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
   int tot_ant = config.pdsch_AntennaPorts.N1 * config.pdsch_AntennaPorts.N2 * config.pdsch_AntennaPorts.XP;
   AssertFatal(config.maxMIMO_layers != 0 && config.maxMIMO_layers <= tot_ant, "Invalid maxMIMO_layers %d\n", config.maxMIMO_layers);
 
+  paramdef_t Timers_Params[] = GNB_TIMERS_PARAMS_DESC;
+  char aprefix[MAX_OPTNAME_SIZE * 2 + 8];
+  sprintf(aprefix, "%s.[0].%s", GNB_CONFIG_STRING_GNB_LIST, GNB_CONFIG_STRING_TIMERS_CONFIG);
+  config_get(config_get_if(), Timers_Params, sizeofArray(Timers_Params), aprefix);
+
+  config.timer_config.sr_ProhibitTimer = *Timers_Params[GNB_TIMERS_SR_PROHIBIT_TIMER_IDX].iptr;
+  config.timer_config.sr_TransMax = *Timers_Params[GNB_TIMERS_SR_TRANS_MAX_IDX].iptr;
+  config.timer_config.sr_ProhibitTimer_v1700 = *Timers_Params[GNB_TIMERS_SR_PROHIBIT_TIMER_V1700_IDX].iptr;
+  config.timer_config.t300 = *Timers_Params[GNB_TIMERS_T300_IDX].iptr;
+  config.timer_config.t301 = *Timers_Params[GNB_TIMERS_T301_IDX].iptr;
+  config.timer_config.t310 = *Timers_Params[GNB_TIMERS_T310_IDX].iptr;
+  config.timer_config.n310 = *Timers_Params[GNB_TIMERS_N310_IDX].iptr;
+  config.timer_config.t311 = *Timers_Params[GNB_TIMERS_T311_IDX].iptr;
+  config.timer_config.n311 = *Timers_Params[GNB_TIMERS_N311_IDX].iptr;
+  config.timer_config.t319 = *Timers_Params[GNB_TIMERS_T319_IDX].iptr;
+  LOG_I(GNB_APP,
+        "sr_ProhibitTimer %d, sr_TransMax %d, sr_ProhibitTimer_v1700 %d, "
+        "t300 %d, t301 %d, t310 %d, n310 %d, t311 %d, n311 %d, t319 %d\n",
+        config.timer_config.sr_ProhibitTimer,
+        config.timer_config.sr_TransMax,
+        config.timer_config.sr_ProhibitTimer_v1700,
+        config.timer_config.t300,
+        config.timer_config.t301,
+        config.timer_config.t310,
+        config.timer_config.n310,
+        config.timer_config.t311,
+        config.timer_config.n311,
+        config.timer_config.t319);
+
   NR_ServingCellConfigCommon_t *scc = get_scc_config(cfg, config.minRXTXTIME);
   //xer_fprint(stdout, &asn_DEF_NR_ServingCellConfigCommon, scc);
   NR_ServingCellConfig_t *scd = get_scd_config(cfg);
@@ -1543,54 +1516,153 @@ void config_security(gNB_RRC_INST *rrc)
   }
 }
 
-// Section 5.4.3 of 38.101-1 and -2
-static void check_ssb_raster(uint64_t freq, int band, int scs)
+static int sort_neighbour_cell_config_by_cell_id(const void *a, const void *b)
 {
-  int start_gscn = 0, step_gscn = 0, end_gscn = 0;
-  for (int i = 0; i < sizeof(sync_raster) / sizeof(sync_raster_t); i++) {
-    if (sync_raster[i].band == band &&
-        sync_raster[i].scs_index == scs) {
-      start_gscn = sync_raster[i].first_gscn;
-      step_gscn = sync_raster[i].step_gscn;
-      end_gscn = sync_raster[i].last_gscn;
-      break;
+  const neighbour_cell_configuration_t *config_a = (const neighbour_cell_configuration_t *)a;
+  const neighbour_cell_configuration_t *config_b = (const neighbour_cell_configuration_t *)b;
+
+  if (config_a->nr_cell_id < config_b->nr_cell_id) {
+    return -1;
+  } else if (config_a->nr_cell_id > config_b->nr_cell_id) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static void fill_neighbour_cell_configuration(uint8_t gnb_idx, gNB_RRC_INST *rrc)
+{
+  char gnbpath[MAX_OPTNAME_SIZE + 8];
+  sprintf(gnbpath, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, gnb_idx);
+
+  paramdef_t neighbour_list_params[] = GNB_NEIGHBOUR_LIST_PARAM_LIST;
+  paramlist_def_t neighbour_list_param_list = {GNB_CONFIG_STRING_NEIGHBOUR_LIST, NULL, 0};
+
+  config_getlist(config_get_if(), &neighbour_list_param_list, neighbour_list_params, sizeofArray(neighbour_list_params), gnbpath);
+  if (neighbour_list_param_list.numelt < 1)
+    return;
+
+  rrc->neighbour_cell_configuration = malloc(sizeof(seq_arr_t));
+  seq_arr_init(rrc->neighbour_cell_configuration, sizeof(neighbour_cell_configuration_t));
+
+  for (int elm = 0; elm < neighbour_list_param_list.numelt; ++elm) {
+    neighbour_cell_configuration_t *cell = calloc(1, sizeof(neighbour_cell_configuration_t));
+    AssertFatal(cell != NULL, "out of memory\n");
+    cell->nr_cell_id = (uint64_t)*neighbour_list_param_list.paramarray[elm][0].u64ptr;
+
+    char neighbourpath[MAX_OPTNAME_SIZE + 8];
+    sprintf(neighbourpath, "%s.[%i].%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, gnb_idx, GNB_CONFIG_STRING_NEIGHBOUR_LIST, elm);
+    paramdef_t NeighbourCellParams[] = GNBNEIGHBOURCELLPARAMS_DESC;
+    paramlist_def_t NeighbourCellParamList = {GNB_CONFIG_STRING_NEIGHBOUR_CELL_LIST, NULL, 0};
+    config_getlist(config_get_if(), &NeighbourCellParamList, NeighbourCellParams, sizeofArray(NeighbourCellParams), neighbourpath);
+    LOG_D(GNB_APP, "HO LOG: For the Cell: %d Neighbour Cell ELM NUM: %d\n", cell->nr_cell_id, NeighbourCellParamList.numelt);
+    if (NeighbourCellParamList.numelt < 1)
+      continue;
+
+    cell->neighbour_cells = malloc(sizeof(seq_arr_t));
+    AssertFatal(cell->neighbour_cells != NULL, "Memory exhausted!!!");
+    seq_arr_init(cell->neighbour_cells, sizeof(nr_neighbour_gnb_configuration_t));
+    for (int l = 0; l < NeighbourCellParamList.numelt; ++l) {
+      nr_neighbour_gnb_configuration_t *neighbourCell = calloc(1, sizeof(nr_neighbour_gnb_configuration_t));
+      AssertFatal(neighbourCell != NULL, "out of memory\n");
+      neighbourCell->gNB_ID = *(NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_GNB_ID_IDX].uptr);
+      neighbourCell->nrcell_id = (uint64_t) * (NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_NR_CELLID_IDX].u64ptr);
+      neighbourCell->physicalCellId = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_PHYSICAL_ID_IDX].uptr;
+      neighbourCell->subcarrierSpacing = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_SCS_IDX].uptr;
+      neighbourCell->absoluteFrequencySSB = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_ABS_FREQ_SSB_IDX].i64ptr;
+      neighbourCell->tac = *NeighbourCellParamList.paramarray[l][GNB_CONFIG_N_CELL_TAC_IDX].uptr;
+
+      char neighbour_plmn_path[CONFIG_MAXOPTLENGTH];
+      sprintf(neighbour_plmn_path,
+              "%s.%s.[%i].%s",
+              neighbourpath,
+              GNB_CONFIG_STRING_NEIGHBOUR_CELL_LIST,
+              l,
+              GNB_CONFIG_STRING_NEIGHBOUR_PLMN);
+
+      paramdef_t NeighbourPlmn[] = GNBPLMNPARAMS_DESC;
+      config_get(config_get_if(), NeighbourPlmn, sizeofArray(NeighbourPlmn), neighbour_plmn_path);
+
+      neighbourCell->plmn.mcc = *NeighbourPlmn[GNB_MOBILE_COUNTRY_CODE_IDX].uptr;
+      neighbourCell->plmn.mnc = *NeighbourPlmn[GNB_MOBILE_NETWORK_CODE_IDX].uptr;
+      neighbourCell->plmn.mnc_digit_length = *NeighbourPlmn[GNB_MNC_DIGIT_LENGTH].uptr;
+      seq_arr_push_back(cell->neighbour_cells, neighbourCell, sizeof(nr_neighbour_gnb_configuration_t));
     }
+
+    seq_arr_push_back(rrc->neighbour_cell_configuration, cell, sizeof(neighbour_cell_configuration_t));
   }
-  AssertFatal(start_gscn != 0, "Couldn't find band %d with SCS %d\n", band, scs);
-  int gscn;
-  if (freq < 3000000000) {
-    int N = 0;
-    int M = 0;
-    for (int k = 0; k < 3; k++) {
-      M = (k << 1) + 1;
-      if ((freq - M * 50000) % 1200000 == 0) {
-        N = (freq - M * 50000) / 1200000;
-        break;
-      }
-    }
-    AssertFatal(N != 0, "SSB frequency %lu Hz not on the synchronization raster (N * 1200kHz + M * 50 kHz)\n",
-                freq);
-    gscn = (3 * N) + (M - 3) / 2;
+  void *base = seq_arr_front(rrc->neighbour_cell_configuration);
+  size_t nmemb = seq_arr_size(rrc->neighbour_cell_configuration);
+  size_t element_size = sizeof(neighbour_cell_configuration_t);
+
+  qsort(base, nmemb, element_size, sort_neighbour_cell_config_by_cell_id);
+}
+
+static void fill_measurement_configuration(uint8_t gnb_idx, gNB_RRC_INST *rrc)
+{
+  char measurement_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(measurement_path, "%s.[%i].%s", GNB_CONFIG_STRING_GNB_LIST, gnb_idx, GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION);
+
+  nr_measurement_configuration_t *measurementConfig = &rrc->measurementConfiguration;
+  // Periodical Event Configuration
+  char periodic_event_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(periodic_event_path,
+          "%s.[%i].%s.%s",
+          GNB_CONFIG_STRING_GNB_LIST,
+          gnb_idx,
+          GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION,
+          MEASUREMENT_EVENTS_PERIODICAL);
+  paramdef_t Periodical_EventParams[] = MEASUREMENT_PERIODICAL_GLOBALPARAMS_DESC;
+  config_get(config_get_if(), Periodical_EventParams, sizeofArray(Periodical_EventParams), periodic_event_path);
+  if (*Periodical_EventParams[MEASUREMENT_EVENTS_ENABLE_IDX].i64ptr) {
+    nr_per_event_t *periodic_event = (nr_per_event_t *)calloc(1, sizeof(nr_per_event_t));
+    periodic_event->includeBeamMeasurements = *Periodical_EventParams[MEASUREMENT_EVENTS_INCLUDE_BEAM_MEAS_IDX].i64ptr;
+    periodic_event->maxReportCells = *Periodical_EventParams[MEASUREMENT_EVENTS_MAX_RS_INDEX_TO_REPORT].i64ptr;
+
+    measurementConfig->per_event = periodic_event;
   }
-  else if (freq < 24250000000) {
-    AssertFatal((freq - 3000000000) % 1440000 == 0,
-                "SSB frequency %lu Hz not on the synchronization raster (3000 MHz + N * 1.44 MHz)\n",
-                freq);
-    gscn = ((freq - 3000000000) / 1440000) + 7499;
+
+  // A2 Event Configuration
+  char a2_path[MAX_OPTNAME_SIZE + 8];
+  sprintf(a2_path,
+          "%s.[%i].%s.%s",
+          GNB_CONFIG_STRING_GNB_LIST,
+          gnb_idx,
+          GNB_CONFIG_STRING_MEASUREMENT_CONFIGURATION,
+          MEASUREMENT_EVENTS_A2);
+  paramdef_t A2_EventParams[] = MEASUREMENT_A2_GLOBALPARAMS_DESC;
+  config_get(config_get_if(), A2_EventParams, sizeofArray(A2_EventParams), a2_path);
+  if (*A2_EventParams[MEASUREMENT_EVENTS_ENABLE_IDX].i64ptr) {
+    nr_a2_event_t *a2_event = (nr_a2_event_t *)calloc(1, sizeof(nr_a2_event_t));
+    a2_event->threshold_RSRP = *A2_EventParams[MEASUREMENT_EVENTS_A2_THRESHOLD_IDX].i64ptr;
+    a2_event->timeToTrigger = *A2_EventParams[MEASUREMENT_EVENTS_TIMETOTRIGGER_IDX].i64ptr;
+
+    measurementConfig->a2_event = a2_event;
   }
-  else {
-    AssertFatal((freq - 24250080000) % 17280000 == 0,
-                "SSB frequency %lu Hz not on the synchronization raster (24250.08 MHz + N * 17.28 MHz)\n",
-                freq);
-    gscn = ((freq - 24250080000) / 17280000) + 22256;
+  // A3 Event Configuration
+  paramlist_def_t A3_EventList = {MEASUREMENT_EVENTS_A3, NULL, 0};
+  paramdef_t A3_EventParams[] = MEASUREMENT_A3_GLOBALPARAMS_DESC;
+  config_getlist(config_get_if(), &A3_EventList, A3_EventParams, sizeofArray(A3_EventParams), measurement_path);
+  LOG_D(GNB_APP, "HO LOG: A3 Configuration Exists: %d\n", A3_EventList.numelt);
+
+  if (A3_EventList.numelt < 1)
+    return;
+
+  measurementConfig->a3_event_list = malloc(sizeof(seq_arr_t));
+  seq_arr_init(measurementConfig->a3_event_list, sizeof(nr_a3_event_t));
+  for (int i = 0; i < A3_EventList.numelt; i++) {
+    nr_a3_event_t *a3_event = (nr_a3_event_t *)calloc(1, sizeof(nr_a3_event_t));
+    AssertFatal(a3_event != NULL, "out of memory\n");
+    a3_event->cell_id = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_CELL_ID_IDX].i64ptr;
+    a3_event->timeToTrigger = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_TIMETOTRIGGER_IDX].i64ptr;
+    a3_event->a3_offset = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_OFFSET_IDX].i64ptr;
+    a3_event->hysteresis = *A3_EventList.paramarray[i][MEASUREMENT_EVENTS_HYSTERESIS_IDX].i64ptr;
+
+    if (a3_event->cell_id == -1)
+      measurementConfig->is_default_a3_configuration_exists = true;
+
+    seq_arr_push_back(measurementConfig->a3_event_list, a3_event, sizeof(nr_a3_event_t));
   }
-  AssertFatal(gscn >= start_gscn && gscn <= end_gscn,
-              "GSCN %d corresponding to SSB frequency %lu does not belong to GSCN range for band %d\n",
-              gscn, freq, band);
-  int rel_gscn = gscn - start_gscn;
-  AssertFatal(rel_gscn % step_gscn == 0,
-              "GSCN %d corresponding to SSB frequency %lu not in accordance with GSCN step for band %d\n",
-               gscn, freq, band);
 }
 
 void RCconfig_NRRRC(gNB_RRC_INST *rrc)
@@ -1682,7 +1754,10 @@ void RCconfig_NRRRC(gNB_RRC_INST *rrc)
         char gnbpath[MAX_OPTNAME_SIZE + 8];
         sprintf(gnbpath,"%s.[%i]",GNB_CONFIG_STRING_GNB_LIST,k);
 
-	
+        fill_neighbour_cell_configuration(k, rrc);
+
+        fill_measurement_configuration(k, rrc);
+
         paramdef_t PLMNParams[] = GNBPLMNPARAMS_DESC;
 
         paramlist_def_t PLMNParamList = {GNB_CONFIG_STRING_PLMN_LIST, NULL, 0};

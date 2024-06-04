@@ -530,7 +530,7 @@ int main( int argc, char **argv ) {
   mode = normal_txrx;
   memset(&openair0_cfg[0],0,sizeof(openair0_config_t)*MAX_CARDS);
   logInit();
-  set_latency_target();
+  lock_memory_to_ram();
   printf("Reading in command-line options\n");
 
   for (int i=0; i<MAX_NUM_CCs; i++) tx_max_power[i]=23;
@@ -617,7 +617,6 @@ int main( int argc, char **argv ) {
   }
 
   printf("ITTI tasks created\n");
-  mlockall(MCL_CURRENT | MCL_FUTURE);
   rt_sleep_ns(10*100000000ULL);
   int eMBMS_active = 0;
 

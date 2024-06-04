@@ -462,8 +462,9 @@ nr_initial_sync_t sl_nr_slss_search(PHY_VARS_NR_UE *UE, UE_nr_rxtx_proc_t *proc,
         uint8_t decoded_output[4];
 
         for (int symbol = 0; symbol < SL_NR_NUMSYM_SLSS_NORMAL_CP - 1;) {
-          nr_pbch_channel_estimation(UE,
-                                     frame_parms,
+          nr_pbch_channel_estimation(frame_parms,
+                                     &UE->SL_UE_PHY_PARAMS,
+                                     UE->nr_gold_pbch,
                                      rxdataF_sz,
                                      dl_ch_estimates,
                                      dl_ch_estimates_time,
@@ -472,6 +473,7 @@ nr_initial_sync_t sl_nr_slss_search(PHY_VARS_NR_UE *UE, UE_nr_rxtx_proc_t *proc,
                                      symbol,
                                      0,
                                      0,
+                                     frame_parms->ssb_start_subcarrier,
                                      rxdataF,
                                      1,
                                      rx_slss_id);

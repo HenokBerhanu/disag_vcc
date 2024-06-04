@@ -109,9 +109,8 @@ void set_Lmax(NR_DL_FRAME_PARMS *fp) {
   }
 }
 
-
-int nr_get_ssb_start_symbol(NR_DL_FRAME_PARMS *fp,uint8_t i_ssb) {
-
+int nr_get_ssb_start_symbol(const NR_DL_FRAME_PARMS *fp, uint8_t i_ssb)
+{
   int mu = fp->numerology_index;
   int symbol = 0;
   uint8_t n, n_temp;
@@ -213,8 +212,13 @@ void set_scs_parameters (NR_DL_FRAME_PARMS *fp, int mu, int N_RB_DL)
     fp->first_carrier_offset = 0;
   fp->nb_prefix_samples    = fp->ofdm_symbol_size / 128 * 9;
   fp->nb_prefix_samples0   = fp->ofdm_symbol_size / 128 * (9 + (1 << mu));
-  LOG_W(PHY,"Init: N_RB_DL %d, first_carrier_offset %d, nb_prefix_samples %d,nb_prefix_samples0 %d, ofdm_symbol_size %d\n",
-        N_RB_DL,fp->first_carrier_offset,fp->nb_prefix_samples,fp->nb_prefix_samples0, fp->ofdm_symbol_size);
+  LOG_I(PHY,
+        "Init: N_RB_DL %d, first_carrier_offset %d, nb_prefix_samples %d,nb_prefix_samples0 %d, ofdm_symbol_size %d\n",
+        N_RB_DL,
+        fp->first_carrier_offset,
+        fp->nb_prefix_samples,
+        fp->nb_prefix_samples0,
+        fp->ofdm_symbol_size);
 }
 
 uint32_t get_samples_per_slot(int slot, const NR_DL_FRAME_PARMS *fp)

@@ -70,7 +70,7 @@ int read_strlist(configmodule_interface_t *cfg, paramdef_t *cfgoptions, config_s
     str=config_setting_get_string_elem(setting,i);
 
     if (str==NULL) {
-      printf("[LIBCONFIG] %s%i  not found in config file\n", cfgoptions->optname,i);
+      printf_params(cfg, "[LIBCONFIG] %s%i  not found in config file\n", cfgoptions->optname,i);
     } else {
       snprintf(cfgoptions->strlistptr[i], DEFAULT_EXTRA_SZ, "%s",str);
       st++;
@@ -481,9 +481,12 @@ int config_libconfig_get(configmodule_interface_t *cfg, paramdef_t *cfgoptions, 
     }
   } /* for loop on options */
 
-  printf("[LIBCONFIG] %s: %i/%i parameters successfully set, (%i to default value)\n",
-         ((prefix == NULL)?"(root)":prefix),
-         status,numoptions,numdefvals );
+  printf_params(cfg,
+                "[LIBCONFIG] %s: %i/%i parameters successfully set, (%i to default value)\n",
+                prefix == NULL ? "(root)" : prefix,
+                status,
+                numoptions,
+                numdefvals);
 
   if (fatalerror == 1) {
     fprintf(stderr,"[LIBCONFIG] fatal errors found when processing  %s \n", libconfig_privdata.configfile );
@@ -517,8 +520,7 @@ int config_libconfig_getlist(configmodule_interface_t *cfg,
     status = ParamList->numelt = config_setting_length(setting);
     printf_params(cfg, "[LIBCONFIG] %i %s in config file %s \n", ParamList->numelt, listpath, libconfig_privdata.configfile);
   } else {
-    printf("[LIBCONFIG] list %s not found in config file %s \n",
-           listpath,libconfig_privdata.configfile );
+    printf_params(cfg, "[LIBCONFIG] list %s not found in config file %s \n", listpath, libconfig_privdata.configfile);
     ParamList->numelt= 0;
     status = -1;
   }
@@ -574,8 +576,10 @@ int config_libconfig_init(configmodule_interface_t *cfg)
    config_set_auto_convert (&(libconfig_privdata.cfg), CONFIG_TRUE);
   /* Read the file. If there is an error, report it and exit. */
   if( config_read_file(&(libconfig_privdata.cfg), libconfig_privdata.configfile) == CONFIG_FALSE) {
-    fprintf(stderr,"[LIBCONFIG] %s %d file %s - line %d: %s\n",__FILE__, __LINE__,
-            libconfig_privdata.configfile, config_error_line(&(libconfig_privdata.cfg)),
+    fprintf(stderr,
+            "[LIBCONFIG] file %s - line %d: %s\n",
+            libconfig_privdata.configfile,
+            config_error_line(&(libconfig_privdata.cfg)),
             config_error_text(&(libconfig_privdata.cfg)));
     config_destroy(&(libconfig_privdata.cfg));
     printf( "\n");

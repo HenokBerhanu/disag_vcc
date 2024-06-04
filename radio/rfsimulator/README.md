@@ -174,3 +174,20 @@ To successfully establish a connection with such a GEO satellite channel, both g
 # Caveats
 
 There are issues in power control: txgain/rxgain setting is not supported.
+
+# How to improve performance
+
+Most importantly, note that the RFsimulator is not designed to be as performant
+as possible, nor is it designed to run close to real-time. It might run faster
+or slower than realtime, depending on CPU, and by design, as this allows to
+stop the entire system for inspection, e.g., using a debugger.
+
+In order to improve performance, you can modify the radio parameters of the gNB
+to reduce the amount of transported samples:
+
+- Use option `-E` for three-quarter sampling (also to be done on the UE-side!)
+- Prefer smaller cell bandwidths
+
+A possible, unimplemented optimization would be to compress samples.
+
+You can further [tune your machine](../../doc/tuning_and_security.md)

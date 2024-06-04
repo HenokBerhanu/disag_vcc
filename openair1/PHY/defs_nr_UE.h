@@ -49,6 +49,7 @@
 #include "common_lib.h"
 #include "fapi_nr_ue_interface.h"
 #include "assertions.h"
+//#include "openair1/SCHED_NR_UE/defs.h"
 
 #ifdef MEX
   #define msg mexPrintf
@@ -60,9 +61,9 @@
     #endif
     #define msg(aRGS...) LOG_D(PHY, ##aRGS)
 #endif
-//use msg in the real-time thread context
+// use msg in the real-time thread context
 #define msg_nrt printf
-//use msg_nrt in the non real-time context (for initialization, ...)
+// use msg_nrt in the non real-time context (for initialization, ...)
 #ifndef malloc16
     #define malloc16(x) memalign(32,x)
 #endif
@@ -122,6 +123,11 @@ typedef enum {
 } NR_CHANNEL_EST_t;
 
 #define debug_msg if (((mac_xface->frame%100) == 0) || (mac_xface->frame < 50)) msg
+
+typedef struct {
+  uint8_t decoded_output[3]; // PBCH paylod not larger than 3B
+  uint8_t xtra_byte;
+} fapiPbch_t;
 
 typedef struct {
 
@@ -613,6 +619,32 @@ typedef struct {
   /// frame to act upon for reception
   int frame_rx;
 } UE_nr_rxtx_proc_t;
+
+typedef struct {
+  bool cell_detected;
+  int rx_offset;
+  int frame_id;
+} nr_initial_sync_t;
+
+typedef struct {
+  nr_gscn_info_t gscnInfo;
+  int foFlag;
+  int targetNidCell;
+  c16_t **rxdata;
+  NR_DL_FRAME_PARMS *fp;
+  UE_nr_rxtx_proc_t *proc;
+  int nFrames;
+  int halfFrameBit;
+  int symbolOffset;
+  int ssbIndex;
+  int ssbOffset;
+  int nidCell;
+  int freqOffset;
+  nr_initial_sync_t syncRes;
+  fapiPbch_t pbchResult;
+  int pssCorrPeakPower;
+  int pssCorrAvgPower;
+} nr_ue_ssb_scan_t;
 
 typedef struct nr_phy_data_tx_s {
   NR_UE_ULSCH_t ulsch;

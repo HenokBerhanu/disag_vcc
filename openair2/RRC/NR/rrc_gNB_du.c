@@ -27,7 +27,26 @@
 #include "openair2/F1AP/f1ap_common.h"
 #include "openair2/F1AP/f1ap_ids.h"
 #include "executables/softmodem-common.h"
+#include "common/utils/ds/seq_arr.h"
+#include "common/utils/alg/foreach.h"
 
+int get_dl_band(const struct f1ap_served_cell_info_t *cell_info)
+{
+  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.freqinfo.band : cell_info->fdd.dl_freqinfo.band;
+}
+
+int get_ssb_scs(const struct f1ap_served_cell_info_t *cell_info)
+{
+  return cell_info->mode == F1AP_MODE_TDD ? cell_info->tdd.tbw.scs : cell_info->fdd.dl_tbw.scs;
+}
+
+int get_ssb_arfcn(const struct nr_rrc_du_container_t *du)
+{
+  DevAssert(du != NULL && du->mtc != NULL);
+  /* format has been verified when accepting MeasurementTimingConfiguration */
+  NR_MeasTimingList_t *mtlist = du->mtc->criticalExtensions.choice.c1->choice.measTimingConf->measTiming;
+  return mtlist->list.array[0]->frequencyAndTiming->carrierFreq;
+}
 
 static int du_compare(const nr_rrc_du_container_t *a, const nr_rrc_du_container_t *b)
 {
@@ -102,6 +121,80 @@ static NR_MeasurementTimingConfiguration_t *extract_mtc(uint8_t *buf, int buf_le
     return NULL;
   }
   return mtc;
+}
+
+static int nr_cell_id_match(const void *key, const void *element)
+{
+  const int *key_id = (const int *)key;
+  const neighbour_cell_configuration_t *config_element = (const neighbour_cell_configuration_t *)element;
+
+  if (*key_id < config_element->nr_cell_id) {
+    return -1;
+  } else if (*key_id == config_element->nr_cell_id) {
+    return 0;
+  }
+
+  return 1;
+}
+
+static neighbour_cell_configuration_t *get_cell_neighbour_list(const gNB_RRC_INST *rrc, const f1ap_served_cell_info_t *cell_info)
+{
+  void *base = seq_arr_front(rrc->neighbour_cell_configuration);
+  size_t nmemb = seq_arr_size(rrc->neighbour_cell_configuration);
+  size_t size = sizeof(neighbour_cell_configuration_t);
+
+  void *it = bsearch((void *)&cell_info->nr_cellid, base, nmemb, size, nr_cell_id_match);
+
+  return (neighbour_cell_configuration_t *)it;
+}
+
+const struct f1ap_served_cell_info_t *get_cell_information_by_phycellId(int phyCellId)
+{
+  gNB_RRC_INST *rrc = RC.nrrrc[0];
+  nr_rrc_du_container_t *it = NULL;
+  RB_FOREACH (it, rrc_du_tree, &rrc->dus) {
+    for (int cellIdx = 0; cellIdx < it->setup_req->num_cells_available; cellIdx++) {
+      const f1ap_served_cell_info_t *cell_info = &(it->setup_req->cell[cellIdx].info);
+      if (cell_info->nr_pci == phyCellId) {
+        LOG_D(NR_RRC, "HO LOG: Found cell with phyCellId %d\n", phyCellId);
+        return cell_info;
+      }
+    }
+  }
+  return NULL;
+}
+
+static void is_intra_frequency_neighbour(void *ssb_arfcn, void *neighbour_cell)
+{
+  uint32_t *ssb_arfcn_ptr = (uint32_t *)ssb_arfcn;
+  nr_neighbour_gnb_configuration_t *neighbour_cell_ptr = (nr_neighbour_gnb_configuration_t *)neighbour_cell;
+
+  if (*ssb_arfcn_ptr == neighbour_cell_ptr->absoluteFrequencySSB) {
+    LOG_D(NR_RRC, "HO LOG: found intra frequency neighbour %lu!\n", neighbour_cell_ptr->nrcell_id);
+    neighbour_cell_ptr->isIntraFrequencyNeighbour = true;
+  }
+}
+/**
+ * @brief Labels neighbour cells if they are intra frequency to prepare meas config only for intra frequency ho
+ * @param[in] rrc     Pointer to RRC instance
+ * @param[in] cell_info Pointer to cell information
+ */
+static void label_intra_frequency_neighbours(gNB_RRC_INST *rrc,
+                                             const nr_rrc_du_container_t *du,
+                                             const f1ap_served_cell_info_t *cell_info)
+{
+  if (!rrc->neighbour_cell_configuration)
+    return;
+
+  neighbour_cell_configuration_t *neighbour_cell_config = get_cell_neighbour_list(rrc, cell_info);
+  if (!neighbour_cell_config)
+    return;
+
+  LOG_D(NR_RRC, "HO LOG: Cell: %lu has neighbour cell configuration!\n", cell_info->nr_cellid);
+  uint32_t ssb_arfcn = get_ssb_arfcn(du);
+
+  seq_arr_t *cell_neighbour_list = neighbour_cell_config->neighbour_cells;
+  for_each(cell_neighbour_list, (void *)&ssb_arfcn, is_intra_frequency_neighbour);
 }
 
 void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
@@ -211,6 +304,9 @@ void rrc_gNB_process_f1_setup_req(f1ap_setup_req_t *req, sctp_assoc_t assoc_id)
       .nrpci = cell_info->nr_pci,
       .num_SI = 0,
   };
+
+  if (du->mib != NULL && du->sib1 != NULL)
+    label_intra_frequency_neighbours(rrc, du, cell_info);
 
   f1ap_setup_resp_t resp = {.transaction_id = req->transaction_id,
                             .num_cells_to_activate = 1,
@@ -332,6 +428,10 @@ void rrc_gNB_process_f1_du_configuration_update(f1ap_gnb_du_configuration_update
         du->mib = mib;
         LOG_I(RRC, "update system information of DU %ld\n", du->setup_req->gNB_DU_id);
       }
+    }
+    if (du->mib != NULL && du->sib1 != NULL) {
+      const f1ap_served_cell_info_t *cell_info = &du->setup_req->cell[0].info;
+      label_intra_frequency_neighbours(rrc, du, cell_info);
     }
   }
 

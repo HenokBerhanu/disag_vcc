@@ -49,7 +49,6 @@
 #include "PHY_INTERFACE/phy_interface_vars.h"
 #include "gnb_config.h"
 #include "SIMULATION/TOOLS/sim.h"
-#include "executables/lte-softmodem.h"
 
 #ifdef SMBV
 #include "PHY/TOOLS/smbv.h"
@@ -604,6 +603,7 @@ static void initialize_agent(ngran_node_t node_type, e2_agent_args_t oai_args)
 }
 #endif
 
+void init_eNB_afterRU(void);
 configmodule_interface_t *uniqCfg = NULL;
 int main( int argc, char **argv ) {
   int ru_id, CC_id = 0;
@@ -622,7 +622,7 @@ int main( int argc, char **argv ) {
   mode = normal_txrx;
   memset(tx_max_power,0,sizeof(int)*MAX_NUM_CCs);
   logInit();
-  set_latency_target();
+  lock_memory_to_ram();
   printf("Reading in command-line options\n");
   get_options(uniqCfg);
 
@@ -632,6 +632,10 @@ int main( int argc, char **argv ) {
     fprintf(stderr,"Getting configuration failed\n");
     exit(-1);
   }
+
+  if (!has_cap_sys_nice())
+    LOG_W(UTIL,
+          "no SYS_NICE capability: cannot set thread priority and affinity, consider running with sudo for optimum performance\n");
 
   if (get_softmodem_params()->do_ra)
     AssertFatal(get_softmodem_params()->phy_test == 0,"RA and phy_test are mutually exclusive\n");
@@ -677,7 +681,6 @@ int main( int argc, char **argv ) {
     AssertFatal(ret == 0, "cannot create ITTI tasks\n");
   }
 
-  mlockall(MCL_CURRENT | MCL_FUTURE);
   pthread_cond_init(&sync_cond,NULL);
   pthread_mutex_init(&sync_mutex, NULL);
   usleep(1000);

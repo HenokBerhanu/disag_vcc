@@ -109,6 +109,7 @@
 #define GNB_CONFIG_STRING_NROFUPLINKSYMBOLS2                             "nrofUplinkSymbols2"
 #define GNB_CONFIG_STRING_SSPBCHBLOCKPOWER                               "ssPBCH_BlockPower"
 
+#define GNB_CONFIG_STRING_CELLSPECIFICKOFFSET                            "cellSpecificKoffset_r17"
 
 #define CARRIERBANDWIDTH_OKVALUES {11,18,24,25,31,32,38,51,52,65,66,78,79,93,106,107,121,132,133,135,160,162,189,216,217,245,264,270,273}
 
@@ -232,6 +233,7 @@
 {GNB_CONFIG_STRING_NROFUPLINKSLOTS2,NULL,0,.i64ptr=&scc->tdd_UL_DL_ConfigurationCommon->pattern2->nrofUplinkSlots,.defint64val=-1,TYPE_INT64,0},\
 {GNB_CONFIG_STRING_NROFUPLINKSYMBOLS2,NULL,0,.i64ptr=&scc->tdd_UL_DL_ConfigurationCommon->pattern2->nrofUplinkSymbols,.defint64val=-1,TYPE_INT64,0},\
 {GNB_CONFIG_STRING_SSPBCHBLOCKPOWER,NULL,0,.i64ptr=&scc->ss_PBCH_BlockPower,.defint64val=20,TYPE_INT64,0}, \
+{GNB_CONFIG_STRING_CELLSPECIFICKOFFSET,NULL,0,.i64ptr=scc->ext2->ntn_Config_r17->cellSpecificKoffset_r17,.defint64val=0,TYPE_INT64,0}, \
 {GNB_CONFIG_STRING_MSG1SUBCARRIERSPACING,NULL,0,.i64ptr=scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->msg1_SubcarrierSpacing,.defintval=-1,TYPE_INT64,0}}
 
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------*/

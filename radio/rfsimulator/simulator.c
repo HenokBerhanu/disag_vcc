@@ -86,8 +86,7 @@
 //
 // #define MAX_FD_RFSIMU FD_SETSIZE
 #define MAX_FD_RFSIMU 250
-#define SYSCTL_MEM_VALUE 134217728 // Kernel network buffer size
-#define SEND_BUFF_SIZE SYSCTL_MEM_VALUE // Socket buffer size
+#define SEND_BUFF_SIZE 100000000 // Socket buffer size
 
 // Simulator role
 typedef enum { SIMU_ROLE_SERVER = 1, SIMU_ROLE_CLIENT } simuRole;
@@ -540,40 +539,6 @@ static int rfsimu_vtime_cmd(char *buff, int debug, telnet_printfunc_t prnt, void
   return CMDSTATUS_FOUND;
 }
 
-static void customNetForPerf()
-{
-  int res = 0;
-  char sysctlmem[256];
-  memset(sysctlmem, 0, 256);
-  sprintf(sysctlmem, "/sbin/sysctl -n -e -q -w net.core.rmem_default=%d", SYSCTL_MEM_VALUE);
-  LOG_W(HW, "running command \"%s\" to increase RFsim performance\n", sysctlmem);
-  res = system(sysctlmem);
-  if (res != 0) {
-    LOG_W(HW, "Cannot set net.core.rmem_default to %d\n", SYSCTL_MEM_VALUE);
-  }
-  memset(sysctlmem, 0, 256);
-  sprintf(sysctlmem, "/sbin/sysctl -n -e -q -w net.core.rmem_max=%d", SYSCTL_MEM_VALUE);
-  LOG_W(HW, "running command \"%s\" to increase RFsim performance\n", sysctlmem);
-  res = system(sysctlmem);
-  if (res != 0) {
-    LOG_W(HW, "Cannot set net.core.rmem_max to %d\n", SYSCTL_MEM_VALUE);
-  }
-  memset(sysctlmem, 0, 256);
-  sprintf(sysctlmem, "/sbin/sysctl -n -e -q -w net.core.wmem_default=%d", SYSCTL_MEM_VALUE);
-  LOG_W(HW, "running command \"%s\" to increase RFsim performance\n", sysctlmem);
-  res = system(sysctlmem);
-  if (res != 0) {
-    LOG_W(HW, "Cannot set net.core.wmem_default to %d\n", SYSCTL_MEM_VALUE);
-  }
-  memset(sysctlmem, 0, 256);
-  sprintf(sysctlmem, "/sbin/sysctl -n -e -q -w net.core.wmem_max=%d", SYSCTL_MEM_VALUE);
-  LOG_W(HW, "running command \"%s\" to increase RFsim performance\n", sysctlmem);
-  res = system(sysctlmem);
-  if (res != 0) {
-    LOG_W(HW, "Cannot set net.core.wmem_max to %d\n", SYSCTL_MEM_VALUE);
-  }
-}
-
 static int startServer(openair0_device *device) {
   rfsimulator_state_t *t = (rfsimulator_state_t *) device->priv;
   t->role = SIMU_ROLE_SERVER;
@@ -588,7 +553,6 @@ static int startServer(openair0_device *device) {
     return -1;
   }
   struct sockaddr_in addr = {.sin_family = AF_INET, .sin_port = htons(t->port), .sin_addr = {.s_addr = INADDR_ANY}};
-  customNetForPerf();
   int rc = bind(t->listen_sock, (struct sockaddr *)&addr, sizeof(addr));
   if (rc < 0) {
     LOG_E(HW, "bind() failed, errno(%d)\n", errno);
@@ -620,7 +584,6 @@ static int startClient(openair0_device *device) {
   addr.sin_addr.s_addr = inet_addr(t->ip);
   bool connected=false;
 
-  customNetForPerf();
   while(!connected) {
     LOG_I(HW, "Trying to connect to %s:%d\n", t->ip, t->port);
 
@@ -868,7 +831,7 @@ static int rfsimulator_read(openair0_device *device, openair0_timestamp *ptimest
   if (first_sock == MAX_FD_RFSIMU) {
     // no connected device (we are eNB, no UE is connected)
     if ( t->nextRxTstamp == 0)
-      LOG_W(HW, "No connected device, generating void samples...\n");
+      LOG_I(HW, "No connected device, generating void samples...\n");
 
     if (!flushInput(t, t->wait_timeout,  nsamps)) {
       for (int x=0; x < nbAnt; x++)
@@ -1019,7 +982,6 @@ int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
   rfsimulator->sample_rate=openair0_cfg->sample_rate;
   rfsimulator->tx_bw=openair0_cfg->tx_bw;  
   rfsimulator_readconfig(rfsimulator);
-  LOG_W(HW, "sample_rate %f\n", rfsimulator->sample_rate);
   if (rfsimulator->prop_delay_ms > 0.0)
     rfsimulator->chan_offset = rfsimulator->sample_rate * rfsimulator->prop_delay_ms / 1000;
   if (rfsimulator->chan_offset != 0) {

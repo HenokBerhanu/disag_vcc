@@ -21,15 +21,13 @@
 
 #include "refsig_defs_ue.h"
 
-void nr_gold_pbch(PHY_VARS_NR_UE* ue)
+void nr_gold_pbch(uint32_t nr_gold_pbch[2][64][NR_PBCH_DMRS_LENGTH_DWORD], int Nid, int Lmax)
 {
   unsigned int n = 0, x1 = 0, x2 = 0;
-  unsigned int Nid, i_ssb, i_ssb2;
-  unsigned char Lmax, l, n_hf, N_hf;
+  unsigned int i_ssb, i_ssb2;
+  unsigned char l, n_hf, N_hf;
   uint8_t reset;
 
-  Nid = ue->frame_parms.Nid_cell;
-  Lmax = ue->frame_parms.Lmax;
   N_hf = (Lmax == 4)? 2:1;
 
   for (n_hf = 0; n_hf < N_hf; n_hf++) {
@@ -42,7 +40,7 @@ void nr_gold_pbch(PHY_VARS_NR_UE* ue)
       x2 = (1<<11) * (i_ssb2 + 1) * ((Nid>>2) + 1) + (1<<6) * (i_ssb2 + 1) + (Nid&3);
 
       for (n=0; n<NR_PBCH_DMRS_LENGTH_DWORD; n++) {
-        ue->nr_gold_pbch[n_hf][l][n] = lte_gold_generic(&x1, &x2, reset);
+        nr_gold_pbch[n_hf][l][n] = lte_gold_generic(&x1, &x2, reset);
         reset = 0;
       }
 

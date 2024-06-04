@@ -542,10 +542,10 @@ static void start_ra_contention_resolution_timer(NR_RA_t *ra, const long ra_Cont
   // ra-ContentionResolutionTimer ENUMERATED {sf8, sf16, sf24, sf32, sf40, sf48, sf56, sf64}
   // The initial value for the contention resolution timer.
   // Value sf8 corresponds to 8 subframes, value sf16 corresponds to 16 subframes, and so on.
-  // We add K2 because we start the timer in the DL slot that schedules Msg3/Msg3 retransmission
-  ra->contention_resolution_timer = ((((int)ra_ContentionResolutionTimer + 1) * 8) << scs) + K2;
-  LOG_D(NR_MAC,
-        "Starting RA Contention Resolution timer with %d ms + %d K2 (%d slots) duration\n",
+  // We add 2 * K2 because the timer runs from Msg2 transmission till Msg4 ACK reception
+  ra->contention_resolution_timer = ((((int)ra_ContentionResolutionTimer + 1) * 8) << scs) + 2 * K2;
+  LOG_I(NR_MAC,
+        "Starting RA Contention Resolution timer with %d ms + 2 * %d K2 (%d slots) duration\n",
         ((int)ra_ContentionResolutionTimer + 1) * 8,
         K2,
         ra->contention_resolution_timer);
@@ -580,8 +580,8 @@ static void nr_generate_Msg3_retransmission(module_id_t module_idP,
 
   NR_PUSCH_TimeDomainResourceAllocationList_t *pusch_TimeDomainAllocationList = ul_bwp->tdaList_Common;
   int mu = ul_bwp->scs;
-  uint8_t K2 = *pusch_TimeDomainAllocationList->list.array[ra->Msg3_tda_id]->k2;
-  const int sched_frame = (frame + (slot + K2 >= nr_slots_per_frame[mu])) % 1024;
+  uint16_t K2 = *pusch_TimeDomainAllocationList->list.array[ra->Msg3_tda_id]->k2 + get_NTN_Koffset(scc);
+  const int sched_frame = (frame + (slot + K2) / nr_slots_per_frame[mu]) % MAX_FRAME_NUMBER;
   const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
 
   if (is_xlsch_in_slot(nr_mac->ulsch_slot_bitmap[sched_slot / 64], sched_slot)) {
@@ -747,6 +747,7 @@ static void nr_generate_Msg3_retransmission(module_id_t module_idP,
 }
 
 static int get_feasible_msg3_tda(frame_type_t frame_type,
+                                 const NR_ServingCellConfigCommon_t *scc,
                                  int mu_delta,
                                  uint64_t ulsch_slot_bitmap[3],
                                  const NR_PUSCH_TimeDomainResourceAllocationList_t *tda_list,
@@ -761,12 +762,14 @@ static int get_feasible_msg3_tda(frame_type_t frame_type,
     return tda;
   }
 
+  const int NTN_gNB_Koffset = get_NTN_Koffset(scc);
+
   // TDD
   DevAssert(tdd != NULL);
   uint8_t tdd_period_slot = slots_per_frame / get_nb_periods_per_frame(tdd->dl_UL_TransmissionPeriodicity);
   for (int i = 0; i < tda_list->list.count; i++) {
     // check if it is UL
-    long k2 = *tda_list->list.array[i]->k2;
+    long k2 = *tda_list->list.array[i]->k2 + NTN_gNB_Koffset;
     int temp_slot = (slot + k2 + mu_delta) % slots_per_frame; // msg3 slot according to 8.3 in 38.213
     if (!is_xlsch_in_slot(ulsch_slot_bitmap[temp_slot / 64], temp_slot))
       continue;
@@ -820,10 +823,10 @@ static void nr_get_Msg3alloc(module_id_t module_id,
   int startSymbolAndLength = pusch_TimeDomainAllocationList->list.array[ra->Msg3_tda_id]->startSymbolAndLength;
   SLIV2SL(startSymbolAndLength, &ra->msg3_startsymb, &ra->msg3_nbSymb);
 
-  long k2 = *pusch_TimeDomainAllocationList->list.array[ra->Msg3_tda_id]->k2;
+  long k2 = *pusch_TimeDomainAllocationList->list.array[ra->Msg3_tda_id]->k2 + get_NTN_Koffset(scc);
   int abs_slot = current_slot + k2 + DELTA[mu];
   ra->Msg3_slot = abs_slot % n_slots_frame;
-  ra->Msg3_frame = (current_frame + (abs_slot / n_slots_frame)) % 1024;
+  ra->Msg3_frame = (current_frame + (abs_slot / n_slots_frame)) % MAX_FRAME_NUMBER;
 
   LOG_I(NR_MAC,
         "UE %04x: Msg3 scheduled at %d.%d (%d.%d k2 %ld TDA %u)\n",
@@ -1224,6 +1227,7 @@ static void nr_generate_Msg2(module_id_t module_idP,
   }
 
   ra->Msg3_tda_id = get_feasible_msg3_tda(cc->frame_type,
+                                          scc,
                                           DELTA[ul_bwp->scs],
                                           nr_mac->ulsch_slot_bitmap,
                                           ul_bwp->tdaList_Common,
@@ -1464,7 +1468,7 @@ static void nr_generate_Msg2(module_id_t module_idP,
   start_ra_contention_resolution_timer(
       ra,
       scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->ra_ContentionResolutionTimer,
-      *ra->UL_BWP.tdaList_Common->list.array[ra->Msg3_tda_id]->k2,
+      *ra->UL_BWP.tdaList_Common->list.array[ra->Msg3_tda_id]->k2 + get_NTN_Koffset(scc),
       ra->UL_BWP.scs);
 
   if (ra->cfra) {

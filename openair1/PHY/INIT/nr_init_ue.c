@@ -706,7 +706,6 @@ void phy_init_nr_top(PHY_VARS_NR_UE *ue) {
 void phy_term_nr_top(void)
 {
   free_ul_reference_signal_sequences();
-  free_context_synchro_nr();
 }
 
 static void sl_generate_psbch_dmrs_qpsk_sequences(PHY_VARS_NR_UE *UE, struct complex16 *modulated_dmrs_sym, uint16_t slss_id)

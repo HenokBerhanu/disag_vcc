@@ -37,6 +37,7 @@
 
 #include "collection/tree.h"
 #include "collection/linear_alloc.h"
+#include "common/utils/ds/seq_arr.h"
 #include "nr_rrc_common.h"
 #include "ds/byte_array.h"
 
@@ -359,6 +360,46 @@ typedef struct {
   int do_drb_integrity;
 } nr_security_configuration_t;
 
+typedef struct {
+  long maxReportCells;
+  bool includeBeamMeasurements;
+} nr_per_event_t;
+
+typedef struct {
+  long threshold_RSRP;
+  long timeToTrigger;
+} nr_a2_event_t;
+
+typedef struct {
+  int cell_id;
+  long a3_offset;
+  long hysteresis;
+  long timeToTrigger;
+} nr_a3_event_t;
+
+typedef struct {
+  nr_per_event_t *per_event;
+  nr_a2_event_t *a2_event;
+  seq_arr_t *a3_event_list;
+  bool is_default_a3_configuration_exists;
+} nr_measurement_configuration_t;
+
+typedef struct {
+  uint32_t gNB_ID;
+  uint64_t nrcell_id;
+  int physicalCellId;
+  int absoluteFrequencySSB;
+  int subcarrierSpacing;
+  plmn_identity_t plmn;
+  uint32_t tac;
+  bool isIntraFrequencyNeighbour;
+} nr_neighbour_gnb_configuration_t;
+
+typedef struct neighbour_cell_configuration_s {
+  int nr_cell_id;
+  seq_arr_t *neighbour_cells;
+} neighbour_cell_configuration_t;
+
 typedef struct nr_mac_rrc_dl_if_s {
   f1_setup_response_func_t f1_setup_response;
   f1_setup_failure_func_t f1_setup_failure;
@@ -423,6 +464,8 @@ typedef struct gNB_RRC_INST_s {
 
   nr_mac_rrc_dl_if_t mac_rrc;
   cucp_cuup_if_t cucp_cuup;
+  seq_arr_t *neighbour_cell_configuration;
+  nr_measurement_configuration_t measurementConfiguration;
 
   RB_HEAD(rrc_du_tree, nr_rrc_du_container_t) dus; // DUs, indexed by assoc_id
   size_t num_dus;

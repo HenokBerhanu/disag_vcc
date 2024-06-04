@@ -61,12 +61,11 @@ int sl_nr_slot_fep(PHY_VARS_NR_UE *ue,
                    uint32_t sample_offset,
                    c16_t rxdataF[][ue->SL_UE_PHY_PARAMS.sl_frame_params.samples_per_slot_wCP]);
 
-int nr_slot_fep_init_sync(PHY_VARS_NR_UE *ue,
-                          const UE_nr_rxtx_proc_t *proc,
+int nr_slot_fep_init_sync(const NR_DL_FRAME_PARMS *frame_parms,
                           unsigned char symbol,
                           int sample_offset,
-                          bool pbch_decoded,
-                          c16_t rxdataF[][ue->frame_parms.samples_per_slot_wCP],
+                          const c16_t **rxdata,
+                          c16_t rxdataF[][frame_parms->samples_per_slot_wCP],
                           int link_type);
 
 int slot_fep_mbsfn(PHY_VARS_UE *phy_vars_ue,

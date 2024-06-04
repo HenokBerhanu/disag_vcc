@@ -77,6 +77,9 @@ static inline const char *rnti_types(nr_rnti_type_t rr)
 }
 #undef R
 
+#define MU_SCS(m) (15 << m)
+#define MAX_GSCN_BAND 620 // n78 has the highest GSCN range of 619
+
 #define NR_MAX_NB_LAYERS 4 // 8
 
 // Since the IQ samples are represented by SQ15 R+I (see https://en.wikipedia.org/wiki/Q_(number_format)) we need to compensate when
@@ -103,6 +106,12 @@ typedef struct {
   int step_gscn;
   int last_gscn;
 } sync_raster_t;
+
+typedef struct {
+  int gscn;
+  double ssRef;
+  int ssbFirstSC;
+} nr_gscn_info_t;
 
 typedef enum frequency_range_e {
   FR1 = 0,
@@ -237,6 +246,14 @@ void freq2time(uint16_t ofdm_symbol_size,
                int16_t *time_signal);
 
 void nr_est_delay(int ofdm_symbol_size, const c16_t *ls_est, c16_t *ch_estimates_time, delay_t *delay);
+
+int get_scan_ssb_first_sc(const double fc,
+                          const int nbRB,
+                          const int nrBand,
+                          const int mu,
+                          nr_gscn_info_t ssbStartSC[MAX_GSCN_BAND]);
+
+void check_ssb_raster(uint64_t freq, int band, int scs);
 
 #define CEILIDIV(a,b) ((a+b-1)/b)
 #define ROUNDIDIV(a,b) (((a<<1)+b)/(b<<1))
