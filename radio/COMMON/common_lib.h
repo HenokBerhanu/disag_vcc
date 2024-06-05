@@ -195,6 +195,8 @@ typedef struct split7_config {
   struct {
     symbol_direction_t sym_dir[14];
   } slot_dirs[160];
+  /*! this is the exponent in 2^X for the FFT size */
+  uint16_t fftSize;
 } split7_config_t;
 
 /*! \brief RF frontend parameters set by application */

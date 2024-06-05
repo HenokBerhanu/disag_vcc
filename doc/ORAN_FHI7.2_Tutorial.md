@@ -791,7 +791,6 @@ Edit the sample OAI gNB configuration file and check following parameters:
         compression
       * `iq_width_prach`: Width of PRACH IQ samples: if 16, no compression, if <16, applies
         compression
-      * `fft_size`: size of FFT performed by RU, set to 12 by default
     * `prach_config`: PRACH-specific configuration
       * `eAxC_offset`:  PRACH antenna offset
       * `kbar`: the PRACH guard interval, provided in RU

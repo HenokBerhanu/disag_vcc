@@ -91,13 +91,11 @@
 
 #define ORAN_RU_CONFIG_IQWIDTH "iq_width"
 #define ORAN_RU_CONFIG_IQWIDTH_PRACH "iq_width_prach"
-#define ORAN_RU_CONFIG_FFT_SIZE "fft_size"
 
 // clang-format off
 #define ORAN_RU_DESC {\
   {ORAN_RU_CONFIG_IQWIDTH,       "sample IQ width (16=uncompressed)\n",       PARAMFLAG_MANDATORY, .u8ptr=NULL, .defuintval=16, TYPE_UINT8, 0}, \
   {ORAN_RU_CONFIG_IQWIDTH_PRACH, "PRACH sample IQ width (16=uncompressed)\n", PARAMFLAG_MANDATORY, .u8ptr=NULL, .defuintval=16, TYPE_UINT8, 0}, \
-  {ORAN_RU_CONFIG_FFT_SIZE,      "Size of FFT at RU\n",                       PARAMFLAG_MANDATORY, .u8ptr=NULL, .defuintval=12, TYPE_UINT8, 0}, \
 }
 // clang-format on
 
