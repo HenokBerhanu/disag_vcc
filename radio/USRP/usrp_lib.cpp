@@ -768,6 +768,8 @@ static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp
   s->rx_timestamp = s->rx_md.time_spec.to_ticks(s->sample_rate);
   *ptimestamp = s->rx_timestamp;
 
+  T(T_USRP_RX_ANT0, T_INT(s->rx_timestamp), T_BUFFER(buff[0], samples_received*4));
+
   recplay_state_t *recPlay=device->recplay_state;
 
   if (device->openair0_cfg->recplay_mode == RECPLAY_RECORDMODE) { // record mode
