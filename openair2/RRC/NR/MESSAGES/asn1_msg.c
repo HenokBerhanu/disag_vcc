@@ -241,6 +241,7 @@ int do_SIB23_NR(rrc_gNB_carrier_data_t *carrier)
                                    100);
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                enc_rval.failed_type->name, enc_rval.encoded);
+  ASN_STRUCT_FREE(asn_DEF_NR_BCCH_DL_SCH_Message, sib_message);
   return((enc_rval.encoded+7)/8);
 }
 
@@ -249,7 +250,6 @@ int do_RRCReject(uint8_t *const buffer)
     asn_enc_rval_t                                   enc_rval;
     NR_DL_CCCH_Message_t                             dl_ccch_msg;
     NR_RRCReject_t                                   *rrcReject;
-    NR_RejectWaitTime_t                              waitTime = 1;
 
     memset((void *)&dl_ccch_msg, 0, sizeof(NR_DL_CCCH_Message_t));
     dl_ccch_msg.message.present = NR_DL_CCCH_MessageType_PR_c1;
@@ -261,9 +261,9 @@ int do_RRCReject(uint8_t *const buffer)
 
     rrcReject->criticalExtensions.choice.rrcReject           = CALLOC(1, sizeof(struct NR_RRCReject_IEs));
     rrcReject->criticalExtensions.choice.rrcReject->waitTime = CALLOC(1, sizeof(NR_RejectWaitTime_t));
+    *rrcReject->criticalExtensions.choice.rrcReject->waitTime = 1;
 
     rrcReject->criticalExtensions.present = NR_RRCReject__criticalExtensions_PR_rrcReject;
-    rrcReject->criticalExtensions.choice.rrcReject->waitTime = &waitTime;
 
     if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
         xer_fprint(stdout, &asn_DEF_NR_DL_CCCH_Message, (void *)&dl_ccch_msg);
@@ -277,6 +277,7 @@ int do_RRCReject(uint8_t *const buffer)
 
     AssertFatal(enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                 enc_rval.failed_type->name, enc_rval.encoded);
+    ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_DL_CCCH_Message, &dl_ccch_msg);
 
     LOG_D(NR_RRC,"RRCReject Encoded %zd bits (%zd bytes)\n",
             enc_rval.encoded,(enc_rval.encoded+7)/8);
@@ -608,6 +609,7 @@ int do_NR_SA_UECapabilityEnquiry(const protocol_ctxt_t *const ctxt_pP,
   if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
     xer_fprint(stdout, &asn_DEF_NR_UE_CapabilityRequestFilterNR, (void *)sa_band_filter);
   }
+  ASN_STRUCT_FREE(asn_DEF_NR_UE_CapabilityRequestFilterNR, sa_band_filter);
 
   ue_capabilityrat_request->capabilityRequestFilter = req_freq;
 
@@ -843,6 +845,7 @@ int do_NR_RRCReconfigurationComplete_for_nsa(
                                                   buffer_size);
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                enc_rval.failed_type->name, enc_rval.encoded);
+  ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_RRCReconfigurationComplete, &rrc_complete_msg);
   LOG_A(NR_RRC, "rrcReconfigurationComplete Encoded %zd bits (%zd bytes)\n", enc_rval.encoded, (enc_rval.encoded+7)/8);
   return((enc_rval.encoded+7)/8);
 }
@@ -962,6 +965,8 @@ int do_NR_ULInformationTransfer(uint8_t **buffer, uint32_t pdu_length, uint8_t *
     encoded = uper_encode_to_new_buffer (&asn_DEF_NR_UL_DCCH_Message, NULL, (void *) &ul_dcch_msg, (void **) buffer);
     AssertFatal(encoded > 0,"ASN1 message encoding failed (%s, %ld)!\n",
                 "ULInformationTransfer",encoded);
+    ulInformationTransfer->dedicatedNAS_Message->buf = NULL; // Let caller decide when to free it
+    ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_UL_DCCH_Message, &ul_dcch_msg);
     LOG_D(NR_RRC,"ULInformationTransfer Encoded %zd bytes\n",encoded);
 
     return encoded;
@@ -1004,6 +1009,9 @@ int do_RRCReestablishmentRequest(uint8_t *buffer,
                                    buffer,
                                    100);
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n", enc_rval.failed_type->name, enc_rval.encoded);
+  // shortMAC_I.buf is on the stack, cannot free useing ASN_STRUCT_FREE macro
+  rrcReestablishmentRequest->rrcReestablishmentRequest.ue_Identity.shortMAC_I.buf = NULL;
+  ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_UL_CCCH_Message, &ul_ccch_msg);
   LOG_D(NR_RRC,"[UE] RRCReestablishmentRequest Encoded %zd bits (%zd bytes)\n", enc_rval.encoded, (enc_rval.encoded+7)/8);
   return((enc_rval.encoded+7)/8);
 }
@@ -1055,6 +1063,7 @@ int do_RRCReestablishment(rrc_gNB_ue_context_t *const ue_context_pP,
 
   AssertFatal(enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
               enc_rval.failed_type->name, enc_rval.encoded);
+  ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_DL_DCCH_Message, &dl_dcch_msg);
 
   LOG_D(NR_RRC, "RRCReestablishment Encoded %u bits (%u bytes)\n", (uint32_t)enc_rval.encoded, (uint32_t)(enc_rval.encoded + 7) / 8);
   return ((enc_rval.encoded + 7) / 8);
@@ -1090,6 +1099,7 @@ int do_RRCReestablishmentComplete(uint8_t *buffer, size_t buffer_size, int64_t r
                                    buffer_size);
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n", enc_rval.failed_type->name, enc_rval.encoded);
   LOG_D(NR_RRC,"[UE] RRCReestablishmentComplete Encoded %zd bits (%zd bytes)\n", enc_rval.encoded, (enc_rval.encoded+7)/8);
+  ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_UL_DCCH_Message, &ul_dcch_msg);
   return((enc_rval.encoded+7)/8);
 }
 
@@ -1336,7 +1346,7 @@ void free_MeasConfig(NR_MeasConfig_t *mc)
 int do_NR_Paging(uint8_t Mod_id, uint8_t *buffer, uint32_t tmsi)
 {
   LOG_D(NR_RRC, "[gNB %d] do_NR_Paging start\n", Mod_id);
-  NR_PCCH_Message_t pcch_msg;
+  NR_PCCH_Message_t pcch_msg = {0};
   pcch_msg.message.present           = NR_PCCH_MessageType_PR_c1;
   asn1cCalloc(pcch_msg.message.choice.c1, c1);
   c1->present = NR_PCCH_MessageType__c1_PR_paging;
@@ -1359,15 +1369,15 @@ int do_NR_Paging(uint8_t Mod_id, uint8_t *buffer, uint32_t tmsi)
         Mod_id, c1->choice.paging->pagingRecordList->list.count);
   asn_enc_rval_t enc_rval = uper_encode_to_buffer(
       &asn_DEF_NR_PCCH_Message, NULL, (void *)&pcch_msg, buffer, RRC_BUF_SIZE);
+
+  if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
+    xer_fprint(stdout, &asn_DEF_NR_PCCH_Message, (void *)&pcch_msg);
+  }
   ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_PCCH_Message, &pcch_msg);
   if(enc_rval.encoded == -1) {
     LOG_I(NR_RRC, "[gNB AssertFatal]ASN1 message encoding failed (%s, %lu)!\n",
           enc_rval.failed_type->name, enc_rval.encoded);
     return -1;
-  }
-
-  if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
-    xer_fprint(stdout, &asn_DEF_NR_PCCH_Message, (void *)&pcch_msg);
   }
 
   return((enc_rval.encoded+7)/8);
