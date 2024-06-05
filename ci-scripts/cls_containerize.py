@@ -412,10 +412,10 @@ class Containerize():
 			elif image != 'ran-build':
 				cmd.run(f'sed -i -e "s#ran-build:latest#ran-build:{imageTag}#" docker/Dockerfile.{pattern}{self.dockerfileprefix}')
 			if image == 'oai-gnb-aerial':
-				cmd.run('cp -f /opt/nvidia-ipc/nvipc_src.2023.11.28.tar.gz .')
+				cmd.run('cp -f /opt/nvidia-ipc/nvipc_src.2024.05.23.tar.gz .')
 			ret = cmd.run(f'{self.cli} build {self.cliBuildOptions} --target {image} --tag {name}:{imageTag} --file docker/Dockerfile.{pattern}{self.dockerfileprefix} {option} . > cmake_targets/log/{name}.log 2>&1', timeout=1200)
 			if image == 'oai-gnb-aerial':
-				cmd.run('rm -f nvipc_src.2023.11.28.tar.gz')
+				cmd.run('rm -f nvipc_src.2024.05.23.tar.gz')
 			if image == 'ran-build' and ret.returncode == 0:
 				cmd.run(f"docker run --name test-log -d {name}:{imageTag} /bin/true")
 				cmd.run(f"docker cp test-log:/oai-ran/cmake_targets/log/ cmake_targets/log/{name}/")
