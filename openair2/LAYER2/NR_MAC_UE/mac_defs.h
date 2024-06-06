@@ -394,7 +394,6 @@ typedef struct {
   int n_harq;
   int n_CCE;
   int N_CCE;
-  int delta_pucch;
   int initial_pucch_id;
 } PUCCH_sched_t;
 
@@ -591,7 +590,9 @@ typedef struct NR_UE_MAC_INST_s {
 
   //SIDELINK MAC PARAMETERS
   sl_nr_ue_mac_params_t *SL_MAC_PARAMS;
-
+  // PUCCH closed loop power control state
+  int G_b_f_c;
+  bool pucch_power_control_initialized;
 } NR_UE_MAC_INST_t;
 
 /*@}*/
