@@ -704,6 +704,97 @@ install_simde_from_source(){
     $SUDO \cp -rv ../simde /usr/include
 }
 
+install_lttng() {
+    if [[ "$OS_DISTRO" != "ubuntu" ]]; then
+      echo_info "LTTng is supported only for ubuntu at the moment."
+      echo_info $distribution
+      return
+    fi
+
+    set +e
+    $SUDO apt-add-repository ppa:lttng/stable-2.13 -y && apt-get update
+    $SUDO apt-get install -y lttng-tools lttng-modules-dkms liblttng-ust-dev
+    if [[ $? > 0 ]]; then
+      echo "Failed to install LTTng using apt. Installing from source"
+      install_lttng_deps
+      install_lttng_from_source
+    fi
+    set -e
+}
+
+install_lttng_deps() {
+  echo "installing dependencies of LTTng"
+  $SUDO apt-get install uuid-dev libxml2-dev -y
+}
+
+install_lttng_from_source() {
+    echo "installing LTTng from source"
+    install_popt_1_18_from_source
+    install_userspace_rcu
+    install_lttng_ust_2_13_from_source
+    install_lttng_tools_2_13_from_source
+}
+
+install_popt_1_18_from_source() {
+  $SUDO $INSTALLER -y install wget
+  echo_info "\nInstalling popt_1_18."
+  cd $(mktemp -d) &&
+  wget http://ftp.rpm.org/popt/releases/popt-1.x/popt-1.18.tar.gz
+  tar -xf popt-1.18.tar.gz && cd popt-1.18
+  ./configure && make -j16 && $SUDO make install
+}
+
+install_userspace_rcu() {
+    echo_info "\nInstalling U-RCU from source."
+    cd /tmp
+    $SUDO rm -rf /tmp/urcu
+    git clone https://github.com/urcu/userspace-rcu.git /tmp/urcu
+    cd /tmp/urcu
+    git checkout stable-0.12
+    ./bootstrap && ./configure && make
+    $SUDO make install
+    $SUDO ldconfig
+}
+
+
+install_lttng_modules_2_13_from_source() {
+    $SUDO $INSTALLER -y install wget
+    echo_info "\nInstalling LTTng Modules."
+    cd $(mktemp -d) &&
+    wget https://lttng.org/files/lttng-modules/lttng-modules-latest-2.13.tar.bz2 &&
+    tar -xf lttng-modules-latest-2.13.tar.bz2 &&
+    cd lttng-modules-2.13.* &&
+    make &&
+    $SUDO make modules_install &&
+    $SUDO depmod -a
+}
+
+install_lttng_ust_2_13_from_source() {
+    $SUDO $INSTALLER -y install wget
+    echo_info "\nInstalling LTTng UST."
+    cd $(mktemp -d) &&
+    wget https://lttng.org/files/lttng-ust/lttng-ust-latest-2.13.tar.bz2 &&
+    tar -xf lttng-ust-latest-2.13.tar.bz2 &&
+    cd lttng-ust-2.13.* &&
+    ./configure --disable-numa &&
+    make &&
+    $SUDO make install &&
+    $SUDO ldconfig
+}
+
+install_lttng_tools_2_13_from_source() {
+    $SUDO $INSTALLER -y install wget
+    echo_info "\nInstalling LTTng Tools."
+    cd $(mktemp -d) &&
+    wget https://lttng.org/files/lttng-tools/lttng-tools-latest-2.13.tar.bz2 &&
+    tar -xf lttng-tools-latest-2.13.tar.bz2 &&
+    cd lttng-tools-2.13.* &&
+    ./configure &&
+    make &&
+    $SUDO make install &&
+    $SUDO ldconfig
+}
+
 #################################################
 # 2. compile
 ################################################
