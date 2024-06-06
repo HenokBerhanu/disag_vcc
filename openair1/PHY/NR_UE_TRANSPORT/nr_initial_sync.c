@@ -47,9 +47,7 @@
 #include "PHY/TOOLS/tools_defs.h"
 #include "nr-uesoftmodem.h"
 
-//static  nfapi_nr_config_request_t config_t;
-//static  nfapi_nr_config_request_t* config =&config_t;
-// #define DEBUG_INITIAL_SYNCH
+//#define DEBUG_INITIAL_SYNCH
 #define DUMP_PBCH_CH_ESTIMATES 0
 
 // structure used for multiple SSB detection
@@ -223,8 +221,7 @@ void nr_scan_ssb(void *arg)
     ssbInfo->ssbOffset = sync_pos - fp->nb_prefix_samples;
 
 #ifdef DEBUG_INITIAL_SYNCH
-    LOG_I(PHY, "[UE%d] Initial sync : Estimated PSS position %d, Nid2 %d\n", ue->Mod_id, sync_pos, ue->common_vars.nid2);
-    LOG_I(PHY, "sync_pos %d ssb_offset %d \n", sync_pos, ue->ssb_offset);
+    LOG_I(PHY, "Initial sync : Estimated PSS position %d, Nid2 %d, ssb offset %d\n", sync_pos, nid2, ssbInfo->ssbOffset);
 #endif
     /* check that SSS/PBCH block is continuous inside the received buffer */
     if (ssbInfo->ssbOffset + NR_N_SYMBOLS_SSB * (fp->ofdm_symbol_size + fp->nb_prefix_samples) >= fp->samples_per_frame) {
@@ -256,10 +253,6 @@ void nr_scan_ssb(void *arg)
                             rxdataF,
                             link_type_dl);
 
-#ifdef DEBUG_INITIAL_SYNCH
-    LOG_I(PHY, "Calling sss detection (normal CP)\n");
-#endif
-
     int freq_offset_sss = 0;
     int32_t metric_tdd_ncp = 0;
     uint8_t phase_tdd_ncp;
@@ -273,7 +266,15 @@ void nr_scan_ssb(void *arg)
                                                &phase_tdd_ncp,
                                                &freq_offset_sss,
                                                rxdataF);
-
+#ifdef DEBUG_INITIAL_SYNCH
+    LOG_I(PHY,
+          "TDD Normal prefix: sss detection result; %d, CellId %d metric %d, phase %d, measured offset %d\n",
+          ssbInfo->syncRes.cell_detected,
+          ssbInfo->nidCell,
+          metric_tdd_ncp,
+          phase_tdd_ncp,
+          ssbInfo->syncRes.rx_offset);
+#endif
     ssbInfo->freqOffset = freq_offset_pss + freq_offset_sss;
 
     uint32_t nr_gold_pbch_ref[2][64][NR_PBCH_DMRS_LENGTH_DWORD];
@@ -315,23 +316,24 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
   for (int s = 0; s < numGscn; s++) {
     notifiedFIFO_elt_t *req = newNotifiedFIFO_elt(sizeof(nr_ue_ssb_scan_t), gscnInfo[s].gscn, &nf, &nr_scan_ssb);
     nr_ue_ssb_scan_t *ssbInfo = (nr_ue_ssb_scan_t *)NotifiedFifoData(req);
-    ssbInfo->gscnInfo = gscnInfo[s];
+    *ssbInfo = (nr_ue_ssb_scan_t){.gscnInfo = gscnInfo[s],
+                                  .fp = &ue->frame_parms,
+                                  .proc = proc,
+                                  .syncRes.cell_detected = false,
+                                  .nFrames = n_frames,
+                                  .foFlag = ue->UE_fo_compensation,
+                                  .targetNidCell = ue->target_Nid_cell};
     ssbInfo->rxdata = malloc16_clear(fp->nb_antennas_rx * sizeof(c16_t *));
     for (int ant = 0; ant < fp->nb_antennas_rx; ant++) {
-      ssbInfo->rxdata[ant] = malloc16_clear((fp->samples_per_frame * 2 + fp->ofdm_symbol_size) * sizeof(c16_t));
+      ssbInfo->rxdata[ant] = malloc16(sizeof(c16_t) * (fp->samples_per_frame * 2 + fp->ofdm_symbol_size));
       memcpy(ssbInfo->rxdata[ant], ue->common_vars.rxdata[ant], sizeof(c16_t) * fp->samples_per_frame * 2);
+      memset(ssbInfo->rxdata[ant] + fp->samples_per_frame * 2, 0, fp->ofdm_symbol_size * sizeof(c16_t));
     }
     LOG_I(NR_PHY,
           "Scanning GSCN: %d, with SSB offset: %d, SSB Freq: %lf\n",
           ssbInfo->gscnInfo.gscn,
           ssbInfo->gscnInfo.ssbFirstSC,
           ssbInfo->gscnInfo.ssRef);
-    ssbInfo->fp = &ue->frame_parms;
-    ssbInfo->proc = proc;
-    ssbInfo->syncRes.cell_detected = false;
-    ssbInfo->nFrames = n_frames;
-    ssbInfo->foFlag = ue->UE_fo_compensation;
-    ssbInfo->targetNidCell = ue->target_Nid_cell;
     pushTpool(&get_nrUE_params()->Tpool, req);
   }
 
@@ -437,16 +439,6 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
       res.syncRes.rx_offset = res.ssbOffset - sync_pos_frame;
   }
 
-#ifdef DEBUG_INITIAL_SYNCH
-    LOG_I(PHY,
-          "TDD Normal prefix: CellId %d metric %d, phase %d, pbch detected %d, measured offset %d\n",
-          fp->Nid_cell,
-          metric_tdd_ncp,
-          phase_tdd_ncp,
-          ret.cell_detected,
-          ret.rx_offset);
-#endif
-
     if (res.syncRes.cell_detected) {
       LOG_I(PHY, "[UE%d] In synch, rx_offset %d samples\n", ue->Mod_id, res.syncRes.rx_offset);
       LOG_I(PHY, "[UE %d] Measured Carrier Frequency offset %d Hz\n", ue->Mod_id, res.freqOffset);
@@ -455,7 +447,7 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
     LOG_I(PHY,"[UE%d] Initial sync : PBCH not ok\n",ue->Mod_id);
     LOG_I(PHY, "[UE%d] Initial sync : Estimated PSS position %d, Nid2 %d\n", ue->Mod_id, sync_pos, ue->common_vars.nid2);
     LOG_I(PHY,"[UE%d] Initial sync : Estimated Nid_cell %d, Frame_type %d\n",ue->Mod_id,
-          frame_parms->Nid_cell,frame_parms->frame_type);
+          fp->Nid_cell,fp->frame_type);
 #endif
     }
 
@@ -481,10 +473,10 @@ nr_initial_sync_t nr_initial_sync(UE_nr_rxtx_proc_t *proc,
       ue->measurements.rx_power_avg_dB[0] = dB_fixed(ue->measurements.rx_power_avg[0]);
 
 #ifdef DEBUG_INITIAL_SYNCH
-    LOG_I(PHY, "[UE%d] Initial sync : Estimated power: %d dB\n", ue->Mod_id, ue->measurements.rx_power_avg_dB[0]);
+    LOG_I(PHY, "[UE%d] Initial sync failed : Estimated power: %d dB\n", ue->Mod_id, ue->measurements.rx_power_avg_dB[0]);
 #endif
     } else {
-      LOG_A(PHY, "Initial sync successful\n");
+      LOG_A(PHY, "Initial sync successful, PCI: %d\n",fp->Nid_cell);
     }
   //  exit_fun("debug exit");
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_NR_INITIAL_UE_SYNC, VCD_FUNCTION_OUT);
