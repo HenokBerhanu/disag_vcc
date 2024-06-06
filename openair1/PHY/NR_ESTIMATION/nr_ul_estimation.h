@@ -54,7 +54,7 @@ int nr_pusch_channel_estimation(PHY_VARS_gNB *gNB,
 
 void dump_nr_I0_stats(FILE *fd,PHY_VARS_gNB *gNB);
 
-void gNB_I0_measurements(PHY_VARS_gNB *gNB,int slot,int first_symb,int num_symb);
+void gNB_I0_measurements(PHY_VARS_gNB *gNB, int slot, int first_symb, int num_symb, uint32_t rb_mask_ul[14][9]);
 
 void nr_gnb_measurements(PHY_VARS_gNB *gNB,
                          NR_gNB_ULSCH_t *ulsch,
