@@ -535,3 +535,40 @@ snssais:
 ```
 
 The `ST` and `SD` values shall also match.
+
+
+# 6. Running with local changes
+
+You can run the testcase with local changes by substituting the binaries in
+execution images. `local-override.yaml` file provides a way to substitute the
+gNB and nrUE executables as well as librfsimulator.so. Refer to the `-volumes`
+section in the file for details. This includes an image build service as well as
+code compilation service. This is necessary as the executable has to be linked
+against the same libraries that are present in the executing image. This might
+take a while the first time but other that that is very fast. Here is a list of
+commands (wait between each command). Tested with `docker compose` v2.27.0
+
+
+This command deploys OAI 5G Core Network
+```bash
+docker compose -f docker-compose.yaml -f local-override.yaml up -d mysql oai-amf oai-smf oai-upf oai-ext-dn
+```
+This command builds base images locally, builds local gNB & nrUE executable and
+runs the gnb service with modified gNB executable.
+```bash
+docker compose -f docker-compose.yaml -f local-override.yaml up -d oai-gnb
+```
+This command rebuilds both the gNB & nrUE and runs the oai-nr-ue container with 
+modified nrUE executable.
+```bash
+docker compose -f docker-compose.yaml -f local-override.yaml up -d oai-nr-ue
+```
+
+## 6.1 Running nrUE in gdb
+`local-override-ue-gdb.yaml` is an additional override file which can be used
+to run the UE executable in gdb. Replace the last command above with the
+following:
+
+```bash
+docker compose -f docker-compose.yaml -f local-override.yaml -f local-override-ue-gdb.yaml run oai-nr-ue
+```
