@@ -1344,6 +1344,7 @@ void *ru_thread( void *param ) {
             rx_tti_busy[info->slot_rx % RU_RX_SLOT_DEPTH] = false;
             if ((info->slot_rx % RU_RX_SLOT_DEPTH) == (proc->tti_rx % RU_RX_SLOT_DEPTH))
               not_done = false;
+            delNotifiedFIFO_elt(res);
           }
           if (!res)
             break;
