@@ -19,17 +19,26 @@
  *      contact@openairinterface.org
  */
 
-#ifndef __PHY_INTERFACE_VARS_H__
-#define __PHY_INTERFACE_VARS_H__
+/*! \file lttng-log.h
+* \brief LTTng Log interface
+* \author Anurag Asokan
+* \date 2024
+* \version 0.5
+* @ingroup util
 
-//#include "SIMULATION/PHY_EMULATION/spec_defs.h"
-#include "phy_interface.h"
+*/
 
-#ifdef PHY_EMUL
-#include "SIMULATION/PHY_EMULATION/DEVICE_DRIVER/defs.h"
-#include "SIMULATION/simulation_defs.h"
+#ifndef __LTTNG_LOG_H__
+#define __LTTNG_LOG_H__
+#if ENABLE_LTTNG
+#include "lttng-tp.h"
+
+#define LOG_FC(component, func, line, log)                        \
+  do {                                                            \
+    tracepoint(OAI, gNB, component, -1, -1, -1, func, line, log); \
+  } while (0)
+#else
+#define LOG_FC(component, func, line, log)
 #endif
 
-
-#endif
-
+#endif /** __LTTNG_LOG_H__ */

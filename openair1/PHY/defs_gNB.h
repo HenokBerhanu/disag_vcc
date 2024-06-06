@@ -622,9 +622,6 @@ typedef struct PHY_VARS_gNB_s {
   /// PUSCH DMRS
   uint32_t ****nr_gold_pusch_dmrs;
 
-  // Mask of occupied RBs, per symbol and PRB
-  uint32_t rb_mask_ul[14][9];
-
   /// PRS sequence
   uint32_t ****nr_gold_prs;
 

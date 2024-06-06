@@ -1074,8 +1074,6 @@ int test_csi_dedicated(PHY_VARS_NR_UE *ue, int gNB_id, UE_nr_rxtx_proc_t *proc)
 
   ue->dlsch[proc->thread_id][gNB_id][0]->current_harq_pid = NR_MAX_DLSCH_HARQ_PROCESSES;
 
-  set_csi_nr( 4, 0x0E );
-
   printf("\n  => Test : PUCCH format from dedicated config with CSI alone \n");
 
   if (pucch_procedures_ue_nr(ue, gNB_id, proc, reset_harq) != true) {

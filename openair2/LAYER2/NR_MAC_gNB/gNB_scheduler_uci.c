@@ -273,7 +273,7 @@ void nr_csi_meas_reporting(int Mod_idP,
       curr_pucch->frame = sched_frame;
       curr_pucch->ul_slot = sched_slot;
       curr_pucch->resource_indicator = res_index;
-      curr_pucch->csi_bits += nr_get_csi_bitlen(UE->csi_report_template, csi_report_id);
+      curr_pucch->csi_bits += nr_get_csi_bitlen(&UE->csi_report_template[csi_report_id]);
       curr_pucch->active = true;
 
       int bwp_start = ul_bwp->BWPStart;

@@ -19,17 +19,16 @@
  *      contact@openairinterface.org
  */
 
-#ifndef __PHY_INTERFACE_VARS_H__
-#define __PHY_INTERFACE_VARS_H__
+/*! \file lttng-tp.c
+* \brief Lttng trace implementaion
+* \author Anurag Asokan
+* \date 2024
+* \version 0.5
+* @ingroup util
 
-//#include "SIMULATION/PHY_EMULATION/spec_defs.h"
-#include "phy_interface.h"
+*/
+//This file is used to define the tracepoints for the lttng tracing.In order to to do linkage with the lttng-tp.h file, we need to define the tracepoints here.
+#define TRACEPOINT_CREATE_PROBES
+#define TRACEPOINT_DEFINE
 
-#ifdef PHY_EMUL
-#include "SIMULATION/PHY_EMULATION/DEVICE_DRIVER/defs.h"
-#include "SIMULATION/simulation_defs.h"
-#endif
-
-
-#endif
-
+#include "lttng-tp.h"

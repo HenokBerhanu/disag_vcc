@@ -768,6 +768,8 @@ static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp
   s->rx_timestamp = s->rx_md.time_spec.to_ticks(s->sample_rate);
   *ptimestamp = s->rx_timestamp;
 
+  T(T_USRP_RX_ANT0, T_INT(s->rx_timestamp), T_BUFFER(buff[0], samples_received*4));
+
   recplay_state_t *recPlay=device->recplay_state;
 
   if (device->openair0_cfg->recplay_mode == RECPLAY_RECORDMODE) { // record mode
@@ -1012,6 +1014,28 @@ int trx_usrp_reset_stats(openair0_device *device) {
   return(0);
 }
 
+/*! \brief synch the USRP time accross devices using the host clock (ideally syched with PTP, but also NTP works) and assuming all
+ * devices are synched by octoclock */
+static void usrp_sync_pps(usrp_state_t *s)
+{
+  // First, wait for PPS.
+  uhd::time_spec_t time_last_pps = s->usrp->get_time_last_pps();
+
+  while (time_last_pps == s->usrp->get_time_last_pps()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+  }
+
+  // get host time
+  struct timespec tp;
+  if (clock_gettime(CLOCK_TAI, &tp) != 0)
+    LOG_W(PHY, "error getting system time\n");
+  double tai_sec = (double)tp.tv_sec;
+
+  // set USRP time to host time at next pps
+  s->usrp->set_time_next_pps(uhd::time_spec_t(tai_sec));
+  LOG_I(HW, "USRP clock set to %f sec\n", tai_sec);
+}
+
 extern "C" {
   int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
     LOG_I(HW, "openair0_cfg[0].sdr_addrs == '%s'\n", openair0_cfg[0].sdr_addrs);
@@ -1188,8 +1212,12 @@ extern "C" {
       exit(EXIT_FAILURE);
     }
   } else {
-    s->usrp->set_time_next_pps(uhd::time_spec_t(0.0));
- 
+    if (s->usrp->get_time_source(0) == "external") {
+      usrp_sync_pps(s);
+    } else {
+      s->usrp->set_time_next_pps(uhd::time_spec_t(0.0));
+    }
+
     if (s->usrp->get_clock_source(0) == "external") {
       if (check_ref_locked(s,0)) {
 	LOG_I(HW,"USRP locked to external reference!\n");

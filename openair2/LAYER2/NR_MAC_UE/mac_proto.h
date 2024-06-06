@@ -111,6 +111,8 @@ void release_mac_configuration(NR_UE_MAC_INST_t *mac,
 void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info);
 void nr_ue_dl_scheduler(NR_UE_MAC_INST_t *mac, nr_downlink_indication_t *dl_info);
 
+csi_payload_t nr_ue_aperiodic_csi_reporting(NR_UE_MAC_INST_t *mac, dci_field_t csi_request, int tda, long *K2);
+
 /*! \fn int8_t nr_ue_get_SR(NR_UE_MAC_INST_t *mac, frame_t frame, slot_t slot, NR_SchedulingRequestId_t sr_id);
    \brief This function schedules a positive or negative SR for schedulingRequestID sr_id
           depending on the presence of any active SR and the prohibit timer.
@@ -132,28 +134,26 @@ bool trigger_periodic_scheduling_request(NR_UE_MAC_INST_t *mac,
 
 int nr_get_csi_measurements(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, PUCCH_sched_t *pucch);
 
-uint8_t get_ssb_rsrp_payload(NR_UE_MAC_INST_t *mac,
-                             PUCCH_sched_t *pucch,
-                             struct NR_CSI_ReportConfig *csi_reportconfig,
-                             NR_CSI_ResourceConfigId_t csi_ResourceConfigId,
-                             NR_CSI_MeasConfig_t *csi_MeasConfig);
+csi_payload_t get_ssb_rsrp_payload(NR_UE_MAC_INST_t *mac,
+                                   struct NR_CSI_ReportConfig *csi_reportconfig,
+                                   NR_CSI_ResourceConfigId_t csi_ResourceConfigId,
+                                   NR_CSI_MeasConfig_t *csi_MeasConfig);
 
-uint8_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
-                                     PUCCH_sched_t *pucch,
+csi_payload_t get_csirs_RI_PMI_CQI_payload(NR_UE_MAC_INST_t *mac,
+                                           struct NR_CSI_ReportConfig *csi_reportconfig,
+                                           NR_CSI_ResourceConfigId_t csi_ResourceConfigId,
+                                           NR_CSI_MeasConfig_t *csi_MeasConfig,
+                                           CSI_mapping_t mapping_type);
+
+csi_payload_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
                                      struct NR_CSI_ReportConfig *csi_reportconfig,
                                      NR_CSI_ResourceConfigId_t csi_ResourceConfigId,
-                                     NR_CSI_MeasConfig_t *csi_MeasConfig);
+                                     const NR_CSI_MeasConfig_t *csi_MeasConfig);
 
-uint8_t get_csirs_RSRP_payload(NR_UE_MAC_INST_t *mac,
-                               PUCCH_sched_t *pucch,
-                               struct NR_CSI_ReportConfig *csi_reportconfig,
-                               NR_CSI_ResourceConfigId_t csi_ResourceConfigId,
-                               NR_CSI_MeasConfig_t *csi_MeasConfig);
-
-uint8_t nr_get_csi_payload(NR_UE_MAC_INST_t *mac,
-                           PUCCH_sched_t *pucch,
-                           int csi_report_id,
-                           NR_CSI_MeasConfig_t *csi_MeasConfig);
+csi_payload_t nr_get_csi_payload(NR_UE_MAC_INST_t *mac,
+                                 int csi_report_id,
+                                 CSI_mapping_t mapping_type,
+                                 NR_CSI_MeasConfig_t *csi_MeasConfig);
 
 uint8_t get_rsrp_index(int rsrp);
 uint8_t get_rsrp_diff_index(int best_rsrp,int current_rsrp);
@@ -217,22 +217,19 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                               uint8_t add_dmrs_flag,
                               uint8_t N_symb_PUCCH,
                               int subframe_number,
-                              int O_uci);
-
-int get_deltatf(uint16_t nb_of_prbs,
-                uint8_t N_symb_PUCCH,
-                uint8_t freq_hop_flag,
-                uint8_t add_dmrs_flag,
-                int N_sc_ctrl_RB,
-                int O_UCI);
+                              int O_uci,
+                              uint16_t start_prb);
 
 int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            int slot,
+                           frame_t frame,
                            uint16_t rnti,
                            PUCCH_sched_t *pucch,
                            fapi_nr_ul_config_pucch_pdu *pucch_pdu);
 
 int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb);
+
+int get_sum_delta_pucch(NR_UE_MAC_INST_t *mac, int slot, frame_t frame);
 
 /* Random Access */
 
@@ -243,7 +240,7 @@ and fills the PRACH PDU per each FD occasion.
 @param slotP Slot index
 @returns void
 */
-void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP, void *phy_data);
+void nr_ue_pucch_scheduler(NR_UE_MAC_INST_t *mac, frame_t frameP, int slotP);
 void nr_schedule_csirs_reception(NR_UE_MAC_INST_t *mac, int frame, int slot);
 void nr_schedule_csi_for_im(NR_UE_MAC_INST_t *mac, int frame, int slot);
 
@@ -367,6 +364,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
                         NR_tda_info_t *tda_info,
                         nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu,
                         dci_pdu_rel15_t *dci,
+                        csi_payload_t *csi_report,
                         RAR_grant_t *rar_grant,
                         uint16_t rnti,
                         int ss_type,

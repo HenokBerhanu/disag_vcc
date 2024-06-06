@@ -114,10 +114,8 @@ void dump_nr_I0_stats(FILE *fd,PHY_VARS_gNB *gNB) {
 
 }
 
-
-
-void gNB_I0_measurements(PHY_VARS_gNB *gNB,int slot, int first_symb,int num_symb) {
-
+void gNB_I0_measurements(PHY_VARS_gNB *gNB, int slot, int first_symb, int num_symb, uint32_t rb_mask_ul[14][9])
+{
   NR_DL_FRAME_PARMS *frame_parms = &gNB->frame_parms;
   NR_gNB_COMMON *common_vars = &gNB->common_vars;
   PHY_MEASUREMENTS_gNB *measurements = &gNB->measurements;
@@ -140,8 +138,8 @@ void gNB_I0_measurements(PHY_VARS_gNB *gNB,int slot, int first_symb,int num_symb
   for (int s=first_symb;s<(first_symb+num_symb);s++) {
     int offset0 = ((slot&3)*frame_parms->symbols_per_slot + s) * frame_parms->ofdm_symbol_size;
     for (rb=0; rb<frame_parms->N_RB_UL; rb++) {
-      if ((gNB->rb_mask_ul[s][rb >> 5] & (1U << (rb & 31))) == 0 && // check that rb was not used in this subframe
-          !(I0_SKIP_DC && rb == frame_parms->N_RB_UL>>1)) {         // skip middle PRB because of artificial noise possibly created by FFT
+      if ((rb_mask_ul[s][rb >> 5] & (1U << (rb & 31))) == 0 && // check that rb was not used in this subframe
+          !(I0_SKIP_DC && rb == frame_parms->N_RB_UL >> 1)) { // skip middle PRB because of artificial noise possibly created by FFT
         int offset = offset0 + (frame_parms->first_carrier_offset + (rb*12))%frame_parms->ofdm_symbol_size;
         nb_symb[rb]++;
         for (int aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
@@ -191,7 +189,6 @@ void gNB_I0_measurements(PHY_VARS_gNB *gNB,int slot, int first_symb,int num_symb
      }
   }
 }
-
 
 // Scope: This function computes the UL SNR from the UL channel estimates
 //

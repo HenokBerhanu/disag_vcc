@@ -307,9 +307,9 @@ void compute_cqi_bitlen(struct NR_CSI_ReportConfig *csi_reportconfig,
                         uint8_t ri_restriction,
                         nr_csi_report_t *csi_report);
 
-void compute_csi_bitlen(NR_CSI_MeasConfig_t *csi_MeasConfig, nr_csi_report_t *csi_report_template);
+void compute_csi_bitlen(const NR_CSI_MeasConfig_t *csi_MeasConfig, nr_csi_report_t *csi_report_template);
 
-uint16_t nr_get_csi_bitlen(nr_csi_report_t *csi_report_template, uint8_t csi_report_id);
+uint16_t nr_get_csi_bitlen(nr_csi_report_t *csi_report);
 
 uint16_t compute_PDU_length(uint32_t num_TLV, uint16_t total_length);
 

@@ -952,13 +952,15 @@ static void setup_puschconfig(NR_PUSCH_Config_t *source, NR_PUSCH_Config_t *targ
     if (source->uci_OnPUSCH->present == NR_SetupRelease_UCI_OnPUSCH_PR_release)
       asn1cFreeStruc(asn_DEF_NR_UCI_OnPUSCH, target->uci_OnPUSCH);
     if (source->uci_OnPUSCH->present == NR_SetupRelease_UCI_OnPUSCH_PR_setup) {
-      if (target->uci_OnPUSCH) {
-        target->uci_OnPUSCH->choice.setup->scaling = source->uci_OnPUSCH->choice.setup->scaling;
-        if (source->uci_OnPUSCH->choice.setup->betaOffsets)
-          UPDATE_IE(target->uci_OnPUSCH->choice.setup->betaOffsets,
-                    source->uci_OnPUSCH->choice.setup->betaOffsets,
-                    struct NR_UCI_OnPUSCH__betaOffsets);
+      if (!target->uci_OnPUSCH) {
+        target->uci_OnPUSCH = calloc(1, sizeof(*target->uci_OnPUSCH));
+        target->uci_OnPUSCH->choice.setup = calloc(1, sizeof(*target->uci_OnPUSCH->choice.setup));
       }
+      target->uci_OnPUSCH->choice.setup->scaling = source->uci_OnPUSCH->choice.setup->scaling;
+      if (source->uci_OnPUSCH->choice.setup->betaOffsets)
+        UPDATE_IE(target->uci_OnPUSCH->choice.setup->betaOffsets,
+                  source->uci_OnPUSCH->choice.setup->betaOffsets,
+                  struct NR_UCI_OnPUSCH__betaOffsets);
     }
   }
 }
@@ -1829,143 +1831,153 @@ static void configure_csiim_resource(NR_CSI_IM_Resource_t *target, NR_CSI_IM_Res
     UPDATE_IE(target->periodicityAndOffset, source->periodicityAndOffset, NR_CSI_ResourcePeriodicityAndOffset_t);
 }
 
+static void modify_csi_measconfig(NR_CSI_MeasConfig_t *source, NR_CSI_MeasConfig_t *target)
+{
+  if (source->reportTriggerSize)
+    UPDATE_IE(target->reportTriggerSize, source->reportTriggerSize, long);
+  if (source->semiPersistentOnPUSCH_TriggerStateList)
+    HANDLE_SETUPRELEASE_IE(target->semiPersistentOnPUSCH_TriggerStateList,
+                           source->semiPersistentOnPUSCH_TriggerStateList,
+                           NR_CSI_SemiPersistentOnPUSCH_TriggerStateList_t,
+                           asn_DEF_NR_SetupRelease_CSI_SemiPersistentOnPUSCH_TriggerStateList);
+  // NZP-CSI-RS-Resources
+  if (source->nzp_CSI_RS_ResourceToReleaseList) {
+    RELEASE_IE_FROMLIST(source->nzp_CSI_RS_ResourceToReleaseList,
+                        target->nzp_CSI_RS_ResourceToAddModList,
+                        nzp_CSI_RS_ResourceId);
+  }
+  if (source->nzp_CSI_RS_ResourceToAddModList) {
+    if (!target->nzp_CSI_RS_ResourceToAddModList)
+      target->nzp_CSI_RS_ResourceToAddModList = calloc(1, sizeof(*target->nzp_CSI_RS_ResourceToAddModList));
+    ADDMOD_IE_FROMLIST_WFUNCTION(source->nzp_CSI_RS_ResourceToAddModList,
+                                 target->nzp_CSI_RS_ResourceToAddModList,
+                                 nzp_CSI_RS_ResourceId,
+                                 NR_NZP_CSI_RS_Resource_t,
+                                 configure_csirs_resource);
+  }
+  // NZP-CSI-RS-ResourceSets
+  if (source->nzp_CSI_RS_ResourceSetToReleaseList) {
+    RELEASE_IE_FROMLIST(source->nzp_CSI_RS_ResourceSetToReleaseList,
+                        target->nzp_CSI_RS_ResourceSetToAddModList,
+                        nzp_CSI_ResourceSetId);
+  }
+  if (source->nzp_CSI_RS_ResourceSetToAddModList) {
+    if (!target->nzp_CSI_RS_ResourceSetToAddModList)
+      target->nzp_CSI_RS_ResourceSetToAddModList = calloc(1, sizeof(*target->nzp_CSI_RS_ResourceSetToAddModList));
+    ADDMOD_IE_FROMLIST(source->nzp_CSI_RS_ResourceSetToAddModList,
+                       target->nzp_CSI_RS_ResourceSetToAddModList,
+                       nzp_CSI_ResourceSetId,
+                       NR_NZP_CSI_RS_ResourceSet_t);
+  }
+  // CSI-IM-Resource
+  if (source->csi_IM_ResourceToReleaseList) {
+    RELEASE_IE_FROMLIST(source->csi_IM_ResourceToReleaseList,
+                        target->csi_IM_ResourceToAddModList,
+                        csi_IM_ResourceId);
+  }
+  if (source->csi_IM_ResourceToAddModList) {
+    if (!target->csi_IM_ResourceToAddModList)
+      target->csi_IM_ResourceToAddModList = calloc(1, sizeof(*target->csi_IM_ResourceToAddModList));
+    ADDMOD_IE_FROMLIST_WFUNCTION(source->csi_IM_ResourceToAddModList,
+                                 target->csi_IM_ResourceToAddModList,
+                                 csi_IM_ResourceId,
+                                 NR_CSI_IM_Resource_t,
+                                 configure_csiim_resource);
+  }
+  // CSI-IM-ResourceSets
+  if (source->csi_IM_ResourceSetToReleaseList) {
+    RELEASE_IE_FROMLIST(source->csi_IM_ResourceSetToReleaseList,
+                        target->csi_IM_ResourceSetToAddModList,
+                        csi_IM_ResourceSetId);
+  }
+  if (source->csi_IM_ResourceSetToAddModList) {
+    if (!target->csi_IM_ResourceSetToAddModList)
+      target->csi_IM_ResourceSetToAddModList = calloc(1, sizeof(*target->csi_IM_ResourceSetToAddModList));
+    ADDMOD_IE_FROMLIST(source->csi_IM_ResourceSetToAddModList,
+                       target->csi_IM_ResourceSetToAddModList,
+                       csi_IM_ResourceSetId,
+                       NR_CSI_IM_ResourceSet_t);
+  }
+  // CSI-SSB-ResourceSets
+  if (source->csi_SSB_ResourceSetToReleaseList) {
+    RELEASE_IE_FROMLIST(source->csi_SSB_ResourceSetToReleaseList,
+                        target->csi_SSB_ResourceSetToAddModList,
+                        csi_SSB_ResourceSetId);
+  }
+  if (source->csi_SSB_ResourceSetToAddModList) {
+    if (!target->csi_SSB_ResourceSetToAddModList)
+      target->csi_SSB_ResourceSetToAddModList = calloc(1, sizeof(*target->csi_SSB_ResourceSetToAddModList));
+    ADDMOD_IE_FROMLIST(source->csi_SSB_ResourceSetToAddModList,
+                       target->csi_SSB_ResourceSetToAddModList,
+                       csi_SSB_ResourceSetId,
+                       NR_CSI_SSB_ResourceSet_t);
+  }
+  // CSI-ResourceConfigs
+  if (source->csi_ResourceConfigToReleaseList) {
+    RELEASE_IE_FROMLIST(source->csi_ResourceConfigToReleaseList,
+                        target->csi_ResourceConfigToAddModList,
+                        csi_ResourceConfigId);
+  }
+  if (source->csi_ResourceConfigToAddModList) {
+    if (!target->csi_ResourceConfigToAddModList)
+      target->csi_ResourceConfigToAddModList = calloc(1, sizeof(*target->csi_ResourceConfigToAddModList));
+    ADDMOD_IE_FROMLIST(source->csi_ResourceConfigToAddModList,
+                       target->csi_ResourceConfigToAddModList,
+                       csi_ResourceConfigId,
+                       NR_CSI_ResourceConfig_t);
+  }
+  // CSI-ReportConfigs
+  if (source->csi_ReportConfigToReleaseList) {
+    RELEASE_IE_FROMLIST(source->csi_ReportConfigToReleaseList,
+                        target->csi_ReportConfigToAddModList,
+                        reportConfigId);
+  }
+  if (source->csi_ReportConfigToAddModList) {
+    if (!target->csi_ReportConfigToAddModList)
+      target->csi_ReportConfigToAddModList = calloc(1, sizeof(*target->csi_ReportConfigToAddModList));
+    ADDMOD_IE_FROMLIST(source->csi_ReportConfigToAddModList,
+                       target->csi_ReportConfigToAddModList,
+                       reportConfigId,
+                       NR_CSI_ReportConfig_t);
+  }
+}
+
 static void configure_csiconfig(NR_UE_ServingCell_Info_t *sc_info, struct NR_SetupRelease_CSI_MeasConfig *csi_MeasConfig_sr)
 {
   switch (csi_MeasConfig_sr->present) {
     case NR_SetupRelease_CSI_MeasConfig_PR_NOTHING:
       break;
-    case NR_SetupRelease_CSI_MeasConfig_PR_release :
+    case NR_SetupRelease_CSI_MeasConfig_PR_release:
       asn1cFreeStruc(asn_DEF_NR_CSI_MeasConfig, sc_info->csi_MeasConfig);
+      asn1cFreeStruc(asn_DEF_NR_CSI_AperiodicTriggerStateList, sc_info->aperiodicTriggerStateList);
       break;
-    case NR_SetupRelease_CSI_MeasConfig_PR_setup:
+    case NR_SetupRelease_CSI_MeasConfig_PR_setup: {
+      // separately handling aperiodicTriggerStateList
+      // because it is set directly into sc_info structure
+      if (csi_MeasConfig_sr->choice.setup->aperiodicTriggerStateList)
+        HANDLE_SETUPRELEASE_DIRECT(sc_info->aperiodicTriggerStateList,
+                                   csi_MeasConfig_sr->choice.setup->aperiodicTriggerStateList,
+                                   NR_CSI_AperiodicTriggerStateList_t,
+                                   asn_DEF_NR_CSI_AperiodicTriggerStateList);
       if (!sc_info->csi_MeasConfig) { // setup
         UPDATE_IE(sc_info->csi_MeasConfig, csi_MeasConfig_sr->choice.setup, NR_CSI_MeasConfig_t);
       } else { // modification
-        NR_CSI_MeasConfig_t *target = sc_info->csi_MeasConfig;
-        NR_CSI_MeasConfig_t *csi_MeasConfig = csi_MeasConfig_sr->choice.setup;
-        if (csi_MeasConfig->reportTriggerSize)
-          UPDATE_IE(target->reportTriggerSize, csi_MeasConfig->reportTriggerSize, long);
-        if (csi_MeasConfig->aperiodicTriggerStateList)
-          HANDLE_SETUPRELEASE_DIRECT(sc_info->aperiodicTriggerStateList,
-                                     csi_MeasConfig->aperiodicTriggerStateList,
-                                     NR_CSI_AperiodicTriggerStateList_t,
-                                     asn_DEF_NR_CSI_AperiodicTriggerStateList);
-        if (csi_MeasConfig->semiPersistentOnPUSCH_TriggerStateList)
-          HANDLE_SETUPRELEASE_IE(target->semiPersistentOnPUSCH_TriggerStateList,
-                                 csi_MeasConfig->semiPersistentOnPUSCH_TriggerStateList,
-                                 NR_CSI_SemiPersistentOnPUSCH_TriggerStateList_t,
-                                 asn_DEF_NR_SetupRelease_CSI_SemiPersistentOnPUSCH_TriggerStateList);
-        // NZP-CSI-RS-Resources
-        if (csi_MeasConfig->nzp_CSI_RS_ResourceToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->nzp_CSI_RS_ResourceToReleaseList,
-                              target->nzp_CSI_RS_ResourceToAddModList,
-                              nzp_CSI_RS_ResourceId);
-        }
-        if (csi_MeasConfig->nzp_CSI_RS_ResourceToAddModList) {
-          if (!target->nzp_CSI_RS_ResourceToAddModList)
-            target->nzp_CSI_RS_ResourceToAddModList = calloc(1, sizeof(*target->nzp_CSI_RS_ResourceToAddModList));
-          ADDMOD_IE_FROMLIST_WFUNCTION(csi_MeasConfig->nzp_CSI_RS_ResourceToAddModList,
-                                       target->nzp_CSI_RS_ResourceToAddModList,
-                                       nzp_CSI_RS_ResourceId,
-                                       NR_NZP_CSI_RS_Resource_t,
-                                       configure_csirs_resource);
-        }
-        // NZP-CSI-RS-ResourceSets
-        if (csi_MeasConfig->nzp_CSI_RS_ResourceSetToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->nzp_CSI_RS_ResourceSetToReleaseList,
-                              target->nzp_CSI_RS_ResourceSetToAddModList,
-                              nzp_CSI_ResourceSetId);
-        }
-        if (csi_MeasConfig->nzp_CSI_RS_ResourceSetToAddModList) {
-          if (!target->nzp_CSI_RS_ResourceSetToAddModList)
-            target->nzp_CSI_RS_ResourceSetToAddModList = calloc(1, sizeof(*target->nzp_CSI_RS_ResourceSetToAddModList));
-          ADDMOD_IE_FROMLIST(csi_MeasConfig->nzp_CSI_RS_ResourceSetToAddModList,
-                             target->nzp_CSI_RS_ResourceSetToAddModList,
-                             nzp_CSI_ResourceSetId,
-                             NR_NZP_CSI_RS_ResourceSet_t);
-        }
-        // CSI-IM-Resource
-        if (csi_MeasConfig->csi_IM_ResourceToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->csi_IM_ResourceToReleaseList,
-                              target->csi_IM_ResourceToAddModList,
-                              csi_IM_ResourceId);
-        }
-        if (csi_MeasConfig->csi_IM_ResourceToAddModList) {
-          if (!target->csi_IM_ResourceToAddModList)
-            target->csi_IM_ResourceToAddModList = calloc(1, sizeof(*target->csi_IM_ResourceToAddModList));
-          ADDMOD_IE_FROMLIST_WFUNCTION(csi_MeasConfig->csi_IM_ResourceToAddModList,
-                                       target->csi_IM_ResourceToAddModList,
-                                       csi_IM_ResourceId,
-                                       NR_CSI_IM_Resource_t,
-                                       configure_csiim_resource);
-        }
-        // CSI-IM-ResourceSets
-        if (csi_MeasConfig->csi_IM_ResourceSetToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->csi_IM_ResourceSetToReleaseList,
-                              target->csi_IM_ResourceSetToAddModList,
-                              csi_IM_ResourceSetId);
-        }
-        if (csi_MeasConfig->csi_IM_ResourceSetToAddModList) {
-          if (!target->csi_IM_ResourceSetToAddModList)
-            target->csi_IM_ResourceSetToAddModList = calloc(1, sizeof(*target->csi_IM_ResourceSetToAddModList));
-          ADDMOD_IE_FROMLIST(csi_MeasConfig->csi_IM_ResourceSetToAddModList,
-                             target->csi_IM_ResourceSetToAddModList,
-                             csi_IM_ResourceSetId,
-                             NR_CSI_IM_ResourceSet_t);
-        }
-        // CSI-SSB-ResourceSets
-        if (csi_MeasConfig->csi_SSB_ResourceSetToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->csi_SSB_ResourceSetToReleaseList,
-                              target->csi_SSB_ResourceSetToAddModList,
-                              csi_SSB_ResourceSetId);
-        }
-        if (csi_MeasConfig->csi_SSB_ResourceSetToAddModList) {
-          if (!target->csi_SSB_ResourceSetToAddModList)
-            target->csi_SSB_ResourceSetToAddModList = calloc(1, sizeof(*target->csi_SSB_ResourceSetToAddModList));
-          ADDMOD_IE_FROMLIST(csi_MeasConfig->csi_SSB_ResourceSetToAddModList,
-                             target->csi_SSB_ResourceSetToAddModList,
-                             csi_SSB_ResourceSetId,
-                             NR_CSI_SSB_ResourceSet_t);
-        }
-        // CSI-ResourceConfigs
-        if (csi_MeasConfig->csi_ResourceConfigToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->csi_ResourceConfigToReleaseList,
-                              target->csi_ResourceConfigToAddModList,
-                              csi_ResourceConfigId);
-        }
-        if (csi_MeasConfig->csi_ResourceConfigToAddModList) {
-          if (!target->csi_ResourceConfigToAddModList)
-            target->csi_ResourceConfigToAddModList = calloc(1, sizeof(*target->csi_ResourceConfigToAddModList));
-          ADDMOD_IE_FROMLIST(csi_MeasConfig->csi_ResourceConfigToAddModList,
-                             target->csi_ResourceConfigToAddModList,
-                             csi_ResourceConfigId,
-                             NR_CSI_ResourceConfig_t);
-        }
-        // CSI-ReportConfigs
-        if (csi_MeasConfig->csi_ReportConfigToReleaseList) {
-          RELEASE_IE_FROMLIST(csi_MeasConfig->csi_ReportConfigToReleaseList,
-                              target->csi_ReportConfigToAddModList,
-                              reportConfigId);
-        }
-        if (csi_MeasConfig->csi_ReportConfigToAddModList) {
-          if (!target->csi_ReportConfigToAddModList)
-            target->csi_ReportConfigToAddModList = calloc(1, sizeof(*target->csi_ReportConfigToAddModList));
-          ADDMOD_IE_FROMLIST(csi_MeasConfig->csi_ReportConfigToAddModList,
-                             target->csi_ReportConfigToAddModList,
-                             reportConfigId,
-                             NR_CSI_ReportConfig_t);
-        }
+        modify_csi_measconfig(csi_MeasConfig_sr->choice.setup, sc_info->csi_MeasConfig);
       }
       break;
+    }
     default:
       AssertFatal(false, "Invalid case\n");
   }
 }
 
-static void configure_servingcell_info(NR_UE_ServingCell_Info_t *sc_info, NR_ServingCellConfig_t *scd)
+static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConfig_t *scd)
 {
-  if (scd->csi_MeasConfig)
+  NR_UE_ServingCell_Info_t *sc_info = &mac->sc_info;
+  if (scd->csi_MeasConfig) {
     configure_csiconfig(sc_info, scd->csi_MeasConfig);
+    compute_csi_bitlen(sc_info->csi_MeasConfig, mac->csi_report_template);
+  }
 
   if (scd->supplementaryUplink)
     UPDATE_IE(sc_info->supplementaryUplink, scd->supplementaryUplink, NR_UplinkConfig_t);
@@ -2226,7 +2238,7 @@ void nr_rrc_mac_config_req_cg(module_id_t module_id,
       handle_reconfiguration_with_sync(mac, cc_idP, spCellConfig->reconfigurationWithSync);
     }
     if (scd) {
-      configure_servingcell_info(&mac->sc_info, scd);
+      configure_servingcell_info(mac, scd);
       configure_BWPs(mac, scd);
     }
   }

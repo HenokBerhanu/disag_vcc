@@ -82,6 +82,8 @@ void nr_ue_init_mac(NR_UE_MAC_INST_t *mac)
 
   for (int i = 0; i < NR_MAX_SR_ID; i++)
     memset(&mac->scheduling_info.sr_info[i], 0, sizeof(mac->scheduling_info.sr_info[i]));
+
+  mac->pucch_power_control_initialized = false;
 }
 
 void nr_ue_mac_default_configs(NR_UE_MAC_INST_t *mac)

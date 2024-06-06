@@ -124,6 +124,8 @@ Options:
 --disable-cpu-affinity
    Disables CPU Affinity between UHD/TX/RX Threads (Valid only when deadline scheduler is disabled). By defaulT, CPU Affinity is enabled when not using deadline scheduler. It is enabled only with >2 CPUs. For eNB, CPU_0-> Device library (UHD), CPU_1->TX Threads, CPU_2...CPU_MAX->Rx Threads. For UE, CPU_0->Device Library(UHD), CPU_1..CPU_MAX -> All the UE threads
 --enable-cpu-affinity
+--enable-LTTNG
+   Enable LTTNG log. While lttng is enabled, T-Tracer will be disabled
 --disable-T-Tracer
    Disables the T tracer.
 --disable-hardware-dependency
@@ -353,6 +355,11 @@ function main() {
            BUILD_DOXYGEN=1
            echo_info "Will build doxygen support"
            shift;;     
+       --enable-LTTNG)
+            CMAKE_CMD="$CMAKE_CMD -DENABLE_LTTNG=ON -DT_TRACER=OFF"
+            echo_info "Enable LTTNG tracer"
+            USE_LTTNG=1
+            shift 1;;
        --disable-T-Tracer)
             CMAKE_CMD="$CMAKE_CMD -DT_TRACER=False"
             echo_info "Disabling the T tracer"
@@ -414,19 +421,19 @@ function main() {
             grep -sq "Ubuntu 18.04" /etc/os-release && echo_error "Bug in OS with this option, see CMakeLists.txt"
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_ADDRESS=True"
             shift;;
-        --sanitize-undefined | -fundefined=address)
+        --sanitize-undefined | -fsanitize=undefined)
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_UNDEFINED=True"
             shift;;
         --sanitize-memory | -fsanitize=memory)
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_MEMORY=ON -DSANITIZE_ADDRESS=OFF -DSANITIZE_UNDEFINED=OFF"
             shift;;
+        --sanitize-thread | -fsanitize=thread)
+            CMAKE_CMD="$CMAKE_CMD -DSANITIZE_THREAD=True"
+            shift;;
        --trace-asn1c-enc-dec)
             CMAKE_CMD="$CMAKE_CMD -DTRACE_ASN1C_ENC_DEC=ON"
             echo_info "Enabling asn1c internal traces via OAI logging system"
             shift 1;;
-        --sanitize-thread | -fthread=address)
-            CMAKE_CMD="$CMAKE_CMD -DSANITIZE_THREAD=True"
-            shift;;
         -h | --help)
             print_help
             exit 1;;
@@ -454,6 +461,10 @@ function main() {
   if [ "$INSTALL_EXTERNAL" = "1" ] ; then
     echo_info "Installing packages"
     check_install_oai_software
+    if [ "$USE_LTTNG" = "1" ] ; then
+      echo_info "installing LTTng"
+      install_lttng $1
+    fi
     if [ "$HW" == "OAI_USRP" ] ; then
       echo_info "installing packages for USRP support"
       check_install_usrp_uhd_driver
