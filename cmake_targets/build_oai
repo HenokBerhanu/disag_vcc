@@ -421,19 +421,19 @@ function main() {
             grep -sq "Ubuntu 18.04" /etc/os-release && echo_error "Bug in OS with this option, see CMakeLists.txt"
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_ADDRESS=True"
             shift;;
-        --sanitize-undefined | -fundefined=address)
+        --sanitize-undefined | -fsanitize=undefined)
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_UNDEFINED=True"
             shift;;
         --sanitize-memory | -fsanitize=memory)
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_MEMORY=ON -DSANITIZE_ADDRESS=OFF -DSANITIZE_UNDEFINED=OFF"
             shift;;
+        --sanitize-thread | -fsanitize=thread)
+            CMAKE_CMD="$CMAKE_CMD -DSANITIZE_THREAD=True"
+            shift;;
        --trace-asn1c-enc-dec)
             CMAKE_CMD="$CMAKE_CMD -DTRACE_ASN1C_ENC_DEC=ON"
             echo_info "Enabling asn1c internal traces via OAI logging system"
             shift 1;;
-        --sanitize-thread | -fthread=address)
-            CMAKE_CMD="$CMAKE_CMD -DSANITIZE_THREAD=True"
-            shift;;
         -h | --help)
             print_help
             exit 1;;
