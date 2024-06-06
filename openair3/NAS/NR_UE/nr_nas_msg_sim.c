@@ -53,8 +53,6 @@
 #include "openair3/SECU/nas_stream_eia2.h"
 #include "openair3/UTILS/conversions.h"
 
-uint8_t  *registration_request_buf;
-uint32_t  registration_request_len;
 extern char *baseNetAddress;
 extern uint16_t NB_UE_INST;
 static nr_ue_nas_t nr_ue_nas = {0};
@@ -474,10 +472,10 @@ void generateRegistrationRequest(as_nas_info_t *initialNasMsg, nr_ue_nas_t *nas)
 
   // encode the message
   initialNasMsg->data = malloc16_clear(size * sizeof(Byte_t));
-  registration_request_buf = initialNasMsg->data;
+  nas->registration_request_buf = initialNasMsg->data;
 
   initialNasMsg->length = mm_msg_encode(mm_msg, (uint8_t*)(initialNasMsg->data), size);
-  registration_request_len = initialNasMsg->length;
+  nas->registration_request_len = initialNasMsg->length;
 
 }
 
@@ -591,9 +589,9 @@ static void generateSecurityModeComplete(nr_ue_nas_t *nas, as_nas_info_t *initia
 
   size += fill_imeisv(&mm_msg->fgs_security_mode_complete.fgsmobileidentity, nas->uicc);
 
-  mm_msg->fgs_security_mode_complete.fgsnasmessagecontainer.nasmessagecontainercontents.value  = registration_request_buf;
-  mm_msg->fgs_security_mode_complete.fgsnasmessagecontainer.nasmessagecontainercontents.length = registration_request_len;
-  size += (registration_request_len + 2);
+  mm_msg->fgs_security_mode_complete.fgsnasmessagecontainer.nasmessagecontainercontents.value  = nas->registration_request_buf;
+  mm_msg->fgs_security_mode_complete.fgsnasmessagecontainer.nasmessagecontainercontents.length = nas->registration_request_len;
+  size += (nas->registration_request_len + 2);
 
   // encode the message
   initialNasMsg->data = (Byte_t *)malloc(size * sizeof(Byte_t));

@@ -60,9 +60,6 @@ static int      nr_pdcp_current_time_last_subframe;
 hash_table_t  *pdcp_coll_p;
 static uint64_t pdcp_optmask;
 
-uint8_t first_dcch = 0;
-uint8_t proto_agent_flag = 0;
-
 static ngran_node_t node_type;
 
 nr_pdcp_entity_t *nr_pdcp_get_rb(nr_pdcp_ue_t *ue, int rb_id, bool srb_flag)
