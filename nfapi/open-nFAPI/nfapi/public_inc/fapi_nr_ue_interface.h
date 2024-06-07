@@ -359,6 +359,7 @@ typedef struct
   nfapi_nr_ue_ul_beamforming_t beamforming;
   //OAI specific
   int8_t absolute_delta_PUSCH;
+  int16_t tx_power;
   fapi_nr_tx_request_body_t tx_request_body;
 } nfapi_nr_ue_pusch_pdu_t;
 

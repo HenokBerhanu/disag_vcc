@@ -164,13 +164,167 @@ TEST(test_pucch_power_state, test_accumulated_delta_pucch)
   }
 }
 
-TEST(pc_min, check_all_bw_indexes) {
-  const int NB_RB_UL[] ={
-    11, 24, 38, 51, 65, 78, 106, 133, 162, 217, 245, 273
-  };
-  for (auto i = 0U; i < sizeof(NB_RB_UL)/sizeof(NB_RB_UL[0]); i++) {
+TEST(pc_min, check_all_bw_indexes)
+{
+  const int NB_RB_UL[] = {11, 24, 38, 51, 65, 78, 106, 133, 162, 217, 245, 273};
+  for (auto i = 0U; i < sizeof(NB_RB_UL) / sizeof(NB_RB_UL[0]); i++) {
     (void)nr_get_Pcmin(1, 20, NB_RB_UL[i]);
   }
+}
+
+TEST(pusch_power_control, pusch_power_control_msg3)
+{
+  NR_UE_MAC_INST_t mac = {0};
+  NR_UE_UL_BWP_t current_UL_BWP = {0};
+  current_UL_BWP.scs = 1;
+  current_UL_BWP.BWPSize = 106;
+  mac.current_UL_BWP = &current_UL_BWP;
+  NR_RACH_ConfigCommon_t nr_rach_ConfigCommon = {0};
+  current_UL_BWP.rach_ConfigCommon = &nr_rach_ConfigCommon;
+  mac.nr_band = 78;
+  NR_PUSCH_Config_t pusch_Config = {0};
+  current_UL_BWP.pusch_Config = &pusch_Config;
+  NR_PUSCH_PowerControl pusch_PowerControl = {0};
+  pusch_Config.pusch_PowerControl = &pusch_PowerControl;
+  pusch_PowerControl.tpc_Accumulation = (long*)1;
+
+  // msg3 cofiguration as in 5g_rfsimulator testcase
+  int num_rb = 8;
+  int start_prb = 0;
+  uint16_t nb_symb_sch = 3;
+  uint16_t nb_dmrs_prb = 12;
+  uint16_t nb_ptrs_prb = 0;
+  uint16_t Qm = 2;
+  uint16_t R = 1570;
+  uint16_t beta_offset_csi1 = 0;
+  uint32_t sum_bits_in_codeblocks = 56;
+  int delta_pusch = 0;
+  bool is_rar_tx_retx = true;
+
+  int P_CMAX = nr_get_Pcmax(23, mac.nr_band, FR1, Qm, false, current_UL_BWP.scs, current_UL_BWP.BWPSize, false, num_rb, start_prb);
+
+  long preambleReceivedTargetPower = -96;
+  nr_rach_ConfigCommon.rach_ConfigGeneric.preambleReceivedTargetPower = preambleReceivedTargetPower;
+
+  int power = get_pusch_tx_power_ue(&mac,
+                                    num_rb,
+                                    start_prb,
+                                    nb_symb_sch,
+                                    nb_dmrs_prb,
+                                    nb_ptrs_prb,
+                                    Qm,
+                                    R,
+                                    beta_offset_csi1,
+                                    sum_bits_in_codeblocks,
+                                    delta_pusch,
+                                    is_rar_tx_retx,
+                                    false);
+  EXPECT_EQ(power, -84);
+  EXPECT_LT(power, P_CMAX);
+  nr_rach_ConfigCommon.rach_ConfigGeneric.preambleReceivedTargetPower -= 2;
+
+  int reduced_power = get_pusch_tx_power_ue(&mac,
+                                            num_rb,
+                                            start_prb,
+                                            nb_symb_sch,
+                                            nb_dmrs_prb,
+                                            nb_ptrs_prb,
+                                            Qm,
+                                            R,
+                                            beta_offset_csi1,
+                                            sum_bits_in_codeblocks,
+                                            delta_pusch,
+                                            is_rar_tx_retx,
+                                            false);
+  EXPECT_EQ(std::min(P_CMAX, power - 2), reduced_power)
+      << "Incorrect handling of preambleReceivedTargetPower";
+  EXPECT_LT(reduced_power, P_CMAX) << "Power above P_CMAX";
+
+  delta_pusch = 4;
+  int increased_power = get_pusch_tx_power_ue(&mac,
+                                            num_rb,
+                                            start_prb,
+                                            nb_symb_sch,
+                                            nb_dmrs_prb,
+                                            nb_ptrs_prb,
+                                            Qm,
+                                            R,
+                                            beta_offset_csi1,
+                                            sum_bits_in_codeblocks,
+                                            delta_pusch,
+                                            is_rar_tx_retx,
+                                            false);
+  EXPECT_EQ(std::min(P_CMAX, reduced_power + delta_pusch), increased_power)
+      << "delta_pusch should increase tx power";
+  EXPECT_LT(increased_power, P_CMAX) << "Power above P_CMAX";
+}
+
+TEST(pusch_power_control, pusch_power_data)
+{
+  NR_UE_MAC_INST_t mac = {0};
+  NR_UE_UL_BWP_t current_UL_BWP = {0};
+  current_UL_BWP.scs = 1;
+  current_UL_BWP.BWPSize = 106;
+  mac.current_UL_BWP = &current_UL_BWP;
+  NR_RACH_ConfigCommon_t nr_rach_ConfigCommon = {0};
+  current_UL_BWP.rach_ConfigCommon = &nr_rach_ConfigCommon;
+  mac.nr_band = 78;
+
+  bool is_rar_tx_retx = false;
+  int num_rb = 5;
+  int start_prb = 0;
+  uint16_t nb_symb_sch = 3;
+  uint16_t nb_dmrs_prb = 6;
+  uint16_t nb_ptrs_prb = 0;
+  uint16_t Qm = 2;
+  uint16_t R = 6790;
+  uint16_t beta_offset_csi1 = 0;
+  uint32_t sum_bits_in_codeblocks = 192;
+  int delta_pusch = 4;
+  bool transform_precoding = false;
+  NR_PUSCH_Config_t pusch_Config = {0};
+  current_UL_BWP.pusch_Config = &pusch_Config;
+  NR_PUSCH_PowerControl pusch_PowerControl = {0};
+  pusch_Config.pusch_PowerControl = &pusch_PowerControl;
+  pusch_PowerControl.tpc_Accumulation = (long*)1;
+  long p0_NominalWithGrant = 0;
+  current_UL_BWP.p0_NominalWithGrant = &p0_NominalWithGrant;
+  pusch_PowerControl.deltaMCS = (long*)1;
+
+  int P_CMAX = nr_get_Pcmax(23, mac.nr_band, FR1, Qm, false, current_UL_BWP.scs, current_UL_BWP.BWPSize, transform_precoding, num_rb, start_prb);
+
+  int power = get_pusch_tx_power_ue(&mac,
+                                    num_rb,
+                                    start_prb,
+                                    nb_symb_sch,
+                                    nb_dmrs_prb,
+                                    nb_ptrs_prb,
+                                    Qm,
+                                    R,
+                                    beta_offset_csi1,
+                                    sum_bits_in_codeblocks,
+                                    delta_pusch,
+                                    is_rar_tx_retx,
+                                    transform_precoding);
+  EXPECT_LE(power, P_CMAX);
+  EXPECT_EQ(power, 18);
+
+  const int BETA_OFFSET_CSI1_DEFAULT = 13;
+  sum_bits_in_codeblocks = 0; // CSI-only
+  power = get_pusch_tx_power_ue(&mac,
+                                num_rb,
+                                start_prb,
+                                nb_symb_sch,
+                                nb_dmrs_prb,
+                                nb_ptrs_prb,
+                                Qm,
+                                R,
+                                BETA_OFFSET_CSI1_DEFAULT,
+                                sum_bits_in_codeblocks,
+                                delta_pusch,
+                                is_rar_tx_retx,
+                                transform_precoding);
+  EXPECT_EQ(power, P_CMAX) << "Expecting max tx power because of deltaMCS with CSI-only";
 }
 
 int main(int argc, char** argv)

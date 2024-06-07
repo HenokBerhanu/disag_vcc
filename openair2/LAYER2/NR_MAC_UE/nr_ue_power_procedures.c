@@ -434,3 +434,136 @@ int16_t compute_nr_SSB_PL(NR_UE_MAC_INST_t *mac, short ssb_rsrp_dBm)
 
   return pathloss;
 }
+
+// PUSCH transmission power according to 38.213 7.1
+int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
+                          int num_rb,
+                          int start_prb,
+                          uint16_t nb_symb_sch,
+                          uint16_t nb_dmrs_prb,
+                          uint16_t nb_ptrs_prb,
+                          uint16_t qm,
+                          uint16_t R,
+                          uint16_t beta_offset_csi1,
+                          uint32_t sum_bits_in_codeblocks,
+                          int delta_pusch,
+                          bool is_rar_tx_retx,
+                          bool transform_precoding)
+{
+  LOG_D(NR_MAC,
+        "PUSCH tx power determination num_rb=%d start_prb=%d nb_symb_sch=%u nb_dmrs_prb=%u nb_ptrs_prb=%u Qm=%u R= %u "
+        "beta_offset_cs1=%u sum_bits_in_codeblocks=%u delta_pusch=%d is_rar_tx_retx=%d transform_precoding=%d\n",
+        num_rb,
+        start_prb,
+        nb_symb_sch,
+        nb_dmrs_prb,
+        nb_ptrs_prb,
+        qm,
+        R,
+        beta_offset_csi1,
+        sum_bits_in_codeblocks,
+        delta_pusch,
+        is_rar_tx_retx,
+        transform_precoding);
+  NR_UE_UL_BWP_t *current_UL_BWP = mac->current_UL_BWP;
+  AssertFatal(current_UL_BWP, "Missing configuration: need UL_BWP to calculate PUSCH tx power\n");
+  NR_PUSCH_Config_t *pusch_Config = current_UL_BWP->pusch_Config;
+  bool has_pusch_config = pusch_Config != NULL;
+  bool has_pusch_power_control_config = has_pusch_config && pusch_Config->pusch_PowerControl != NULL;
+  bool is_provided_alpha_sets = has_pusch_power_control_config && pusch_Config->pusch_PowerControl->p0_AlphaSets != NULL;
+  AssertFatal(!has_pusch_power_control_config || pusch_Config->pusch_PowerControl->sri_PUSCH_MappingToAddModList == NULL,
+              "SRI-PUSCH-PowerControl handling not implemented\n");
+
+  int P_O_NOMINAL_PUSCH;
+  float alpha;
+  const float alpha_factor_table[8] = {0.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+  if (is_rar_tx_retx || !is_provided_alpha_sets || current_UL_BWP->p0_NominalWithGrant == NULL) {
+    int DELTA_PREAMBLE_MSG3 = 0;
+    if (current_UL_BWP->msg3_DeltaPreamble) {
+      DELTA_PREAMBLE_MSG3 = *current_UL_BWP->msg3_DeltaPreamble;
+    }
+    NR_RACH_ConfigCommon_t *nr_rach_ConfigCommon = current_UL_BWP->rach_ConfigCommon;
+    long preambleReceivedTargetPower = nr_rach_ConfigCommon->rach_ConfigGeneric.preambleReceivedTargetPower;
+    int P_O_PRE = preambleReceivedTargetPower;
+    P_O_NOMINAL_PUSCH = P_O_PRE + DELTA_PREAMBLE_MSG3;
+
+    if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->msg3_Alpha) {
+      alpha = alpha_factor_table[*pusch_Config->pusch_PowerControl->msg3_Alpha];
+    } else {
+      alpha = 1.0f;
+    }
+  } else {
+    P_O_NOMINAL_PUSCH = *current_UL_BWP->p0_NominalWithGrant;
+    if (pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->alpha) {
+      alpha = alpha_factor_table[*pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->alpha];
+    } else {
+      // Default according to 38.331 P0-PUSCH-AlphaSet field descriptions
+      alpha = 1.0f;
+    }
+  }
+
+  int P_O_UE_PUSCH;
+  if (is_rar_tx_retx || !is_provided_alpha_sets) {
+    P_O_UE_PUSCH = 0;
+  } else {
+    if (pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->p0) {
+      P_O_UE_PUSCH = *pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->p0;
+    } else {
+      // Default according to 38.331 P0-PUSCH-AlphaSet field descriptions
+      P_O_UE_PUSCH = 0;
+    }
+  }
+
+  int mu = current_UL_BWP->scs;
+
+  int M_pusch_component = 10 * log10((pow(2, mu)) * num_rb);
+  int P_CMAX = nr_get_Pcmax(mac->p_Max,
+                            mac->nr_band,
+                            mac->frequency_range,
+                            2,
+                            false,
+                            mac->current_UL_BWP->scs,
+                            mac->current_UL_BWP->BWPSize,
+                            transform_precoding,
+                            1,
+                            start_prb);
+
+  int P_O_PUSCH = P_O_NOMINAL_PUSCH + P_O_UE_PUSCH;
+
+  float DELTA_TF = 0;
+  if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->deltaMCS) {
+    float beta_offset = 1;
+    float BPRE;
+    if (sum_bits_in_codeblocks == 0) {
+      float table_38_213_9_3_2[] = {
+          1.125,   11.250,  21.375,  31.625,  41.750,  52.000,   62.250,   72.500,   82.875,   93.125,
+          103.500, 114.000, 125.000, 136.250, 148.000, 1510.000, 1612.625, 1715.875, 1820.000,
+      };
+      beta_offset = table_38_213_9_3_2[beta_offset_csi1];
+      BPRE = (qm * R / beta_offset) / 1024;
+    } else {
+      const int nb_subcarrier_per_rb = 12;
+      const uint32_t N_RE = nb_subcarrier_per_rb * nb_symb_sch - nb_dmrs_prb - nb_ptrs_prb;
+      BPRE = sum_bits_in_codeblocks / (float)(N_RE * num_rb);
+    }
+    DELTA_TF = 10 * log10(pow(2, BPRE * 1.25f) * beta_offset);
+  }
+
+  // TODO: compute pathoss using correct reference
+  int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
+
+  int f_b_f_c = 0;
+  if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->tpc_Accumulation) {
+    f_b_f_c = delta_pusch;
+  } else {
+    // TODO: PUSCH power control state
+  }
+  LOG_D(NR_MAC,
+        "PUSCH tx power components P_O_PUSCH=%d, M_pusch_component=%d, alpha*pathloss=%f, delta_TF=%f, f_b_f_c=%d\n",
+        P_O_PUSCH,
+        M_pusch_component,
+        alpha * pathloss,
+        DELTA_TF,
+        f_b_f_c);
+  return min(P_CMAX, P_O_PUSCH + M_pusch_component + alpha * pathloss + DELTA_TF + f_b_f_c);
+}

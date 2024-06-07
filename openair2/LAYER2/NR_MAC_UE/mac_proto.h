@@ -219,6 +219,20 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                               int subframe_number,
                               int O_uci,
                               uint16_t start_prb);
+int get_pusch_tx_power_ue(
+  NR_UE_MAC_INST_t *mac,
+  int num_rb,
+  int start_prb,
+  uint16_t nb_symb_sch,
+  uint16_t nb_dmrs_prb,
+  uint16_t nb_ptrs_prb,
+  uint16_t qm,
+  uint16_t R,
+  uint16_t beta_offset_csi1,
+  uint32_t sum_bits_in_codeblocks,
+  int delta_pusch,
+  bool is_rar_tx_retx,
+  bool transform_precoding);
 
 int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            int slot,
