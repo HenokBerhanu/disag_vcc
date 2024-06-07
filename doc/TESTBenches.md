@@ -22,7 +22,7 @@
 | nokiabox      | 172.21.19.39    | _None_                | gNB (Nokia), 5GC   | _Nokia RF integrated_                                 |
 | avra          | 172.21.16.124   | CI-Avra-Usage         | gNB (n78)          | AW2S Jaguar (192.168.80.239)                          |
 | orion         | 172.21.16.134   | CI-Orion-Build-Sanity-Check-Deploy-Test, CI-Orion-DsTester-Deploy-Test | Build | |
-| aerial2       | 172.21.16.131   | CI-Aerial2-Usage      | gNB (PNF/Nvidia CUBB + VNF) | Foxconn RU, _Nvidia Aerial SDK integrated_   |
+| aerial1       | 172.21.16.130   | CI-Aerial2-Usage      | gNB (PNF/Nvidia CUBB + VNF) | Foxconn RU, _Nvidia Aerial SDK integrated_   |
 | sphex         | 172.21.17.54    | CI-Sphex-Usage        | COTS UE            | Quectel RM500Q                                        |
 | matix         | 172.21.19.58    | CI-Matix-Usage        | gNB (n77)          | N310                                                  |
 
@@ -193,7 +193,7 @@ information on how the images are built.
   - OpenShift cluster for CN deployment and container images for gNB and UE deployment
 - [RAN-SA-AERIAL-CN5G](https://jenkins-oai.eurecom.fr/job/RAN-SA-AERIAL-CN5G/)
   ~5G-NR
-  - 5G-NR SA test setup: OAI VNF  + PNF/NVIDIA CUBB on Aerial2 (U22) + Foxconn RU, sphex + COTS UE (Quectel RM500Q), OAI CN5G
+  - 5G-NR SA test setup: OAI VNF  + PNF/NVIDIA CUBB on Aerial1 (U22) + Foxconn RU, sphex + COTS UE (Quectel RM500Q), OAI CN5G
   - container images for gNB deployment
 - [RAN-SA-2x2-Module-CN5G](https://jenkins-oai.eurecom.fr/view/RAN/job/RAN-SA-2x2-Module-CN5G/)
   ~5G-NR
