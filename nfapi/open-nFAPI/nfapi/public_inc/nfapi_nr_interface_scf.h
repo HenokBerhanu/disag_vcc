@@ -608,13 +608,21 @@ typedef struct {
 typedef struct {
   nfapi_p4_p5_message_header_t header;
   nfapi_vendor_extension_tlv_t vendor_extension;
-} nfapi_nr_stop_request_t;
-
+} nfapi_nr_stop_request_scf_t;
 
 typedef struct {
   nfapi_p4_p5_message_header_t header;
   nfapi_vendor_extension_tlv_t vendor_extension;
-} nfapi_nr_stop_indication_t;
+} nfapi_nr_stop_indication_scf_t;
+
+typedef struct {
+  nfapi_p4_p5_message_header_t header;
+  uint16_t sfn;
+  uint16_t slot;
+  uint8_t message_id; // Which message received on the PNF has an error
+  uint8_t error_code;
+  nfapi_vendor_extension_tlv_t vendor_extension;
+} nfapi_nr_error_indication_scf_t;
 
 typedef enum {
   NFAPI_NR_STOP_MSG_INVALID_STATE
