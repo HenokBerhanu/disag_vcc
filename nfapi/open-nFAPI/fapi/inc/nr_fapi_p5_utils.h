@@ -34,5 +34,27 @@
 #include "stdio.h"
 #include "stdint.h"
 #include "nr_fapi.h"
+#include "nfapi/oai_integration/vendor_ext.h"
+
+#define EQ_TLV(_tlv_a, _tlv_b)        \
+  do {                                \
+    EQ(_tlv_a.tl.tag, _tlv_b.tl.tag); \
+    EQ(_tlv_a.value, _tlv_b.value);   \
+  } while (0)
+
+#define EQ(_a, _b)      \
+  do {                  \
+    if ((_a) != (_b)) { \
+      return false;     \
+    }                   \
+  } while (0)
+
+void copy_vendor_extension_value(nfapi_vendor_extension_tlv_t *dst, const nfapi_vendor_extension_tlv_t *src);
+
+bool eq_param_request(const nfapi_nr_param_request_scf_t *unpacked_req, const nfapi_nr_param_request_scf_t *req);
+
+void free_param_request(nfapi_nr_param_request_scf_t *msg);
+
+void copy_param_request(const nfapi_nr_param_request_scf_t *src, nfapi_nr_param_request_scf_t *dst);
 
 #endif // OPENAIRINTERFACE_NR_FAPI_P5_UTILS_H
