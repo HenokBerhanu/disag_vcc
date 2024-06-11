@@ -856,6 +856,19 @@ int unpack_nr_tlv_list(unpack_tlv_t unpack_fns[],
     for (idx = 0; idx < size; ++idx) {
       if (unpack_fns[idx].tag == generic_tl.tag) { // match the extracted tag value with all the tags in unpack_fn list
         tagMatch = 1;
+
+        if (generic_tl.tag == NFAPI_NR_PARAM_TLV_NUM_CONFIG_TLVS_TO_REPORT_TAG) {
+          // padding and sub tlvs handled already
+          nfapi_nr_cell_param_t *cellParamTable = (nfapi_nr_cell_param_t *)unpack_fns[idx].tlv;
+          cellParamTable->num_config_tlvs_to_report.tl.tag = generic_tl.tag;
+          cellParamTable->num_config_tlvs_to_report.tl.length = generic_tl.length;
+          int result = (*unpack_fns[idx].unpack_func)(unpack_fns[idx].tlv, ppReadPackedMsg, end);
+          if (result == 0) {
+            return 0;
+          }
+          continue;
+        }
+
         nfapi_tl_t *tl = (nfapi_tl_t *)(unpack_fns[idx].tlv);
         tl->tag = generic_tl.tag;
         tl->length = generic_tl.length;
