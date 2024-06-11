@@ -763,6 +763,7 @@ Edit the sample OAI gNB configuration file and check following parameters:
   * Set an isolated core for L1 thread `L1_rx_thread_core`, in our environment we are using CPU 8
   * Set an isolated core for L1 thread `L1_tx_thread_core`, in our environment we are using CPU 10
   * `phase_compensation` should be set to 0 to disable when it is performed in the RU and set to 1 when it should be performed on the DU side
+  * `tx_amp_backoff_dB` controls the output level of OAI with respect to a full-scale output. The exact value for `tx_amp_backoff_dB` should be obtained from the O-RU documentation. This documentation typically includes detailed sections on Downlink (DL) signal scaling and gain setup. **Warning:** Exceeding the recommended power limits may permanently damage the RU.
 
 * `RUs` section
   * Set an isolated core for RU thread `ru_thread_core`, in our environment we are using CPU 6
