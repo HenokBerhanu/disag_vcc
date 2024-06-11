@@ -49,12 +49,27 @@
     }                   \
   } while (0)
 
+#define COPY_TL(_dst_tl, _src_tl)    \
+  do {                               \
+    _dst_tl.tag = _src_tl.tag;       \
+    _dst_tl.length = _src_tl.length; \
+  } while (0)
+
+#define COPY_TLV(_dst, _src)   \
+  do {                         \
+    COPY_TL(_dst.tl, _src.tl); \
+    _dst.value = _src.value;   \
+  } while (0)
+
 void copy_vendor_extension_value(nfapi_vendor_extension_tlv_t *dst, const nfapi_vendor_extension_tlv_t *src);
 
 bool eq_param_request(const nfapi_nr_param_request_scf_t *unpacked_req, const nfapi_nr_param_request_scf_t *req);
+bool eq_param_response(const nfapi_nr_param_response_scf_t *unpacked_req, const nfapi_nr_param_response_scf_t *req);
 
 void free_param_request(nfapi_nr_param_request_scf_t *msg);
+void free_param_response(nfapi_nr_param_response_scf_t *msg);
 
 void copy_param_request(const nfapi_nr_param_request_scf_t *src, nfapi_nr_param_request_scf_t *dst);
+void copy_param_response(const nfapi_nr_param_response_scf_t *src, nfapi_nr_param_response_scf_t *dst);
 
 #endif // OPENAIRINTERFACE_NR_FAPI_P5_UTILS_H
