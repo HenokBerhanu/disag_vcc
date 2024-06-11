@@ -47,8 +47,6 @@ COPY . .
 RUN /bin/sh oaienv && \
     tar -xvzf nvipc_src.*.tar.gz && \
     cd nvipc_src.* && \
-    git init && \
-    git apply ../cmake_targets/tools/install_libraries_to_system.patch --verbose && \
     rm -rf build && mkdir build && cd build && \
     cmake .. -DNVIPC_DPDK_ENABLE=OFF -DNVIPC_DOCA_ENABLE=OFF -DNVIPC_CUDA_ENABLE=OFF -DENABLE_SLT_RSP=ON && \
     make -j && make install
@@ -79,6 +77,7 @@ RUN apt-get update && \
         iproute2 \
         iputils-ping \
         gdb \
+        moreutils \
         libusb-1.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
