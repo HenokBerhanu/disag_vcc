@@ -38,6 +38,7 @@
 #include "nfapi/oai_integration/vendor_ext.h"
 #include <debug.h>
 #include "nr_fapi_p5.h"
+#include "nr_fapi.h"
 
 // Pack routines
 //TODO: Add pacl/unpack fns for uint32 and uint64
@@ -3378,47 +3379,16 @@ static int check_nr_unpack_length(nfapi_nr_phy_msg_type_e msgId, uint32_t unpack
         retLen = sizeof(nfapi_nr_pnf_stop_response_t);
 
       break;
-
     case NFAPI_NR_PHY_MSG_TYPE_PARAM_REQUEST:
-      if (unpackedBufLen >= sizeof(nfapi_nr_param_request_scf_t))
-        retLen = sizeof(nfapi_nr_param_request_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_PARAM_RESPONSE:
-      if (unpackedBufLen >= sizeof(nfapi_nr_param_response_scf_t))
-        retLen = sizeof(nfapi_nr_param_response_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_CONFIG_REQUEST:
-      if (unpackedBufLen >= sizeof(nfapi_nr_config_request_scf_t))
-        retLen = sizeof(nfapi_nr_config_request_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_CONFIG_RESPONSE:
-      if (unpackedBufLen >= sizeof(nfapi_nr_config_response_scf_t))
-        retLen = sizeof(nfapi_nr_config_response_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_START_REQUEST:
-      if (unpackedBufLen >= sizeof( nfapi_nr_start_request_scf_t))
-        retLen = sizeof( nfapi_nr_start_request_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_START_RESPONSE:
-      if (unpackedBufLen >= sizeof(nfapi_nr_start_response_scf_t))
-        retLen = sizeof(nfapi_nr_start_response_scf_t);
-
-      break;
-
     case NFAPI_NR_PHY_MSG_TYPE_STOP_REQUEST:
-      if (unpackedBufLen >= sizeof(nfapi_stop_request_t))
-        retLen = sizeof(nfapi_stop_request_t);
-
+    case NFAPI_NR_PHY_MSG_TYPE_STOP_INDICATION:
+    case NFAPI_NR_PHY_MSG_TYPE_ERROR_INDICATION:
+      retLen = check_nr_fapi_unpack_length(msgId, unpackedBufLen);
       break;
 
     case NFAPI_NR_PHY_MSG_TYPE_STOP_RESPONSE:
