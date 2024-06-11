@@ -179,23 +179,26 @@ static int create_mempools(struct active_device *ad, int socket_id, uint16_t num
                                                     ops_pool_size, OPS_CACHE_SIZE, socket_id);
 
   if ((ad->bbdev_dec_op_pool == NULL) || (ad->bbdev_enc_op_pool == NULL))
-    TEST_ASSERT_NOT_NULL(NULL, "ERROR Failed to create %u items ops pool for dev %u on socket %d.",
-                         ops_pool_size, ad->dev_id, socket_id);
+    AssertFatal(1 == 0, "ERROR Failed to create %u items ops pool for dev %u on socket %d.", ops_pool_size, ad->dev_id, socket_id);
 
   /* Inputs */
   mbuf_pool_size = optimal_mempool_size(ops_pool_size * nb_segments);
   data_room_size = RTE_MAX(in_max_sz + RTE_PKTMBUF_HEADROOM + FILLER_HEADROOM, (unsigned int)RTE_MBUF_DEFAULT_BUF_SIZE);
   ad->in_mbuf_pool = rte_pktmbuf_pool_create("in_mbuf_pool", mbuf_pool_size, 0, 0, data_room_size, socket_id);
-  TEST_ASSERT_NOT_NULL(ad->in_mbuf_pool,
-                       "ERROR Failed to create %u items input pktmbuf pool for dev %u on socket %d.",
-                       mbuf_pool_size, ad->dev_id, socket_id);
+  AssertFatal(ad->in_mbuf_pool != NULL,
+              "ERROR Failed to create %u items input pktmbuf pool for dev %u on socket %d.",
+              mbuf_pool_size,
+              ad->dev_id,
+              socket_id);
 
   /* Hard outputs */
   data_room_size = RTE_MAX(out_buff_sz + RTE_PKTMBUF_HEADROOM + FILLER_HEADROOM, (unsigned int)RTE_MBUF_DEFAULT_BUF_SIZE);
   ad->hard_out_mbuf_pool = rte_pktmbuf_pool_create("hard_out_mbuf_pool", mbuf_pool_size, 0, 0, data_room_size, socket_id);
-  TEST_ASSERT_NOT_NULL(ad->hard_out_mbuf_pool,
-                       "ERROR Failed to create %u items hard output pktmbuf pool for dev %u on socket %d.",
-                       mbuf_pool_size, ad->dev_id, socket_id);
+  AssertFatal(ad->hard_out_mbuf_pool != NULL,
+              "ERROR Failed to create %u items hard output pktmbuf pool for dev %u on socket %d.",
+              mbuf_pool_size,
+              ad->dev_id,
+              socket_id);
   return 0;
 }
 
@@ -311,7 +314,7 @@ static int add_dev(uint8_t dev_id, struct rte_bbdev_info *info)
   ret = rte_bbdev_setup_queues(dev_id, nb_queues, info->socket_id);
   if (ret < 0) {
     printf("rte_bbdev_setup_queues(%u, %u, %d) ret %i\n", dev_id, nb_queues, info->socket_id, ret);
-    return TEST_FAILED;
+    return -1;
   }
 
   /* setup device queues */
@@ -333,7 +336,7 @@ static int add_dev(uint8_t dev_id, struct rte_bbdev_info *info)
       break;
     }
   }
-  TEST_ASSERT(queue_id != nb_queues, "ERROR Failed to configure encoding queues on dev %u", dev_id);
+  AssertFatal(queue_id != nb_queues, "ERROR Failed to configure encoding queues on dev %u", dev_id);
 
   // Search a queue linked to HW capability ldpc encoding
   qconf.op_type = RTE_BBDEV_OP_LDPC_DEC;
@@ -347,9 +350,9 @@ static int add_dev(uint8_t dev_id, struct rte_bbdev_info *info)
       break;
     }
   }
-  TEST_ASSERT(queue_id != nb_queues, "ERROR Failed to configure encoding queues on dev %u", dev_id);
+  AssertFatal(queue_id != nb_queues, "ERROR Failed to configure encoding queues on dev %u", dev_id);
   ad->nb_queues = 2;
-  return TEST_SUCCESS;
+  return 0;
 }
 
 // based on DPDK BBDEV init_op_data_objs
@@ -366,11 +369,11 @@ static int init_op_data_objs_dec(struct rte_bbdev_op_data *bufs,
     uint32_t data_len = offloadParams->perCB[i].E_cb;
     char *data;
     struct rte_mbuf *m_head = rte_pktmbuf_alloc(mbuf_pool);
-    TEST_ASSERT_NOT_NULL(m_head,
-                         "Not enough mbufs in %d data type mbuf pool (needed %u, available %u)",
-                         op_type,
-                         n,
-                         mbuf_pool->size);
+    AssertFatal(m_head != NULL,
+                "Not enough mbufs in %d data type mbuf pool (needed %u, available %u)",
+                op_type,
+                n,
+                mbuf_pool->size);
 
     if (data_len > RTE_BBDEV_LDPC_E_MAX_MBUF) {
       printf("Warning: Larger input size than DPDK mbuf %u\n", data_len);
@@ -384,7 +387,7 @@ static int init_op_data_objs_dec(struct rte_bbdev_op_data *bufs,
       if ((op_type == DATA_INPUT) && large_input) {
         /* Allocate a fake overused mbuf */
         data = rte_malloc(NULL, data_len, 0);
-        TEST_ASSERT_NOT_NULL(data, "rte malloc failed with %u bytes", data_len);
+        AssertFatal(data != NULL, "rte malloc failed with %u bytes", data_len);
         memcpy(data, &input[i * LDPC_MAX_CB_SIZE], data_len);
         m_head->buf_addr = data;
         m_head->buf_iova = rte_malloc_virt2iova(data);
@@ -393,8 +396,8 @@ static int init_op_data_objs_dec(struct rte_bbdev_op_data *bufs,
       } else {
         rte_pktmbuf_reset(m_head);
         data = rte_pktmbuf_append(m_head, data_len);
-        TEST_ASSERT_NOT_NULL(data, "Couldn't append %u bytes to mbuf from %d data type mbuf pool", data_len, op_type);
-        TEST_ASSERT(data == RTE_PTR_ALIGN(data, min_alignment),
+        AssertFatal(data != NULL, "Couldn't append %u bytes to mbuf from %d data type mbuf pool", data_len, op_type);
+        AssertFatal(data == RTE_PTR_ALIGN(data, min_alignment),
                     "Data addr in mbuf (%p) is not aligned to device min alignment (%u)",
                     data,
                     min_alignment);
@@ -421,11 +424,11 @@ static int init_op_data_objs_enc(struct rte_bbdev_op_data *bufs,
     uint32_t data_len = offloadParams->Kr;
     char *data;
     struct rte_mbuf *m_head = rte_pktmbuf_alloc(mbuf_pool);
-    TEST_ASSERT_NOT_NULL(m_head,
-                         "Not enough mbufs in %d data type mbuf pool (needed %u, available %u)",
-                         op_type,
-                         n,
-                         mbuf_pool->size);
+    AssertFatal(m_head != NULL,
+                "Not enough mbufs in %d data type mbuf pool (needed %u, available %u)",
+                op_type,
+                n,
+                mbuf_pool->size);
 
     if (data_len > RTE_BBDEV_LDPC_E_MAX_MBUF) {
       printf("Warning: Larger input size than DPDK mbuf %u\n", data_len);
@@ -439,7 +442,7 @@ static int init_op_data_objs_enc(struct rte_bbdev_op_data *bufs,
       if ((op_type == DATA_INPUT) && large_input) {
         /* Allocate a fake overused mbuf */
         data = rte_malloc(NULL, data_len, 0);
-        TEST_ASSERT_NOT_NULL(data, "rte malloc failed with %u bytes", data_len);
+        AssertFatal(data != NULL, "rte malloc failed with %u bytes", data_len);
         memcpy(data, &input_enc[0], data_len);
         m_head->buf_addr = data;
         m_head->buf_iova = rte_malloc_virt2iova(data);
@@ -448,8 +451,8 @@ static int init_op_data_objs_enc(struct rte_bbdev_op_data *bufs,
       } else {
         rte_pktmbuf_reset(m_head);
         data = rte_pktmbuf_append(m_head, data_len);
-        TEST_ASSERT_NOT_NULL(data, "Couldn't append %u bytes to mbuf from %d data type mbuf pool", data_len, op_type);
-        TEST_ASSERT(data == RTE_PTR_ALIGN(data, min_alignment),
+        AssertFatal(data != NULL, "Couldn't append %u bytes to mbuf from %d data type mbuf pool", data_len, op_type);
+        AssertFatal(data == RTE_PTR_ALIGN(data, min_alignment),
                     "Data addr in mbuf (%p) is not aligned to device min alignment (%u)",
                     data,
                     min_alignment);
@@ -477,7 +480,7 @@ static int allocate_buffers_on_socket(struct rte_bbdev_op_data **buffers, const 
     }
   }
 
-  return (*buffers == NULL) ? TEST_FAILED : TEST_SUCCESS;
+  return (*buffers == NULL) ? -1 : 0;
 }
 
 // DPDK BBDEV copy
@@ -631,7 +634,7 @@ static int init_test_op_params(struct test_op_params *op_params,
     op_params->mp_enc = ops_mp;
   }
 
-  TEST_ASSERT_SUCCESS(ret, "rte_bbdev_op_alloc_bulk() failed");
+  AssertFatal(ret == 0, "rte_bbdev_op_alloc_bulk() failed");
 
   op_params->burst_sz = burst_sz;
   op_params->num_to_process = num_to_process;
@@ -658,14 +661,14 @@ pmd_lcore_ldpc_dec(void *arg)
   uint8_t *p_out = tp->p_out;
   t_nrLDPCoffload_params *p_offloadParams = tp->p_offloadParams;
 
-  TEST_ASSERT_SUCCESS((num_segments > MAX_BURST), "BURST_SIZE should be <= %u", MAX_BURST);
+  AssertFatal((num_segments < MAX_BURST), "BURST_SIZE should be <= %u", MAX_BURST);
   rte_bbdev_info_get(tp->dev_id, &info);
   bufs = &tp->op_params->q_bufs[GET_SOCKET(info.socket_id)][queue_id];
   while (rte_atomic16_read(&tp->op_params->sync) == SYNC_WAIT)
     rte_pause();
 
   ret = rte_bbdev_dec_op_alloc_bulk(tp->op_params->mp_dec, ops_enq, num_segments);
-  TEST_ASSERT_SUCCESS(ret, "Allocation failed for %d ops", num_segments);
+  AssertFatal(ret == 0, "Allocation failed for %d ops", num_segments);
   set_ldpc_dec_op(ops_enq, 0, bufs, ulsch_id, p_offloadParams);
 
   for (enq = 0, deq = 0; enq < num_segments;) {
@@ -692,7 +695,7 @@ pmd_lcore_ldpc_dec(void *arg)
       *status = ops_enq[i]->status;
     }
     ret = retrieve_ldpc_dec_op(ops_deq, num_segments, tp->op_params->vector_mask, p_out);
-    TEST_ASSERT_SUCCESS(ret, "LDPC offload decoder failed!");
+    AssertFatal(ret == 0, "LDPC offload decoder failed!");
   }
 
   rte_bbdev_dec_op_free_bulk(ops_enq, num_segments);
@@ -718,14 +721,14 @@ static int pmd_lcore_ldpc_enc(void *arg)
   uint8_t *p_out = tp->p_out;
   t_nrLDPCoffload_params *p_offloadParams = tp->p_offloadParams;
 
-  TEST_ASSERT_SUCCESS((num_segments > MAX_BURST), "BURST_SIZE should be <= %u", MAX_BURST);
+  AssertFatal((num_segments < MAX_BURST), "BURST_SIZE should be <= %u", MAX_BURST);
 
   rte_bbdev_info_get(tp->dev_id, &info);
   bufs = &tp->op_params->q_bufs[GET_SOCKET(info.socket_id)][queue_id];
   while (rte_atomic16_read(&tp->op_params->sync) == SYNC_WAIT)
     rte_pause();
   ret = rte_bbdev_enc_op_alloc_bulk(tp->op_params->mp_enc, ops_enq, num_segments);
-  TEST_ASSERT_SUCCESS(ret, "Allocation failed for %d ops", num_segments);
+  AssertFatal(ret == 0, "Allocation failed for %d ops", num_segments);
 
   set_ldpc_enc_op(ops_enq, 0, bufs->inputs, bufs->hard_outputs, p_offloadParams);
   for (enq = 0, deq = 0; enq < num_segments;) {
@@ -743,7 +746,7 @@ static int pmd_lcore_ldpc_enc(void *arg)
   }
 
   ret = retrieve_ldpc_enc_op(ops_deq, num_segments, p_out, tp->p_offloadParams->perCB);
-  TEST_ASSERT_SUCCESS(ret, "Validation failed!");
+  AssertFatal(ret == 0, "Failed to retrieve LDPC encoding op!");
   rte_bbdev_enc_op_free_bulk(ops_enq, num_segments);
   return ret;
 }
@@ -762,9 +765,9 @@ int start_pmd_dec(struct active_device *ad,
   num_lcores = (ad->nb_queues < (op_params->num_lcores)) ? ad->nb_queues : op_params->num_lcores;
   /* Allocate memory for thread parameters structure */
   struct thread_params *t_params = rte_zmalloc(NULL, num_lcores * sizeof(struct thread_params), RTE_CACHE_LINE_SIZE);
-  TEST_ASSERT_NOT_NULL(t_params,
-                       "Failed to alloc %zuB for t_params",
-                       RTE_ALIGN(sizeof(struct thread_params) * num_lcores, RTE_CACHE_LINE_SIZE));
+  AssertFatal(t_params != NULL,
+              "Failed to alloc %zuB for t_params",
+              RTE_ALIGN(sizeof(struct thread_params) * num_lcores, RTE_CACHE_LINE_SIZE));
   rte_atomic16_set(&op_params->sync, SYNC_WAIT);
   /* Master core is set at first entry */
   t_params[0].dev_id = ad->dev_id;
@@ -864,28 +867,29 @@ int32_t LDPCinit()
   rte_bbdev_info_get(0, &info);
   // Set number of queues based on number of initialized cores (-l option) and driver
   // capabilities
-  TEST_ASSERT_SUCCESS(add_dev(dev_id, &info), "Failed to setup bbdev");
-  TEST_ASSERT_SUCCESS(rte_bbdev_stats_reset(dev_id), "Failed to reset stats of bbdev %d", dev_id);
-  TEST_ASSERT_SUCCESS(rte_bbdev_start(dev_id), "Failed to start bbdev %d", dev_id);
+  AssertFatal(add_dev(dev_id, &info) == 0, "Failed to setup bbdev");
+  AssertFatal(rte_bbdev_stats_reset(dev_id) == 0, "Failed to reset stats of bbdev %d", dev_id);
+  AssertFatal(rte_bbdev_start(dev_id) == 0, "Failed to start bbdev %d", dev_id);
 
   //the previous calls have populated this global variable (beurk)
   // One more global to remove, not thread safe global op_params
   op_params = rte_zmalloc(NULL, sizeof(struct test_op_params), RTE_CACHE_LINE_SIZE);
-  TEST_ASSERT_NOT_NULL(op_params, "Failed to alloc %zuB for op_params",
-                       RTE_ALIGN(sizeof(struct test_op_params), RTE_CACHE_LINE_SIZE));
+  AssertFatal(op_params != NULL,
+              "Failed to alloc %zuB for op_params",
+              RTE_ALIGN(sizeof(struct test_op_params), RTE_CACHE_LINE_SIZE));
 
   int socket_id = GET_SOCKET(info.socket_id);
   int out_max_sz = 8448; // max code block size (for BG1), 22 * 384
   int in_max_sz = LDPC_MAX_CB_SIZE; // max number of encoded bits (for BG2 and MCS0)
   int num_queues = 1;
   int f_ret = create_mempools(ad, socket_id, num_queues, out_max_sz, in_max_sz);
-  if (f_ret != TEST_SUCCESS) {
+  if (f_ret != 0) {
     printf("Couldn't create mempools");
     return -1;
   }
   f_ret = init_test_op_params(op_params, RTE_BBDEV_OP_LDPC_DEC, ad->bbdev_dec_op_pool, num_queues, num_queues, 1);
   f_ret = init_test_op_params(op_params, RTE_BBDEV_OP_LDPC_ENC, ad->bbdev_enc_op_pool, num_queues, num_queues, 1);
-  if (f_ret != TEST_SUCCESS) {
+  if (f_ret != 0) {
     printf("Couldn't init test op params");
     return -1;
   }
@@ -952,7 +956,7 @@ int32_t LDPCdecoder(struct nrLDPC_dec_params *p_decParams,
                                                           &op_params->q_bufs[socket_id][queue_id].harq_outputs};
   for (enum op_data_type type = DATA_INPUT; type < 3; type += 2) {
     ret = allocate_buffers_on_socket(queue_ops[type], C * sizeof(struct rte_bbdev_op_data), socket_id);
-    TEST_ASSERT_SUCCESS(ret, "Couldn't allocate memory for rte_bbdev_op_data structs");
+    AssertFatal(ret == 0, "Couldn't allocate memory for rte_bbdev_op_data structs");
     ret = init_op_data_objs_dec(*queue_ops[type],
                                 (uint8_t *)p_llr,
                                 &offloadParams,
@@ -960,7 +964,7 @@ int32_t LDPCdecoder(struct nrLDPC_dec_params *p_decParams,
                                 C,
                                 type,
                                 info.drv.min_alignment);
-    TEST_ASSERT_SUCCESS(ret, "Couldn't init rte_bbdev_op_data structs");
+    AssertFatal(ret == 0, "Couldn't init rte_bbdev_op_data structs");
   }
   ret = start_pmd_dec(ad, op_params, &offloadParams, ulsch_id, (uint8_t *)p_out);
   if (ret < 0) {
@@ -1012,7 +1016,7 @@ int32_t LDPCencoder(unsigned char **input, unsigned char **output, encoder_imple
                                                           &op_params->q_bufs[socket_id][queue_id].harq_outputs};
   for (enum op_data_type type = DATA_INPUT; type < 3; type += 2) {
     ret = allocate_buffers_on_socket(queue_ops[type], impp->n_segments * sizeof(struct rte_bbdev_op_data), socket_id);
-    TEST_ASSERT_SUCCESS(ret, "Couldn't allocate memory for rte_bbdev_op_data structs");
+    AssertFatal(ret == 0, "Couldn't allocate memory for rte_bbdev_op_data structs");
     ret = init_op_data_objs_enc(*queue_ops[type],
                                 input,
                                 &offloadParams,
@@ -1021,7 +1025,7 @@ int32_t LDPCencoder(unsigned char **input, unsigned char **output, encoder_imple
                                 impp->n_segments,
                                 type,
                                 info.drv.min_alignment);
-    TEST_ASSERT_SUCCESS(ret, "Couldn't init rte_bbdev_op_data structs");
+    AssertFatal(ret == 0, "Couldn't init rte_bbdev_op_data structs");
   }
   ret = start_pmd_enc(ad, op_params, &offloadParams, *output);
   pthread_mutex_unlock(&encode_mutex);
