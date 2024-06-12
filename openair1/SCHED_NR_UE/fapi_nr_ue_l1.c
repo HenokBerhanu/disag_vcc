@@ -298,7 +298,15 @@ static void configure_dlsch(NR_UE_DLSCH_t *dlsch0,
   //get nrOfLayers from DCI info
   uint8_t Nl = 0;
   for (int i = 0; i < 12; i++) { // max 12 ports
-    if ((dlsch_config_pdu->dmrs_ports>>i)&0x01) Nl += 1;
+    if ((dlsch_config_pdu->dmrs_ports >> i) & 0x01)
+      Nl += 1;
+  }
+  if (Nl == 0) {
+    LOG_E(PHY, "Invalid number of layers %d for DLSCH\n", Nl);
+    // setting NACK for this TB
+    dlsch0->active = false;
+    update_harq_status(mac, current_harq_pid, 0);
+    return;
   }
   dlsch0->Nl = Nl;
   if (dlsch_config_pdu->new_data_indicator) {
@@ -456,7 +464,7 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
         NR_UL_UE_HARQ_t *harq_process_ul_ue = &phy->ul_harq_processes[current_harq_pid];
         nfapi_nr_ue_pusch_pdu_t *pusch_pdu = &phy_data->ulsch.pusch_pdu;
         LOG_D(PHY,
-              "copy pusch_config_pdu nrOfLayers:%d, num_dmrs_cdm_grps_no_data:%d \n",
+              "copy pusch_config_pdu nrOfLayers: %d, num_dmrs_cdm_grps_no_data: %d\n",
               pdu->pusch_config_pdu.nrOfLayers,
               pdu->pusch_config_pdu.num_dmrs_cdm_grps_no_data);
 

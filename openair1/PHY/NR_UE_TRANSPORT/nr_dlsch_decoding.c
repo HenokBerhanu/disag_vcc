@@ -375,7 +375,7 @@ uint32_t nr_dlsch_decoding(PHY_VARS_NR_UE *phy_vars_ue,
                     &harq_process->F,
                     decParams.BG);
 
-    if (harq_process->C>MAX_NUM_NR_DLSCH_SEGMENTS_PER_LAYER*dlsch->Nl) {
+    if (harq_process->C > MAX_NUM_NR_DLSCH_SEGMENTS_PER_LAYER * dlsch->Nl) {
       LOG_E(PHY, "nr_segmentation.c: too many segments %d, A %d\n", harq_process->C, A);
       return(-1);
     }
@@ -392,7 +392,7 @@ uint32_t nr_dlsch_decoding(PHY_VARS_NR_UE *phy_vars_ue,
   decParams.numMaxIter = dlsch->max_ldpc_iterations;
   decParams.outMode = 0;
   r_offset = 0;
-  uint16_t a_segments = MAX_NUM_NR_DLSCH_SEGMENTS_PER_LAYER*dlsch->Nl;  //number of segments to be allocated
+  uint16_t a_segments = MAX_NUM_NR_DLSCH_SEGMENTS_PER_LAYER * dlsch->Nl;  //number of segments to be allocated
 
   if (nb_rb != 273) {
     a_segments = a_segments*nb_rb;

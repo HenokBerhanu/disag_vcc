@@ -682,7 +682,12 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
       ul_layers_config(mac, pusch_config_pdu, dci, dci_format);
       ul_ports_config(mac, &dmrslength, pusch_config_pdu, dci, dci_format);
     } else {
-      LOG_E(NR_MAC, "In %s: UL grant from DCI format %d is not handled...\n", __FUNCTION__, dci_format);
+      LOG_E(NR_MAC, "UL grant from DCI format %d is not handled...\n", dci_format);
+      return -1;
+    }
+
+    if (pusch_config_pdu->nrOfLayers < 1) {
+      LOG_E(NR_MAC, "Invalid UL number of layers %d from DCI\n", pusch_config_pdu->nrOfLayers);
       return -1;
     }
 
