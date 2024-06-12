@@ -680,6 +680,8 @@ class Containerize():
 		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu20"
 		ret = cmd.run(f'docker build --progress=plain --tag ran-unittests:{baseTag} --file {dockerfile} . &> {lSourcePath}/cmake_targets/log/unittest-build.log')
 		if ret.returncode != 0:
+			build_log_name = f'build_log_{self.testCase_id}'
+			CopyLogsToExecutor(cmd, lSourcePath, build_log_name)
 			logging.error(f'Cannot build unit tests')
 			HTML.CreateHtmlTestRow("Unit test build failed", 'KO', [dockerfile])
 			HTML.CreateHtmlTabFooter(False)
