@@ -343,7 +343,7 @@ typedef struct {
   /// \f$\log_2(\max|H_i|^2)\f$
   int16_t log2_maxh;
   /// measured RX power based on DRS
-  int ulsch_power[8];
+  uint32_t ulsch_power[8];
   /// total signal over antennas
   uint32_t ulsch_power_tot;
   /// measured RX noise power
