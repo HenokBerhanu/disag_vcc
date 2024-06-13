@@ -389,7 +389,10 @@ uint16_t get_band(uint64_t downlink_frequency, int32_t delta_duplex)
   printf("DL frequency %"PRIu64": band %d, UL frequency %"PRIu64"\n",
         downlink_frequency, current_band, downlink_frequency+delta_duplex);
 
-  AssertFatal(current_band != 0, "Can't find EUTRA band for frequency %"PRIu64" and duplex_spacing %u\n", downlink_frequency, delta_duplex);
+  AssertFatal(current_band != 0,
+              "Can't find EUTRA band for frequency %" PRIu64 " and duplex_spacing %d\n",
+              downlink_frequency,
+              delta_duplex);
 
   return current_band;
 }
@@ -1030,13 +1033,13 @@ uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
 static double get_start_freq(const double fc, const int nbRB, const int mu)
 {
   const int scs = MU_SCS(mu) * 1000;
-  return fc - (nbRB / 2 * NR_NB_SC_PER_RB * scs);
+  return fc - ((double)nbRB / 2 * NR_NB_SC_PER_RB * scs);
 }
 
 static double get_stop_freq(const double fc, const int nbRB, const int mu)
 {
   int scs = MU_SCS(mu) * 1000;
-  return fc + (nbRB / 2 * NR_NB_SC_PER_RB * scs);
+  return fc + ((double)nbRB / 2 * NR_NB_SC_PER_RB * scs);
 }
 
 static void compute_M_and_N(const int gscn, int *rM, int *rN)
@@ -1101,6 +1104,7 @@ static void find_gscn_to_scan(const double startFreq,
     *scanGscnStart = g;
     break;
   }
+  *scanGscnStop = *scanGscnStart;
 
   for (int g = gscn.last_gscn; g > gscn.first_gscn; g -= gscn.step_gscn) {
     const double centerSSBFreq = get_ssref_from_gscn(g);
@@ -1138,7 +1142,7 @@ int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, con
   find_gscn_to_scan(startFreq, stopFreq, tmpRaster, &scanGscnStart, &scanGscnStop);
 
   const double scs = MU_SCS(mu) * 1e3;
-  const double pointA = fc - (nbRB / 2 * scs * NR_NB_SC_PER_RB);
+  const double pointA = fc - ((double)nbRB / 2 * scs * NR_NB_SC_PER_RB);
   int numGscn = 0;
   for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster.step_gscn) {
     ssbInfo[numGscn].ssRef = get_ssref_from_gscn(g);
