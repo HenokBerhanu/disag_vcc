@@ -1126,21 +1126,23 @@ int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, con
   const double startFreq = get_start_freq(fc, nbRB, mu);
   const double stopFreq = get_stop_freq(fc, nbRB, mu);
 
-  int scanGscnStart = -1;
-  int scanGscnStop = -1;
-  sync_raster_t tmpRaster = {0};
-  for (const sync_raster_t *r = sync_raster; r < r + (sizeof(sync_raster) / sizeof(sync_raster_t)); r++) {
-    if (r->band == nrBand && r->scs_index == mu) {
-      tmpRaster = *r;
-      break;
-    }
+  int scanGscnStart = 0;
+  int scanGscnStop = 0;
+  const sync_raster_t *tmpRaster = sync_raster;
+  const sync_raster_t * end=sync_raster + sizeofArray(sync_raster);
+  while (tmpRaster < end && (tmpRaster->band != nrBand || tmpRaster->scs_index != mu))
+    tmpRaster++;
+  if (tmpRaster >= end) {
+    LOG_E(PHY, "raster not found nrband=%d, mu=%d\n", nrBand, mu);
+    return 0;
   }
-  find_gscn_to_scan(startFreq, stopFreq, tmpRaster, &scanGscnStart, &scanGscnStop);
+
+  find_gscn_to_scan(startFreq, stopFreq, *tmpRaster, &scanGscnStart, &scanGscnStop);
 
   const double scs = MU_SCS(mu) * 1e3;
   const double pointA = fc - (nbRB / 2 * scs * NR_NB_SC_PER_RB);
   int numGscn = 0;
-  for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster.step_gscn) {
+  for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster->step_gscn) {
     ssbInfo[numGscn].ssRef = get_ssref_from_gscn(g);
     ssbInfo[numGscn].ssbFirstSC = get_ssb_first_sc(pointA, ssbInfo[numGscn].ssRef, mu);
     ssbInfo[numGscn].gscn = g;

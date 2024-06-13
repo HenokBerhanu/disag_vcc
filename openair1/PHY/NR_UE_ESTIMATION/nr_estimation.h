@@ -75,12 +75,12 @@ int nr_pbch_channel_estimation(const NR_DL_FRAME_PARMS *fp,
                                const UE_nr_rxtx_proc_t *proc,
                                unsigned char symbol,
                                int dmrss,
-                               uint8_t ssb_index,
-                               uint8_t n_hf,
+                               uint ssb_index,
+                               uint n_hf,
                                int ssb_start_subcarrier,
                                const c16_t rxdataF[][fp->samples_per_slot_wCP],
                                bool sidelink,
-                               uint16_t Nid);
+                               uint Nid);
 
 int nr_pdsch_channel_estimation(PHY_VARS_NR_UE *ue,
                                 const UE_nr_rxtx_proc_t *proc,

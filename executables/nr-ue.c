@@ -735,6 +735,7 @@ void *UE_thread(void *arg)
       readFrame(UE, &sync_timestamp, false);
       notifiedFIFO_elt_t *Msg = newNotifiedFIFO_elt(sizeof(syncData_t), 0, &nf, UE_synch);
       syncData_t *syncMsg = (syncData_t *)NotifiedFifoData(Msg);
+      *syncMsg = (syncData_t){0};
       NR_DL_FRAME_PARMS *fp = &UE->frame_parms;
       if (UE->UE_scan_carrier) {
         // Get list of GSCN in this band for UE's bandwidth and center frequency.
@@ -743,10 +744,7 @@ void *UE_thread(void *arg)
             get_scan_ssb_first_sc(fp->dl_CarrierFreq, fp->N_RB_DL, fp->nr_band, fp->numerology_index, syncMsg->gscnInfo);
       } else {
         LOG_W(PHY, "SSB position provided\n");
-        nr_gscn_info_t *g = syncMsg->gscnInfo;
-        g->ssbFirstSC = fp->ssb_start_subcarrier;
-        g->gscn = 0;
-        g->ssRef = 0;
+        syncMsg->gscnInfo[0] = (nr_gscn_info_t){.ssbFirstSC = fp->ssb_start_subcarrier};
         syncMsg->numGscn = 1;
       }
       syncMsg->UE = UE;
