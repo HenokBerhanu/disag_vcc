@@ -260,6 +260,38 @@ static inline int writeBit(uint8_t *bitmap, int offset, int value, int size)
   return size;
 }
 
+// 38.214 Section 5.1.3.1
+static uint8_t get_dlsch_mcs_table(nr_dci_format_t format,
+                                   nr_rnti_type_t rnti_type,
+                                   int ss_type,
+                                   long *mcs_Table,
+                                   long *sps_mcs_Table,
+                                   bool sps_transmission,
+                                   long *mcs_C_RNTI)
+{
+  // TODO procedures for SPS-Config (semi-persistent scheduling) not implemented
+  if (mcs_Table && *mcs_Table == NR_PDSCH_Config__mcs_Table_qam256 && format == NR_DL_DCI_FORMAT_1_1 && rnti_type == TYPE_C_RNTI_)
+    return 1; // Table 5.1.3.1-2: MCS index table 2 for PDSCH
+  else if (!mcs_C_RNTI
+           && mcs_Table
+           && *mcs_Table == NR_PDSCH_Config__mcs_Table_qam64LowSE
+           && ss_type == NR_SearchSpace__searchSpaceType_PR_ue_Specific
+           && rnti_type == TYPE_C_RNTI_)
+    return 2; // Table 5.1.3.1-3: MCS index table 3 for PDSCH
+  else if (mcs_C_RNTI && rnti_type == TYPE_MCS_C_RNTI_)
+    return 2; // Table 5.1.3.1-3: MCS index table 3 for PDSCH
+  else if (!sps_mcs_Table && mcs_Table && *mcs_Table == NR_PDSCH_Config__mcs_Table_qam256) {
+    if ((format == NR_DL_DCI_FORMAT_1_1 && rnti_type == TYPE_CS_RNTI_) || sps_transmission)
+      return 1; // Table 5.1.3.1-2: MCS index table 2 for PDSCH
+  }
+  else if (sps_mcs_Table) {
+    if (rnti_type == TYPE_CS_RNTI_ || sps_transmission)
+      return 2; // Table 5.1.3.1-3: MCS index table 3 for PDSCH
+  }
+  // otherwise
+  return 0; // Table 5.1.3.1-1: MCS index table 1 for PDSCH
+}
+
 int8_t nr_ue_process_dci_freq_dom_resource_assignment(nfapi_nr_ue_pusch_pdu_t *pusch_config_pdu,
                                                       fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_config_pdu,
                                                       NR_PDSCH_Config_t *pdsch_Config,
@@ -638,12 +670,13 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
   int dmrs_typeA_pos = mac->dmrs_TypeA_Position;
   const int coreset_type = dci_ind->coreset_type == NFAPI_NR_CSET_CONFIG_PDCCH_CONFIG; // 0 for coreset0, 1 otherwise;
 
+  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
   NR_tda_info_t tda_info = get_dl_tda_info(current_DL_BWP,
                                            dci_ind->ss_type,
                                            dci->time_domain_assignment.val,
                                            dmrs_typeA_pos,
                                            mux_pattern,
-                                           get_rnti_type(mac, dci_ind->rnti),
+                                           rnti_type,
                                            coreset_type,
                                            mac->get_sib1);
 
@@ -661,7 +694,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
   else
     dlsch_pdu->dlDmrsScramblingId = mac->physCellId;
 
-  if (get_rnti_type(mac, dci_ind->rnti) == TYPE_C_RNTI_
+  if (rnti_type == TYPE_C_RNTI_
       && dci_ind->ss_type != NR_SearchSpace__searchSpaceType_PR_common
       && pdsch_config->dataScramblingIdentityPDSCH)
     dlsch_pdu->dlDataScramblingId = *pdsch_config->dataScramblingIdentityPDSCH;
@@ -689,7 +722,13 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
   dlsch_pdu->vrb_to_prb_mapping =
       (dci->vrb_to_prb_mapping.val == 0) ? vrb_to_prb_mapping_non_interleaved : vrb_to_prb_mapping_interleaved;
   /* MCS TABLE INDEX */
-  dlsch_pdu->mcs_table = (pdsch_config) ? ((pdsch_config->mcs_Table) ? (*pdsch_config->mcs_Table + 1) : 0) : 0;
+  dlsch_pdu->mcs_table = get_dlsch_mcs_table(NR_DL_DCI_FORMAT_1_0,
+                                             rnti_type,
+                                             dci_ind->ss_type,
+                                             pdsch_config ? pdsch_config->mcs_Table : NULL,
+                                             NULL, // SPS not implemented,
+                                             false, // as above
+                                             NULL); // MCS-C-RNTI not implemented
   /* MCS */
   dlsch_pdu->mcs = dci->mcs;
 
@@ -942,12 +981,13 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
   int dmrs_typeA_pos = mac->dmrs_TypeA_Position;
   int mux_pattern = 1;
   const int coreset_type = dci_ind->coreset_type == NFAPI_NR_CSET_CONFIG_PDCCH_CONFIG; // 0 for coreset0, 1 otherwise;
+  nr_rnti_type_t rnti_type = get_rnti_type(mac, dci_ind->rnti);
   NR_tda_info_t tda_info = get_dl_tda_info(current_DL_BWP,
                                            dci_ind->ss_type,
                                            dci->time_domain_assignment.val,
                                            dmrs_typeA_pos,
                                            mux_pattern,
-                                           get_rnti_type(mac, dci_ind->rnti),
+                                           rnti_type,
                                            coreset_type,
                                            false);
 
@@ -1152,8 +1192,13 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
   // send the ack/nack slot number to phy to indicate tx thread to wait for DLSCH decoding
   dlsch_pdu->k1_feedback = feedback_ti;
 
-  /* TODO same calculation for MCS table as done in UL */
-  dlsch_pdu->mcs_table = (pdsch_Config->mcs_Table) ? (*pdsch_Config->mcs_Table + 1) : 0;
+  dlsch_pdu->mcs_table = get_dlsch_mcs_table(NR_DL_DCI_FORMAT_1_1,
+                                             rnti_type,
+                                             dci_ind->ss_type,
+                                             pdsch_Config ? pdsch_Config->mcs_Table : NULL,
+                                             NULL, // SPS not implemented,
+                                             false, // as above
+                                             NULL); // MCS-C-RNTI not implemented
   dlsch_pdu->qamModOrder = nr_get_Qm_dl(dlsch_pdu->mcs, dlsch_pdu->mcs_table);
   if (dlsch_pdu->qamModOrder == 0) {
     LOG_W(MAC, "Invalid code rate or Mod order, likely due to unexpected DL DCI.\n");
