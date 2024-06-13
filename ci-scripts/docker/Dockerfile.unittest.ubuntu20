@@ -27,6 +27,11 @@
 
 FROM ran-base:develop as ran-tests
 
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --yes \
+        libgtest-dev
+
 RUN rm -Rf /oai-ran
 WORKDIR /oai-ran
 COPY . .
