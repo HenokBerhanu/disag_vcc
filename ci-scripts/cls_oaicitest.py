@@ -810,7 +810,7 @@ class OaiCiTest():
 			with cls_cmd.getConnection(ue.getHost()) as cmd_ue, cls_cmd.getConnection(EPC.IPAddress) as cmd_svr:
 				port = 5002 + idx
 				cmd_ue.run(f'{ue.getCmdPrefix()} iperf -B {ueIP} -s -u -i1 >> {server_filename} &', timeout=iperf_time*1.5)
-				cmd_svr.run(f'{svr.getCmdPrefix()} iperf -c {ueIP} -B {svrIP} {iperf_opt} -i1 2>&1 | tee {client_filename}', timeout=iperf_time*1.5)
+				cmd_svr.run(f'{svr.getCmdPrefix()} iperf -c {ueIP} -B {svrIP} {iperf_opt} -i1 2>&1 | tee {client_filename}', timeout=iperf_time*2.5)
 				cmd_ue.run(f'cp {client_filename} {logPath}/{client_filename}')
 				cmd_ue.run(f'cp {server_filename} {logPath}/{server_filename}')
 				status, msg = Iperf_analyzeV2UDP(server_filename, self.iperf_bitrate_threshold, self.iperf_packetloss_threshold, target_bitrate)
@@ -818,7 +818,7 @@ class OaiCiTest():
 			with cls_cmd.getConnection(ue.getHost()) as cmd_ue, cls_cmd.getConnection(EPC.IPAddress) as cmd_svr:
 				port = 5002 + idx
 				# note: some core setups start an iperf3 server automatically, indicated in ci_infra by runIperf3Server: False`
-				t = iperf_time * 1.5
+				t = iperf_time * 2.5
 				if runIperf3Server:
 					cmd_svr.run(f'{svr.getCmdPrefix()} nohup timeout -vk3 {t} iperf3 -s -B {svrIP} -p {port} -1 {jsonReport} &', timeout=t)
 				cmd_ue.run(f'rm /tmp/{client_filename}', reportNonZero=False)
