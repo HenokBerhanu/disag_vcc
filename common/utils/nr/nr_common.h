@@ -241,12 +241,6 @@ uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
 int get_ssb_subcarrier_offset(uint32_t absoluteFrequencySSB, uint32_t absoluteFrequencyPointA, int scs);
 int get_delay_idx(int delay, int max_delay_comp);
 
-void freq2time(uint16_t ofdm_symbol_size,
-               int16_t *freq_signal,
-               int16_t *time_signal);
-
-void nr_est_delay(int ofdm_symbol_size, const c16_t *ls_est, c16_t *ch_estimates_time, delay_t *delay);
-
 int get_scan_ssb_first_sc(const double fc,
                           const int nbRB,
                           const int nrBand,

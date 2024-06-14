@@ -29,11 +29,12 @@
 #include "PHY/NR_REFSIG/nr_mod_table.h"
 #include "PHY/NR_TRANSPORT/nr_sch_dmrs.h"
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
-#include "common/utils/nr/nr_common.h"
+#include "nr_phy_common.h"
 #include "filt16a_32.h"
 #include "T.h"
 #include <openair1/PHY/TOOLS/phy_scope_interface.h>
 #include "nfapi/open-nFAPI/nfapi/public_inc/nfapi_nr_interface.h"
+
 
 extern openair0_config_t openair0_cfg[];
 

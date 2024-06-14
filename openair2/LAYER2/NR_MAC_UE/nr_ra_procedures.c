@@ -79,7 +79,16 @@ void init_RA(NR_UE_MAC_INST_t *mac,
   int n_prbs = get_N_RA_RB(prach_scs, mac->current_UL_BWP->scs);
   int start_prb = rach_ConfigGeneric->msg1_FrequencyStart + mac->current_UL_BWP->BWPStart;
   // PRACH shall be as specified for QPSK modulated DFT-s-OFDM of equivalent RB allocation (38.101-1)
-  prach_resources->RA_PCMAX = nr_get_Pcmax(mac, 2, false, prach_scs, cfg->carrier_config.dl_grid_size[prach_scs], true, n_prbs, start_prb);
+  prach_resources->RA_PCMAX = nr_get_Pcmax(mac->p_Max,
+                                           mac->nr_band,
+                                           mac->frequency_range,
+                                           2,
+                                           false,
+                                           prach_scs,
+                                           cfg->carrier_config.dl_grid_size[prach_scs],
+                                           true,
+                                           n_prbs,
+                                           start_prb);
   prach_resources->RA_PREAMBLE_TRANSMISSION_COUNTER = 1;
   prach_resources->RA_PREAMBLE_POWER_RAMPING_COUNTER = 1;
   prach_resources->POWER_OFFSET_2STEP_RA = 0;

@@ -8,8 +8,9 @@ explaining how to test with cmake and ctest; it is a suggested read, and the
 following just lists the main points of how to compile the tests and how to add
 new ones.
 
-At the time of writing, only the NR RLC tests have been integrated. The author
-hopes that more tests follow suit.
+GoogleTest is a C++ unit testing framework that has been added as an external dependency. While using GoogleTest is not a requirement it can simplify writing unit tests.
+See [primer](http://google.github.io/googletest/primer.html) for a quick introduction. To add it to your test executable link against
+`GTest::gtest` or `GTest::gtest_main`.
 
 # How to compile tests
 
