@@ -92,7 +92,7 @@ extern nrUE_params_t *get_nrUE_params(void);
 extern int setup_nr_ue_buffers(PHY_VARS_NR_UE **phy_vars_ue, openair0_config_t *openair0_cfg);
 extern void fill_ue_band_info(void);
 extern void init_NR_UE(int, char *, char *, char *);
-extern void init_NR_UE_threads(int);
+extern void init_NR_UE_threads(PHY_VARS_NR_UE *ue);
 extern void reset_opp_meas(void);
 extern void print_opp_meas(void);
 void start_oai_nrue_threads(void);
