@@ -225,7 +225,7 @@ static void nr_rrc_ue_process_rrcReconfiguration(NR_UE_RRC_INST_t *rrc,
         nr_rrc_cellgroup_configuration(rrc, cellGroupConfig);
 
         AssertFatal(!get_softmodem_params()->sa, "secondaryCellGroup only used in NSA for now\n");
-        nr_rrc_mac_config_req_cg(0, 0, cellGroupConfig, rrc->UECap.UE_NR_Capability);
+        nr_rrc_mac_config_req_cg(rrc->ue_id, 0, cellGroupConfig, rrc->UECap.UE_NR_Capability);
         asn1cFreeStruc(asn_DEF_NR_CellGroupConfig, cellGroupConfig);
       }
       if (ie->measConfig != NULL) {

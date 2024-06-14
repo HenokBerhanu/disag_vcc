@@ -416,7 +416,7 @@ static void RU_write(nr_rxtx_thread_data_t *rxtxD, bool sl_tx_action)
 
   radio_tx_burst_flag_t flags = TX_BURST_INVALID;
 
-  NR_UE_MAC_INST_t *mac = get_mac_inst(0);
+  NR_UE_MAC_INST_t *mac = get_mac_inst(UE->Mod_id);
   if (mac->phy_config_request_sent &&
       openair0_cfg[0].duplex_mode == duplex_mode_TDD &&
       !get_softmodem_params()->continuous_tx) {
@@ -769,7 +769,7 @@ void *UE_thread(void *arg)
   initNotifiedFIFO_nothreadSafe(&freeBlocks);
 
   int timing_advance = UE->timing_advance;
-  NR_UE_MAC_INST_t *mac = get_mac_inst(0);
+  NR_UE_MAC_INST_t *mac = get_mac_inst(UE->Mod_id);
 
   bool syncRunning = false;
   const int nb_slot_frame = fp->slots_per_frame;

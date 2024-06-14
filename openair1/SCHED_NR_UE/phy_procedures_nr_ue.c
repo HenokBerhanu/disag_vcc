@@ -944,7 +944,7 @@ int pbch_pdcch_processing(PHY_VARS_NR_UE *ue, const UE_nr_rxtx_proc_t *proc, nr_
     char output[harq_output_len];
     char *p = output;
     const char *end = output + harq_output_len;
-    p += snprintf(p, end - p, "Harq round stats for Downlink: %d", ue->dl_stats[0]);
+    p += snprintf(p, end - p, "[UE %d] Harq round stats for Downlink: %d", ue->Mod_id, ue->dl_stats[0]);
     for (int round = 1; round < 16 && (round < 3 || ue->dl_stats[round] != 0); ++round)
       p += snprintf(p, end - p,"/%d", ue->dl_stats[round]);
     LOG_I(NR_PHY,"%s\n", output);

@@ -250,7 +250,7 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac,
   mac->phy_config.CC_id = cc_idP;
   
   // carrier config
-  LOG_D(MAC, "Entering UE Config Common\n");
+  LOG_D(MAC, "[UE %d] Entering UE Config Common\n", mac->ue_id);
 
   AssertFatal(scc->downlinkConfigCommon, "Not expecting downlinkConfigCommon to be NULL here\n");
 
@@ -2219,7 +2219,7 @@ void nr_rrc_mac_config_req_cg(module_id_t module_id,
                               NR_CellGroupConfig_t *cell_group_config,
                               NR_UE_NR_Capability_t *ue_Capability)
 {
-  LOG_I(MAC,"Applying CellGroupConfig from gNodeB\n");
+  LOG_I(MAC,"[UE %d] Applying CellGroupConfig from gNodeB\n", module_id);
   AssertFatal(cell_group_config, "CellGroupConfig should not be NULL\n");
   NR_UE_MAC_INST_t *mac = get_mac_inst(module_id);
 

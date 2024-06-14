@@ -1004,7 +1004,7 @@ void nr_ue_csi_rs_procedures(PHY_VARS_NR_UE *ue,
 
   switch (csirs_config_pdu->measurement_bitmap) {
     case 1 :
-      LOG_I(NR_PHY, "RSRP = %i dBm\n", rsrp_dBm);
+      LOG_I(NR_PHY, "[UE %d] RSRP = %i dBm\n", ue->Mod_id, rsrp_dBm);
       break;
     case 26 :
       LOG_I(NR_PHY, "RI = %i i1 = %i.%i.%i, i2 = %i, SINR = %i dB, CQI = %i\n",
