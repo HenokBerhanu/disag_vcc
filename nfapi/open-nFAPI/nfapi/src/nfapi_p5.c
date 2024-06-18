@@ -791,7 +791,7 @@ uint8_t pack_nr_param_response(void *msg, uint8_t **ppWritePackedMsg, uint8_t *e
                          ppWritePackedMsg,
                          end,
                          &pack_uint8_tlv_value)
-          && pack_nr_tlv(NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_YBS_PER_SLOT_TAG,
+          && pack_nr_tlv(NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_TBS_PER_SLOT_TAG,
                          &(pNfapiMsg->pdsch_param.max_pdsch_tbs_per_slot),
                          ppWritePackedMsg,
                          end,
@@ -2634,7 +2634,7 @@ uint8_t unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *
       {NFAPI_NR_PARAM_TLV_PDSCH_DMRS_ADDITIONAL_POS_TAG,
        &(pNfapiMsg->pdsch_param.pdsch_dmrs_additional_pos),
        &unpack_uint8_tlv_value},
-      {NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_YBS_PER_SLOT_TAG, &(pNfapiMsg->pdsch_param.max_pdsch_tbs_per_slot), &unpack_uint8_tlv_value},
+      {NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_TBS_PER_SLOT_TAG, &(pNfapiMsg->pdsch_param.max_pdsch_tbs_per_slot), &unpack_uint8_tlv_value},
       {NFAPI_NR_PARAM_TLV_MAX_NUMBER_MIMO_LAYERS_PDSCH_TAG,
        &(pNfapiMsg->pdsch_param.max_number_mimo_layers_pdsch),
        &unpack_uint8_tlv_value},
