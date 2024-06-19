@@ -104,7 +104,6 @@ TEST(test_pucch_power_state, test_accumulated_delta_pucch)
   uint16_t start_prb = 0;
   int P_CMAX =
       nr_get_Pcmax(23, mac.nr_band, FR1, 2, false, current_UL_BWP.scs, current_UL_BWP.BWPSize, false, nb_of_prbs, start_prb);
-
   int pucch_power_prev = get_pucch_tx_power_ue(&mac,
                                                scs,
                                                &pucch_Config,
@@ -162,6 +161,15 @@ TEST(test_pucch_power_state, test_accumulated_delta_pucch)
                                             start_prb);
     EXPECT_LE(mac.G_b_f_c, pucch_power_state) << "PUCCH power control state increased with negative delta pucch";
     pucch_power_prev = pucch_power;
+  }
+}
+
+TEST(pc_min, check_all_bw_indexes) {
+  const int NB_RB_UL[] ={
+    11, 24, 38, 51, 65, 78, 106, 133, 162, 217, 245, 273
+  };
+  for (auto i = 0U; i < sizeof(NB_RB_UL)/sizeof(NB_RB_UL[0]); i++) {
+    (void)nr_get_Pcmin(1, 20, NB_RB_UL[i]);
   }
 }
 

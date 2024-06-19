@@ -224,6 +224,14 @@ float nr_get_Pcmax(int p_Max,
   }
 }
 
+float nr_get_Pcmin(int scs, int nr_band, int N_RB_UL) {
+  int band_index = get_supported_band_index(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL);
+  const float table_38101_6_3_1_1[] = {
+    -40, -40, -40, -40, -39, -38.2, -37.5, -37, -36.5, -35.2, -34.6, -34, -33.5, -33
+  };
+  return table_38101_6_3_1_1[band_index];
+}
+
 // This is not entirely correct. In certain k2/k1/k0 settings we might postpone accumulating delta_PUCCH until next HARQ feedback
 // slot. The correct way to do this would be to calculate the K_PUCCH (delta_PUCCH summation window end) for each PUCCH occasion and
 // compare PUCCH transmission symbol with the reception symbol of the DCI containing delta_PUCCH to determine if the delta_PUCCH
@@ -339,7 +347,7 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             format_type == 2,
                             1,
                             start_prb);
-  int P_CMIN = -40; // TODO: minimum TX power, possibly 38.101-1 6.3.1
+  int P_CMIN = nr_get_Pcmin(mac->current_UL_BWP->scs, mac->nr_band,  mac->current_UL_BWP->BWPSize);
   int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
 
   if (power_config->twoPUCCH_PC_AdjustmentStates && *power_config->twoPUCCH_PC_AdjustmentStates > 1) {
