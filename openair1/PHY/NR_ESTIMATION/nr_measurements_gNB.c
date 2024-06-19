@@ -160,7 +160,7 @@ void gNB_I0_measurements(PHY_VARS_gNB *gNB, int slot, int first_symb, int num_sy
     } //rb
   } // symb
   int nb_rb=0;
-  int32_t n0_subband_tot=0;
+  int64_t n0_subband_tot=0;
   int32_t n0_subband_tot_perANT[frame_parms->nb_antennas_rx];
 
   memset(n0_subband_tot_perANT, 0, sizeof(n0_subband_tot_perANT));
@@ -200,7 +200,7 @@ void nr_gnb_measurements(PHY_VARS_gNB *gNB,
                          unsigned char symbol,
                          uint8_t nrOfLayers)
 {
-  int rx_power_tot = 0;
+  uint32_t rx_power_tot = 0;
   unsigned short rx_power_avg_dB;
   unsigned short rx_power_tot_dB;
   RU_t *ru = gNB->RU_list[0];

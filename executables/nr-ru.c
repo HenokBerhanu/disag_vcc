@@ -912,7 +912,7 @@ static void fill_rf_config(RU_t *ru, char *rf_config_file)
   }
 }
 
-static void fill_split7_2_config(split7_config_t *split7, const nfapi_nr_config_request_scf_t *config, int slots_per_frame)
+static void fill_split7_2_config(split7_config_t *split7, const nfapi_nr_config_request_scf_t *config, int slots_per_frame, uint16_t ofdm_symbol_size)
 {
   const nfapi_nr_prach_config_t *prach_config = &config->prach_config;
   const nfapi_nr_tdd_table_t *tdd_table = &config->tdd_table;
@@ -934,6 +934,8 @@ static void fill_split7_2_config(split7_config_t *split7, const nfapi_nr_config_
       }
     }
   }
+
+  split7->fftSize = log2(ofdm_symbol_size);
 }
 
 /* this function maps the RU tx and rx buffers to the available rf chains.
@@ -1157,7 +1159,7 @@ void *ru_thread( void *param ) {
   nr_dump_frame_parms(fp);
   nr_phy_init_RU(ru);
   fill_rf_config(ru, ru->rf_config_file);
-  fill_split7_2_config(&ru->openair0_cfg.split7, &ru->config, fp->slots_per_frame);
+  fill_split7_2_config(&ru->openair0_cfg.split7, &ru->config, fp->slots_per_frame, fp->ofdm_symbol_size);
 
   if(!emulate_rf) {
     // Start IF device if any
@@ -1342,6 +1344,7 @@ void *ru_thread( void *param ) {
             rx_tti_busy[info->slot_rx % RU_RX_SLOT_DEPTH] = false;
             if ((info->slot_rx % RU_RX_SLOT_DEPTH) == (proc->tti_rx % RU_RX_SLOT_DEPTH))
               not_done = false;
+            delNotifiedFIFO_elt(res);
           }
           if (!res)
             break;

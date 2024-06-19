@@ -1,8 +1,15 @@
+# we need at least gcc-11 to build xran, so let's enforce it here
+# (because xran might not check it, and we have control here)
+if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0
+   OR CMAKE_C_COMPILER_VERSION VERSION_LESS 11.0)
+ message(FATAL_ERROR "you need to have at least gcc/g++-11 to use 7.2 FHI through xran")
+endif()
+
 # use env var PKG_CONFIG_PATH to override paths to libdpdk.pc
 pkg_check_modules(dpdk REQUIRED libdpdk)
 pkg_check_modules(numa REQUIRED numa)
 
-find_package(xran 5.1.2 EXACT REQUIRED) # E release -> 5
+find_package(xran 5.1.3 EXACT REQUIRED) # E release -> 5
 
 # Ignore xran-specific warning: we don't care/can't change the following warning, so suppress
 # alignment 1 of 'struct XYZ' is less than 2
