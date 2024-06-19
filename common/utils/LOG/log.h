@@ -28,7 +28,7 @@
 */
 
 #ifndef __LOG_H__
-#    define __LOG_H__
+#define __LOG_H__
 
 /*--- INCLUDES ---------------------------------------------------------------*/
 #include <unistd.h>
@@ -526,8 +526,8 @@ int32_t write_file_matlab(const char *fname, const char *vname, void *data, int 
   } while (0)
 
 #define nfapi_log(FILE, FNC, LN, COMP, LVL, FMT...)
-#define LOG_DEBUGFLAG(D) (g_log->dump_mask & D)
-#define LOG_DUMPFLAG(D) (g_log->debug_mask & D)
+#define LOG_DEBUGFLAG(D) (g_log->debug_mask & D)
+#define LOG_DUMPFLAG(D) (g_log->dump_mask & D)
 #define LOG_DUMPMSG(c, f, b, s, x...)      \
   do {                                     \
     if (g_log->dump_mask & f)              \
