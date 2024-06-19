@@ -65,62 +65,34 @@ static int get_deltatf(uint16_t nb_of_prbs,
                        int N_sc_ctrl_RB,
                        int O_UCI);
 
-// Implementation of 6.2.4 Configured ransmitted power
-// 3GPP TS 38.101-1 version 16.5.0 Release 16
-// -
-// The UE is allowed to set its configured maximum output power PCMAX,f,c for carrier f of serving cell c in each slot.
-// The configured maximum output power PCMAX,f,c is set within the following bounds: PCMAX_L,f,c <=  PCMAX,f,c <=  PCMAX_H,f,c
-// -
-// Measurement units:
-// - p_max:              dBm
-// - delta_TC_c:         dB
-// - P_powerclass:       dBm
-// - delta_P_powerclass: dB
-// - MPR_c:              dB
-// - delta_MPR_c:        dB
-// - delta_T_IB_c        dB
-// - delta_rx_SRS        dB
-// note:
-// - Assuming:
-// -- Powerclass 3 capable UE (which is default power class unless otherwise stated)
-// -- Maximum power reduction (MPR_c) for power class 3
-// -- no additional MPR (A_MPR_c)
-int nr_get_Pcmax(int p_Max,
-                 uint16_t nr_band,
-                 frequency_range_t frequency_range,
-                 int Qm,
-                 bool powerBoostPi2BPSK,
-                 int scs,
-                 int N_RB_UL,
-                 bool is_transform_precoding,
-                 int n_prbs,
-                 int start_prb)
+// ∆MPR according to Table 6.2.2-3 38.101-1
+static float get_delta_mpr(uint16_t nr_band, int scs, int N_RB_UL, int n_prbs, int start_prb, int power_class)
 {
-  if (frequency_range == FR1) {
-    // TODO configure P-MAX from the upper layers according to 38.331
-    int p_powerclass = 23; // dBm assuming poweclass 3 UE
-    int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
-    int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
-    if (p_Max && Qm == 1 && powerBoostPi2BPSK
-        && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
-      p_emax += 3;
-      delta_P_powerclass -= 3;
+  frame_type_t frame_type = get_frame_type(nr_band, scs);
+  if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
+    if (power_class == 3) {
+      if ((nr_band == 28 || nr_band == 83) && get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL) == 30) {
+        return 0.5f;
+      }
     }
+    if (power_class == 3 || power_class == 2) {
+      if ((nr_band == 40 || nr_band == 97) && get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL) == 100) {
+        return 1.0f;
+      }
+    }
+  }
+  return 0;
+}
 
-    // TODO to be set for CA and DC
-    int delta_T_IB = 0;
-
-    // TODO in case of band 41 and PRB allocation within 4MHz of the upper or lower limit of the band -> delta_TC = 1.5
-    if (nr_band == 41)
-      LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
-    int delta_TC = 0;
-
-    float MPR = 0;
-    frame_type_t frame_type = get_frame_type(nr_band, scs);
-    if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
-      int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
-      int rb_high = N_RB_UL - rb_low - n_prbs;
-      bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
+// MPR according to 38-101 6.2.2
+static float get_mpr(int Qm, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb, int power_class)
+{
+  float MPR = 0;
+  int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
+  int rb_high = N_RB_UL - rb_low - n_prbs;
+  bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
+  switch (power_class) {
+    case 3:
       // Table 6.2.2-1 in 38.101
       switch (Qm) {
         case 1:
@@ -166,16 +138,73 @@ int nr_get_Pcmax(int p_Max,
         default:
           AssertFatal(false, "Invalid Qm %d\n", Qm);
       }
+      break;
+    default:
+      AssertFatal(false, "PowerClass != 3 not implemented\n");
+  }
+  return MPR;
+}
+
+// Implementation of 6.2.4 Configured ransmitted power
+// 3GPP TS 38.101-1 version 16.5.0 Release 16
+// -
+// The UE is allowed to set its configured maximum output power PCMAX,f,c for carrier f of serving cell c in each slot.
+// The configured maximum output power PCMAX,f,c is set within the following bounds: PCMAX_L,f,c <=  PCMAX,f,c <=  PCMAX_H,f,c
+// -
+// Measurement units:
+// - p_max:              dBm
+// - delta_TC_c:         dB
+// - P_powerclass:       dBm
+// - delta_P_powerclass: dB
+// - MPR_c:              dB
+// - delta_MPR_c:        dB
+// - delta_T_IB_c        dB
+// - delta_rx_SRS        dB
+// note:
+// - Assuming:
+// -- Powerclass 3 capable UE (which is default power class unless otherwise stated)
+// -- Maximum power reduction (MPR_c) for power class 3
+// -- no additional MPR (A_MPR_c)
+float nr_get_Pcmax(int p_Max,
+                   uint16_t nr_band,
+                   frequency_range_t frequency_range,
+                   int Qm,
+                   bool powerBoostPi2BPSK,
+                   int scs,
+                   int N_RB_UL,
+                   bool is_transform_precoding,
+                   int n_prbs,
+                   int start_prb)
+{
+  const int power_class = 3; // Assume power class 3
+  if (frequency_range == FR1) {
+    // TODO configure P-MAX from the upper layers according to 38.331
+    int p_powerclass = 23; // dBm assuming poweclass 3 UE
+    int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
+    int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
+    if (p_Max && Qm == 1 && powerBoostPi2BPSK
+        && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
+      p_emax += 3;
+      delta_P_powerclass -= 3;
     }
 
+    // TODO to be set for CA and DC
+    int delta_T_IB = 0;
+
+    // TODO in case of band 41 and PRB allocation within 4MHz of the upper or lower limit of the band -> delta_TC = 1.5
+    if (nr_band == 41)
+      LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
+    int delta_TC = 0;
+
+    float MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, power_class);
+    float delta_MPR = get_delta_mpr(nr_band, scs, N_RB_UL, n_prbs, start_prb, power_class);
     int A_MPR = 0; // TODO too complicated to implement for now (see 6.2.3 in 38.101-1)
     int delta_rx_SRS = 0; // TODO for SRS
     int P_MPR = 0; // to ensure compliance with applicable electromagnetic energy absorption requirements
 
-    float total_reduction = (MPR > A_MPR ? MPR : A_MPR) + delta_T_IB + delta_TC + delta_rx_SRS;
-    if (P_MPR > total_reduction)
-      total_reduction = P_MPR;
-    int pcmax_high, pcmax_low;
+    float total_reduction = max(max(MPR + delta_MPR, A_MPR) + delta_T_IB + delta_TC + delta_rx_SRS, P_MPR);
+
+    float pcmax_high, pcmax_low;
     if (p_Max) {
       pcmax_high = p_emax < (p_powerclass - delta_P_powerclass) ? p_emax : (p_powerclass - delta_P_powerclass);
       pcmax_low = (p_emax - delta_TC) < (p_powerclass - delta_P_powerclass - total_reduction)
@@ -186,8 +215,8 @@ int nr_get_Pcmax(int p_Max,
       pcmax_low = p_powerclass - delta_P_powerclass - total_reduction;
     }
     // TODO we need a strategy to select a value between minimum and maximum allowed PC_max
-    int pcmax = (pcmax_low + pcmax_high) / 2;
-    LOG_D(MAC, "Configured maximum output power:  %d dBm <= PCMAX %d dBm <= %d dBm \n", pcmax_low, pcmax, pcmax_high);
+    float pcmax = (pcmax_low + pcmax_high) / 2;
+    LOG_D(MAC, "Configured maximum output power:  %f dBm <= PCMAX %f dBm <= %f dBm \n", pcmax_low, pcmax, pcmax_high);
     return pcmax;
   } else {
     // FR2 TODO it is even more complex because it is radiated power
@@ -297,8 +326,9 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
     delta_F_PUCCH = *delta_F_PUCCH_config;
   }
 
-  // PUCCH shall be as specified for QPSK modulated DFT-s-OFDM of equivalent RB allocation (38.101-1)
-  // TODO: P_CMAX for format 2
+  // 38.101-1: The allowed MPR for SRS, PUCCH formats 0, 1, 3 and 4, and PRACH shall be as specified for QPSK modulated DFT-
+  // s-OFDM of equivalent RB allocation. The allowed MPR for PUCCH format 2 shall be as specified for QPSK
+  // modulated CP-OFDM of equivalent RB allocation.
   int P_CMAX = nr_get_Pcmax(mac->p_Max,
                             mac->nr_band,
                             mac->frequency_range,
@@ -306,7 +336,7 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             false,
                             mac->current_UL_BWP->scs,
                             mac->current_UL_BWP->BWPSize,
-                            true,
+                            format_type == 2,
                             1,
                             start_prb);
   int P_CMIN = -40; // TODO: minimum TX power, possibly 38.101-1 6.3.1
