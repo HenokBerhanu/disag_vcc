@@ -29,11 +29,12 @@
 #include "PHY/NR_REFSIG/nr_mod_table.h"
 #include "PHY/NR_TRANSPORT/nr_sch_dmrs.h"
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
-#include "common/utils/nr/nr_common.h"
+#include "nr_phy_common.h"
 #include "filt16a_32.h"
 #include "T.h"
 #include <openair1/PHY/TOOLS/phy_scope_interface.h>
 #include "nfapi/open-nFAPI/nfapi/public_inc/nfapi_nr_interface.h"
+
 
 extern openair0_config_t openair0_cfg[];
 
@@ -651,12 +652,12 @@ int nr_pbch_channel_estimation(const NR_DL_FRAME_PARMS *fp,
                                const UE_nr_rxtx_proc_t *proc,
                                unsigned char symbol,
                                int dmrss,
-                               uint8_t ssb_index,
-                               uint8_t n_hf,
+                               uint ssb_index,
+                               uint n_hf,
                                int ssb_start_subcarrier,
                                const c16_t rxdataF[][fp->samples_per_slot_wCP],
                                bool sidelink,
-                               uint16_t Nid)
+                               uint Nid)
 {
   int Ns = proc->nr_slot_rx;
   c16_t pilot[200] __attribute__((aligned(16)));

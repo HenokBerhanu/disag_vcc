@@ -391,6 +391,8 @@ Compile the fronthaul interface library by calling `make` and the option
 environment variables `RTE_SDK` for the path to the source tree of DPDK, and
 `XRAN_DIR` to set the path to the fronthaul library.
 
+**Note**: you need at least gcc-11 and g++-11.
+
 ```bash
 cd ~/phy/fhi_lib/lib
 make clean
@@ -790,7 +792,6 @@ Edit the sample OAI gNB configuration file and check following parameters:
         compression
       * `iq_width_prach`: Width of PRACH IQ samples: if 16, no compression, if <16, applies
         compression
-      * `fft_size`: size of FFT performed by RU, set to 12 by default
     * `prach_config`: PRACH-specific configuration
       * `eAxC_offset`:  PRACH antenna offset
       * `kbar`: the PRACH guard interval, provided in RU

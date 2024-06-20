@@ -227,7 +227,16 @@ int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
                            PUCCH_sched_t *pucch,
                            fapi_nr_ul_config_pucch_pdu *pucch_pdu);
 
-int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb);
+int nr_get_Pcmax(int p_Max,
+                 uint16_t nr_band,
+                 frequency_range_t frequency_range,
+                 int Qm,
+                 bool powerBoostPi2BPSK,
+                 int scs,
+                 int N_RB_UL,
+                 bool is_transform_precoding,
+                 int n_prbs,
+                 int start_prb);
 
 int get_sum_delta_pucch(NR_UE_MAC_INST_t *mac, int slot, frame_t frame);
 

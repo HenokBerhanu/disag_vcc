@@ -237,7 +237,7 @@ void nr_decode_pucch0(PHY_VARS_gNB *gNB,
   uint8_t index=0;
 
   int nb_re_pucch = 12*pucch_pdu->prb_size;  // prb size is 1
-  int signal_energy = 0, signal_energy_ant0 = 0;
+  int64_t signal_energy = 0, signal_energy_ant0 = 0;
 
   for (int l=0; l<pucch_pdu->nr_of_symbols; l++) {
     uint8_t l2 = l + pucch_pdu->start_symbol_index;
@@ -1147,7 +1147,11 @@ void nr_decode_pucch2(PHY_VARS_gNB *gNB,
 
     uint32_t x1 = 0, x2 = 0, sGold = 0;
     uint8_t *sGold8 = (uint8_t *)&sGold;
-    x2 = (((1<<17)*((14*slot) + (pucch_pdu->start_symbol_index+symb) + 1)*((2*pucch_pdu->dmrs_scrambling_id) + 1)) + (2*pucch_pdu->dmrs_scrambling_id))%(1U<<31); // c_init calculation according to TS38.211 subclause
+    const int scramble = pucch_pdu->dmrs_scrambling_id * 2;
+    // fixme: when MR2754 will be merged, use the gold sequence cache instead of regenerate each time
+    x2 = ((1ULL << 17) * ((NR_NUMBER_OF_SYMBOLS_PER_SLOT * slot + pucch_pdu->start_symbol_index + symb + 1) * (scramble + 1))
+          + scramble)
+         % (1U << 31); // c_init calculation according to TS38.211 subclause
 #ifdef DEBUG_NR_PUCCH_RX
     printf("slot %d, start_symbol_index %d, symbol %d, dmrs_scrambling_id %d\n",
            slot,pucch_pdu->start_symbol_index,symb,pucch_pdu->dmrs_scrambling_id);

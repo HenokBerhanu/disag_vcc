@@ -316,6 +316,12 @@ void rx_nr_prach_ru(RU_t *ru,
     dftlen >>= 1;
     break;
 
+  case 23040:
+    // 20 MHz @ 23.04 Ms/s
+    Ncp = (Ncp * 3) / 4;
+    dftlen = (dftlen * 3) / 4;
+    break;
+
   case 30720:
     // 20, 25, 30 MHz @ 30.72 Ms/s
     break;

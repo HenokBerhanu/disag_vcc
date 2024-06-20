@@ -454,10 +454,9 @@ static void nr_ulsch_channel_level(int **ul_ch_estimates_ext,
         avg128U = simde_mm_add_epi32(avg128U, simde_mm_srai_epi32(simde_mm_madd_epi16(ul_ch128[i], ul_ch128[i]), x));
       }
 
-      avg[aatx*frame_parms->nb_antennas_rx+aarx] = (((int32_t*)&avg128U)[0] +
-                                                    ((int32_t*)&avg128U)[1] +
-                                                    ((int32_t*)&avg128U)[2] +
-                                                    ((int32_t*)&avg128U)[3]) / y;
+      int32_t *avg32i = (int32_t *)&avg128U;
+      int64_t avg64 = (int64_t)avg32i[0] + avg32i[1] + avg32i[2] + avg32i[3];
+      avg[aatx * frame_parms->nb_antennas_rx + aarx] = avg64 / y;
     }
   }
 

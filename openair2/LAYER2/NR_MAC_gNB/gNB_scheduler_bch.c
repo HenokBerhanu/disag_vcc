@@ -65,6 +65,7 @@ static void schedule_ssb(frame_t frame,
   dl_config_pdu->PDUSize      =2 + sizeof(nfapi_nr_dl_tti_ssb_pdu_rel15_t);
 
   AssertFatal(scc->physCellId!=NULL,"ServingCellConfigCommon->physCellId is null\n");
+  AssertFatal(*scc->physCellId < 1008 && *scc->physCellId >=0, "5G physicall cell id out of range: %ld\n", *scc->physCellId); 
   dl_config_pdu->ssb_pdu.ssb_pdu_rel15.PhysCellId          = *scc->physCellId;
   dl_config_pdu->ssb_pdu.ssb_pdu_rel15.BetaPss             = 0;
   dl_config_pdu->ssb_pdu.ssb_pdu_rel15.SsbBlockIndex       = i_ssb;

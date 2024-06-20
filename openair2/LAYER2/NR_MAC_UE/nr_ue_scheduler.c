@@ -1768,11 +1768,23 @@ static void build_ssb_list(NR_UE_MAC_INST_t *mac)
     uint32_t curr_mask = cfg->ssb_table.ssb_mask_list[ssb_index / 32].ssb_mask;
     // check if if current SSB is transmitted
     if ((curr_mask >> (31 - (ssb_index % 32))) & 0x01) {
-      ssb_list->nb_ssb_per_index[ssb_index]=ssb_list->nb_tx_ssb;
+      ssb_list->nb_ssb_per_index[ssb_index] = ssb_list->nb_tx_ssb;
       ssb_list->nb_tx_ssb++;
     }
+    else
+      ssb_list->nb_ssb_per_index[ssb_index] = -1;
   }
   ssb_list->tx_ssb = calloc(ssb_list->nb_tx_ssb, sizeof(*ssb_list->tx_ssb));
+}
+
+static int get_ssb_idx_from_list(ssb_list_info_t *ssb_list, int idx)
+{
+  for (int ssb_index = 0; ssb_index < MAX_NB_SSB; ssb_index++) {
+    if (ssb_list->nb_ssb_per_index[ssb_index] == idx)
+      return ssb_index;
+  }
+  AssertFatal(false, "Couldn't find SSB index in SSB list\n");
+  return 0;
 }
 
 // Map the transmitted SSBs to the ROs and create the association pattern according to the config
@@ -1863,7 +1875,7 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
       // WIP: only one possible association period so the starting PRACH configuration period is automatically 0
       // WIP: For the moment, only map each SSB idx once per association period if configuration is multiple SSBs per RO
       //      this is true if no PRACH occasions are conflicting with SSBs nor TDD_UL_DL_ConfigurationCommon schedule
-      int ssb_idx = 0;
+      int idx = 0;
       bool done = false;
       for (int i = 0; i < prach_period->nb_of_prach_conf_period && !done; i++, prach_configuration_period_idx++) {
         prach_period->prach_conf_period_list[i] = &prach_assoc_pattern->prach_conf_period_list[prach_configuration_period_idx];
@@ -1880,9 +1892,10 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
                 // Go through the list of transmitted SSBs and map the required amount of SSBs to this RO
                 // WIP: For the moment, only map each SSB idx once per association period if configuration is multiple SSBs per RO
                 //      this is true if no PRACH occasions are conflicting with SSBs nor TDD_UL_DL_ConfigurationCommon schedule
-                for (; ssb_idx < ssb_list->nb_tx_ssb; ssb_idx++) {
-                  ssb_info_t *tx_ssb = ssb_list->tx_ssb + ssb_idx;
+                for (; idx < ssb_list->nb_tx_ssb; idx++) {
+                  ssb_info_t *tx_ssb = ssb_list->tx_ssb + idx;
                   // Map only the transmitted ssb_idx
+                  int ssb_idx = get_ssb_idx_from_list(ssb_list, idx);
                   ro_p->mapped_ssb_idx[ro_p->nb_mapped_ssb] = ssb_idx;
                   ro_p->nb_mapped_ssb++;
                   AssertFatal(MAX_NB_RO_PER_SSB_IN_ASSOCIATION_PATTERN > tx_ssb->nb_mapped_ro + 1,
@@ -1903,11 +1916,11 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
                         tx_ssb->nb_mapped_ro);
                   // If all the required SSBs are mapped to this RO, exit the loop of SSBs
                   if (ro_p->nb_mapped_ssb == ssb_rach_ratio) {
-                      ssb_idx++;
+                      idx++;
                       break;
                     }
                 }
-                done = MAX_NB_SSB == ssb_idx;
+                done = MAX_NB_SSB == idx;
               }
             }
           }
@@ -1919,8 +1932,8 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
     for (prach_association_period_t *prach_period = prach_assoc_pattern->prach_association_period_list; prach_period < end;
          prach_period++) {
       // Go through the list of transmitted SSBs
-      for (int ssb_idx = 0; ssb_idx < ssb_list->nb_tx_ssb; ssb_idx++) {
-        ssb_info_t *tx_ssb = ssb_list->tx_ssb + ssb_idx;
+      for (int idx = 0; idx < ssb_list->nb_tx_ssb; idx++) {
+        ssb_info_t *tx_ssb = ssb_list->tx_ssb + idx;
         uint8_t nb_mapped_ro_in_association_period=0; // Reset the nb of mapped ROs for the new SSB index
         bool done = false;
         // Map all the required ROs to this SSB
@@ -1936,6 +1949,7 @@ static void map_ssb_to_ro(NR_UE_MAC_INST_t *mac)
                 for (int ro_in_freq = 0; ro_in_freq < slot_map->nb_of_prach_occasion_in_freq && !done; ro_in_freq++) {
                   prach_occasion_info_t *ro_p =
                       slot_map->prach_occasion + ro_in_time * slot_map->nb_of_prach_occasion_in_freq + ro_in_freq;
+                  int ssb_idx = get_ssb_idx_from_list(ssb_list, idx);
                   ro_p->mapped_ssb_idx[0] = ssb_idx;
                   ro_p->nb_mapped_ssb = 1;
                   AssertFatal(MAX_NB_RO_PER_SSB_IN_ASSOCIATION_PATTERN > tx_ssb->nb_mapped_ro + 1,

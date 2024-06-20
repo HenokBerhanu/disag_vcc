@@ -85,16 +85,24 @@ static int get_deltatf(uint16_t nb_of_prbs,
 // -- Powerclass 3 capable UE (which is default power class unless otherwise stated)
 // -- Maximum power reduction (MPR_c) for power class 3
 // -- no additional MPR (A_MPR_c)
-int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb)
+int nr_get_Pcmax(int p_Max,
+                 uint16_t nr_band,
+                 frequency_range_t frequency_range,
+                 int Qm,
+                 bool powerBoostPi2BPSK,
+                 int scs,
+                 int N_RB_UL,
+                 bool is_transform_precoding,
+                 int n_prbs,
+                 int start_prb)
 {
-  int nr_band = mac->nr_band;
-  if(mac->frequency_range == FR1) {
-
-    //TODO configure P-MAX from the upper layers according to 38.331
+  if (frequency_range == FR1) {
+    // TODO configure P-MAX from the upper layers according to 38.331
     int p_powerclass = 23; // dBm assuming poweclass 3 UE
-    int p_emax = mac->p_Max != INT_MIN ? mac->p_Max : p_powerclass;
+    int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
     int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
-    if(mac->p_Max && Qm == 1 && powerBoostPi2BPSK && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
+    if (p_Max && Qm == 1 && powerBoostPi2BPSK
+        && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
       p_emax += 3;
       delta_P_powerclass -= 3;
     }
@@ -103,54 +111,52 @@ int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs,
     int delta_T_IB = 0;
 
     // TODO in case of band 41 and PRB allocation within 4MHz of the upper or lower limit of the band -> delta_TC = 1.5
-    if(nr_band == 41)
+    if (nr_band == 41)
       LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
     int delta_TC = 0;
 
     float MPR = 0;
     frame_type_t frame_type = get_frame_type(nr_band, scs);
-    if(compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
+    if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
       int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
       int rb_high = N_RB_UL - rb_low - n_prbs;
       bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
       // Table 6.2.2-1 in 38.101
       switch (Qm) {
-        case 1 :
+        case 1:
           AssertFatal(false, "MPR for Pi/2 BPSK not implemented yet\n");
           break;
-        case 2 :
+        case 2:
           if (is_transform_precoding) {
-            if(!is_inner_rb)
+            if (!is_inner_rb)
               MPR = 1;
-          }
-          else {
-            if(is_inner_rb)
+          } else {
+            if (is_inner_rb)
               MPR = 1.5;
             else
               MPR = 3;
           }
           break;
-        case 4 :
+        case 4:
           if (is_transform_precoding) {
-            if(is_inner_rb)
+            if (is_inner_rb)
               MPR = 1;
             else
               MPR = 2;
-          }
-          else {
-            if(is_inner_rb)
+          } else {
+            if (is_inner_rb)
               MPR = 2;
             else
               MPR = 3;
           }
           break;
-        case 6 :
+        case 6:
           if (is_transform_precoding)
             MPR = 2.5;
           else
             MPR = 3.5;
           break;
-        case 8 :
+        case 8:
           if (is_transform_precoding)
             MPR = 4.5;
           else
@@ -170,12 +176,12 @@ int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs,
     if (P_MPR > total_reduction)
       total_reduction = P_MPR;
     int pcmax_high, pcmax_low;
-    if(mac->p_Max) {
+    if (p_Max) {
       pcmax_high = p_emax < (p_powerclass - delta_P_powerclass) ? p_emax : (p_powerclass - delta_P_powerclass);
-      pcmax_low = (p_emax - delta_TC) < (p_powerclass - delta_P_powerclass - total_reduction) ?
-                  (p_emax - delta_TC) : (p_powerclass - delta_P_powerclass - total_reduction);
-    }
-    else {
+      pcmax_low = (p_emax - delta_TC) < (p_powerclass - delta_P_powerclass - total_reduction)
+                      ? (p_emax - delta_TC)
+                      : (p_powerclass - delta_P_powerclass - total_reduction);
+    } else {
       pcmax_high = p_powerclass - delta_P_powerclass;
       pcmax_low = p_powerclass - delta_P_powerclass - total_reduction;
     }
@@ -183,8 +189,7 @@ int nr_get_Pcmax(NR_UE_MAC_INST_t *mac, int Qm, bool powerBoostPi2BPSK, int scs,
     int pcmax = (pcmax_low + pcmax_high) / 2;
     LOG_D(MAC, "Configured maximum output power:  %d dBm <= PCMAX %d dBm <= %d dBm \n", pcmax_low, pcmax, pcmax_high);
     return pcmax;
-  }
-  else {
+  } else {
     // FR2 TODO it is even more complex because it is radiated power
     return 23;
   }
@@ -294,7 +299,16 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
 
   // PUCCH shall be as specified for QPSK modulated DFT-s-OFDM of equivalent RB allocation (38.101-1)
   // TODO: P_CMAX for format 2
-  int P_CMAX = nr_get_Pcmax(mac, 2, false, mac->current_UL_BWP->scs, mac->current_UL_BWP->BWPSize, true, 1, start_prb);
+  int P_CMAX = nr_get_Pcmax(mac->p_Max,
+                            mac->nr_band,
+                            mac->frequency_range,
+                            2,
+                            false,
+                            mac->current_UL_BWP->scs,
+                            mac->current_UL_BWP->BWPSize,
+                            true,
+                            1,
+                            start_prb);
   int P_CMIN = -40; // TODO: minimum TX power, possibly 38.101-1 6.3.1
   int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
 
@@ -357,4 +371,28 @@ static int get_deltatf(uint16_t nb_of_prbs,
     DELTA_TF = 10 * log10((double)(pow(2, (K2 * BPRE)) - 1));
   }
   return DELTA_TF;
+}
+
+// Returns the pathloss in dB for the active UL BWP on the selected carrier based on the DL RS associated with the PRACH transmission
+// computation according to clause 7.4 (Physical random access channel) of 3GPP TS 38.213 version 16.3.0 Release 16
+// Assumptions:
+// - PRACH transmission from a UE is not in response to a detection of a PDCCH order by the UE
+// Measurement units:
+// - referenceSignalPower:   dBm/RE (average EPRE of the resources elements that carry secondary synchronization signals in dBm)
+int16_t compute_nr_SSB_PL(NR_UE_MAC_INST_t *mac, short ssb_rsrp_dBm)
+{
+  fapi_nr_config_request_t *cfg = &mac->phy_config.config_req;
+  int referenceSignalPower = cfg->ssb_config.ss_pbch_power;
+  //TODO improve PL measurements. Probably not correct as it is.
+
+  int16_t pathloss = (int16_t)(referenceSignalPower - ssb_rsrp_dBm);
+
+  LOG_D(NR_MAC, "pathloss %d dB, referenceSignalPower %d dBm/RE (%f mW), RSRP %d dBm (%f mW)\n",
+        pathloss,
+        referenceSignalPower,
+        pow(10, referenceSignalPower/10),
+        ssb_rsrp_dBm,
+        pow(10, ssb_rsrp_dBm/10));
+
+  return pathloss;
 }

@@ -33,6 +33,7 @@
 
 #include "PHY/NR_REFSIG/ul_ref_seq_nr.h"
 #include "executables/softmodem-common.h"
+#include "nr_phy_common.h"
 
 
 //#define DEBUG_CH

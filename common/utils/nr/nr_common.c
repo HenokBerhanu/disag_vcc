@@ -1126,21 +1126,23 @@ int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, con
   const double startFreq = get_start_freq(fc, nbRB, mu);
   const double stopFreq = get_stop_freq(fc, nbRB, mu);
 
-  int scanGscnStart = -1;
-  int scanGscnStop = -1;
-  sync_raster_t tmpRaster = {0};
-  for (const sync_raster_t *r = sync_raster; r < r + (sizeof(sync_raster) / sizeof(sync_raster_t)); r++) {
-    if (r->band == nrBand && r->scs_index == mu) {
-      tmpRaster = *r;
-      break;
-    }
+  int scanGscnStart = 0;
+  int scanGscnStop = 0;
+  const sync_raster_t *tmpRaster = sync_raster;
+  const sync_raster_t * end=sync_raster + sizeofArray(sync_raster);
+  while (tmpRaster < end && (tmpRaster->band != nrBand || tmpRaster->scs_index != mu))
+    tmpRaster++;
+  if (tmpRaster >= end) {
+    LOG_E(PHY, "raster not found nrband=%d, mu=%d\n", nrBand, mu);
+    return 0;
   }
-  find_gscn_to_scan(startFreq, stopFreq, tmpRaster, &scanGscnStart, &scanGscnStop);
+
+  find_gscn_to_scan(startFreq, stopFreq, *tmpRaster, &scanGscnStart, &scanGscnStop);
 
   const double scs = MU_SCS(mu) * 1e3;
   const double pointA = fc - (nbRB / 2 * scs * NR_NB_SC_PER_RB);
   int numGscn = 0;
-  for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster.step_gscn) {
+  for (int g = scanGscnStart; (g <= scanGscnStop) && (numGscn < MAX_GSCN_BAND); g += tmpRaster->step_gscn) {
     ssbInfo[numGscn].ssRef = get_ssref_from_gscn(g);
     ssbInfo[numGscn].ssbFirstSC = get_ssb_first_sc(pointA, ssbInfo[numGscn].ssRef, mu);
     ssbInfo[numGscn].gscn = g;
@@ -1172,38 +1174,6 @@ void init_delay_table(uint16_t ofdm_symbol_size,
       delay_table[max_delay_comp + delay][k].i = (int16_t)round(256 * cimag(delay_cexp));
     }
   }
-}
-
-void freq2time(uint16_t ofdm_symbol_size,
-               int16_t *freq_signal,
-               int16_t *time_signal)
-{
-  const idft_size_idx_t idft_size = get_idft(ofdm_symbol_size);
-  idft(idft_size, freq_signal, time_signal, 1);
-}
-
-void nr_est_delay(int ofdm_symbol_size, const c16_t *ls_est, c16_t *ch_estimates_time, delay_t *delay)
-{
-  freq2time(ofdm_symbol_size, (int16_t *)ls_est, (int16_t *)ch_estimates_time);
-
-  int max_pos = delay->delay_max_pos;
-  int max_val = delay->delay_max_val;
-  const int sync_pos = 0;
-
-  for (int i = 0; i < ofdm_symbol_size; i++) {
-    int temp = c16amp2(ch_estimates_time[i]) >> 1;
-    if (temp > max_val) {
-      max_pos = i;
-      max_val = temp;
-    }
-  }
-
-  if (max_pos > ofdm_symbol_size / 2)
-    max_pos = max_pos - ofdm_symbol_size;
-
-  delay->delay_max_pos = max_pos;
-  delay->delay_max_val = max_val;
-  delay->est_delay = max_pos - sync_pos;
 }
 
 void nr_timer_start(NR_timer_t *timer)

@@ -65,7 +65,7 @@ int32_t generate_nr_prach(PHY_VARS_NR_UE *ue, uint8_t gNB_id, int frame, uint8_t
   c16_t prach[(4688 + 4 * 24576) * 2] __attribute__((aligned(32))) = {0};
   int16_t prachF_tmp[(4688+4*24576)*4*2] __attribute__((aligned(32))) = {0};
 
-  int16_t Ncp = 0;
+  int Ncp = 0;
   int prach_start, prach_sequence_length, i, prach_len, dftlen, mu, kbar, K, n_ra_prb, k, prachStartSymbol, sample_offset_slot;
 
   fd_occasion             = 0;
@@ -330,6 +330,12 @@ int32_t generate_nr_prach(PHY_VARS_NR_UE *ue, uint8_t gNB_id, int frame, uint8_t
     // 10, 15 MHz @ 15.36 Ms/s
     Ncp >>= 1;
     dftlen >>= 1;
+    break;
+
+  case 23040:
+    // 20 MHz @ 23.04 Ms/s
+    Ncp = (Ncp * 3) / 4;
+    dftlen = (dftlen * 3) / 4;
     break;
 
   case 30720:
