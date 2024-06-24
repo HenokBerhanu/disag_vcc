@@ -56,26 +56,26 @@
 // What to do when an error happens (e.g., a push or pull fails)
 static inline void on_error()
 {
-    // show the call stack
-    int fd = STDERR_FILENO;
-    static const char msg[] = "---stack trace---\n";
-    __attribute__((unused)) int r =
-        write(fd, msg, sizeof(msg) - 1);
-    void *buffer[100];
-    int nptrs = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-    backtrace_symbols_fd(buffer, nptrs, fd);
+  // show the call stack
+  int fd = STDERR_FILENO;
+  static const char msg[] = "---stack trace---\n";
+  __attribute__((unused)) int r = write(fd, msg, sizeof(msg) - 1);
+  void *buffer[100];
+  int nptrs = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
+  backtrace_symbols_fd(buffer, nptrs, fd);
 
-    //abort();
+  // abort();
 }
 
 // Fundamental routines
 
-uint8_t push8(uint8_t in, uint8_t **out, uint8_t *end) {
+uint8_t push8(uint8_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 1) {
+  if ((end - pOut) >= 1) {
     pOut[0] = in;
-    (*out)+=1;
+    (*out) += 1;
     return 1;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -84,12 +84,13 @@ uint8_t push8(uint8_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t pushs8(int8_t in, uint8_t **out, uint8_t *end) {
+uint8_t pushs8(int8_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 1) {
+  if ((end - pOut) >= 1) {
     pOut[0] = in;
-    (*out)+=1;
+    (*out) += 1;
     return 1;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -98,10 +99,11 @@ uint8_t pushs8(int8_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t push16(uint16_t in, uint8_t **out, uint8_t *end) {
+uint8_t push16(uint16_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 2) {
+  if ((end - pOut) >= 2) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     pOut[1] = (in & 0xFF00) >> 8;
     pOut[0] = (in & 0xFF);
@@ -109,7 +111,7 @@ uint8_t push16(uint16_t in, uint8_t **out, uint8_t *end) {
     pOut[0] = (in & 0xFF00) >> 8;
     pOut[1] = (in & 0xFF);
 #endif
-    (*out)+=2;
+    (*out) += 2;
     return 2;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -118,10 +120,11 @@ uint8_t push16(uint16_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t pushs16(int16_t in, uint8_t **out, uint8_t *end) {
+uint8_t pushs16(int16_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 2) {
+  if ((end - pOut) >= 2) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     pOut[1] = (in & 0xFF00) >> 8;
     pOut[0] = (in & 0xFF);
@@ -129,7 +132,7 @@ uint8_t pushs16(int16_t in, uint8_t **out, uint8_t *end) {
     pOut[0] = (in & 0xFF00) >> 8;
     pOut[1] = (in & 0xFF);
 #endif
-    (*out)+=2;
+    (*out) += 2;
     return 2;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -138,10 +141,11 @@ uint8_t pushs16(int16_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t push32(uint32_t in, uint8_t **out, uint8_t *end) {
+uint8_t push32(uint32_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 4) {
+  if ((end - pOut) >= 4) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     pOut[3] = (in & 0xFF000000) >> 24;
     pOut[2] = (in & 0xFF0000) >> 16;
@@ -153,7 +157,7 @@ uint8_t push32(uint32_t in, uint8_t **out, uint8_t *end) {
     pOut[2] = (in & 0xFF00) >> 8;
     pOut[3] = (in & 0xFF);
 #endif
-    (*out)+=4;
+    (*out) += 4;
     return 4;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -162,10 +166,11 @@ uint8_t push32(uint32_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t pushs32(int32_t in, uint8_t **out, uint8_t *end) {
+uint8_t pushs32(int32_t in, uint8_t **out, uint8_t *end)
+{
   uint8_t *pOut = *out;
 
-  if((end - pOut) >= 4) {
+  if ((end - pOut) >= 4) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     pOut[3] = (in & 0xFF000000) >> 24;
     pOut[2] = (in & 0xFF0000) >> 16;
@@ -177,7 +182,7 @@ uint8_t pushs32(int32_t in, uint8_t **out, uint8_t *end) {
     pOut[2] = (in & 0xFF00) >> 8;
     pOut[3] = (in & 0xFF);
 #endif
-    (*out)+=4;
+    (*out) += 4;
     return 4;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -186,12 +191,13 @@ uint8_t pushs32(int32_t in, uint8_t **out, uint8_t *end) {
   }
 }
 
-uint8_t pull8(uint8_t **in, uint8_t *out, uint8_t *end) {
+uint8_t pull8(uint8_t **in, uint8_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >= 1 ) {
+  if ((end - pIn) >= 1) {
     *out = *pIn;
-    (*in)+=1;
+    (*in) += 1;
     return 1;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -200,12 +206,13 @@ uint8_t pull8(uint8_t **in, uint8_t *out, uint8_t *end) {
   }
 }
 
-uint8_t pulls8(uint8_t **in, int8_t *out, uint8_t *end) {
+uint8_t pulls8(uint8_t **in, int8_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >= 1 ) {
+  if ((end - pIn) >= 1) {
     *out = *pIn;
-    (*in)+=1;
+    (*in) += 1;
     return 1;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -214,16 +221,17 @@ uint8_t pulls8(uint8_t **in, int8_t *out, uint8_t *end) {
   }
 }
 
-uint8_t pull16(uint8_t **in, uint16_t *out, uint8_t *end) {
+uint8_t pull16(uint8_t **in, uint16_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >=2 ) {
+  if ((end - pIn) >= 2) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     *out = ((pIn[1]) << 8) | pIn[0];
 #else
     *out = ((pIn[0]) << 8) | pIn[1];
 #endif
-    (*in)+=2;
+    (*in) += 2;
     return 2;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -232,16 +240,17 @@ uint8_t pull16(uint8_t **in, uint16_t *out, uint8_t *end) {
   }
 }
 
-uint8_t pulls16(uint8_t **in, int16_t *out, uint8_t *end) {
+uint8_t pulls16(uint8_t **in, int16_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >=2 ) {
+  if ((end - pIn) >= 2) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     *out = ((pIn[1]) << 8) | pIn[0];
 #else
     *out = ((pIn[0]) << 8) | pIn[1];
 #endif
-    (*in)+=2;
+    (*in) += 2;
     return 2;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -250,10 +259,11 @@ uint8_t pulls16(uint8_t **in, int16_t *out, uint8_t *end) {
   }
 }
 
-uint8_t pull32(uint8_t **in, uint32_t *out, uint8_t *end) {
+uint8_t pull32(uint8_t **in, uint32_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >= 4) {
+  if ((end - pIn) >= 4) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     *out = ((uint32_t)pIn[3] << 24) | (pIn[2] << 16) | (pIn[1] << 8) | pIn[0];
 #else
@@ -262,22 +272,23 @@ uint8_t pull32(uint8_t **in, uint32_t *out, uint8_t *end) {
     (*in) += 4;
     return 4;
   } else {
-    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n",  __FUNCTION__);
+    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
     on_error();
     return 0;
   }
 }
 
-uint8_t pulls32(uint8_t **in, int32_t *out, uint8_t *end) {
+uint8_t pulls32(uint8_t **in, int32_t *out, uint8_t *end)
+{
   uint8_t *pIn = *in;
 
-  if((end - pIn) >=4 ) {
+  if ((end - pIn) >= 4) {
 #ifdef FAPI_BYTE_ORDERING_BIG_ENDIAN
     *out = (pIn[3] << 24) | (pIn[2] << 16) | (pIn[1] << 8) | pIn[0];
 #else
     *out = (pIn[0] << 24) | (pIn[1] << 16) | (pIn[2] << 8) | pIn[3];
 #endif
-    (*in)+=4;
+    (*in) += 4;
     return 4;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -292,21 +303,22 @@ inline void pusharray16(uint8_t **, uint16_t, uint32_t len)
 }
 */
 
-uint32_t pullarray16(uint8_t **in, uint16_t out[], uint32_t max_len, uint32_t len, uint8_t *end) {
-  if(len == 0)
+uint32_t pullarray16(uint8_t **in, uint16_t out[], uint32_t max_len, uint32_t len, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*in)) >= sizeof(uint16_t) * len) {
+  if ((end - (*in)) >= sizeof(uint16_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
-      if(!pull16(in, &out[idx], end))
+    for (idx = 0; idx < len; ++idx) {
+      if (!pull16(in, &out[idx], end))
         return 0;
     }
 
@@ -318,21 +330,22 @@ uint32_t pullarray16(uint8_t **in, uint16_t out[], uint32_t max_len, uint32_t le
   }
 }
 
-uint32_t pullarrays16(uint8_t **in, int16_t out[], uint32_t max_len, uint32_t len, uint8_t *end) {
-  if(len == 0)
+uint32_t pullarrays16(uint8_t **in, int16_t out[], uint32_t max_len, uint32_t len, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*in)) >= sizeof(uint16_t) * len) {
+  if ((end - (*in)) >= sizeof(uint16_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
-      if(!pulls16(in, &out[idx], end))
+    for (idx = 0; idx < len; ++idx) {
+      if (!pulls16(in, &out[idx], end))
         return 0;
     }
 
@@ -343,21 +356,22 @@ uint32_t pullarrays16(uint8_t **in, int16_t out[], uint32_t max_len, uint32_t le
     return 0;
   }
 }
-uint32_t pusharray16(uint16_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end) {
-  if(len == 0)
+uint32_t pusharray16(uint16_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*out)) >= sizeof(uint16_t) * len) {
+  if ((end - (*out)) >= sizeof(uint16_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
-      if(!push16(in[idx], out, end))
+    for (idx = 0; idx < len; ++idx) {
+      if (!push16(in[idx], out, end))
         return 0;
     }
 
@@ -368,20 +382,21 @@ uint32_t pusharray16(uint16_t in[], uint32_t max_len, uint32_t len, uint8_t **ou
     return 0;
   }
 }
-uint32_t pusharrays16(int16_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end) {
-  if(len == 0)
+uint32_t pusharrays16(int16_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*out)) >= sizeof(uint16_t) * len) {
+  if ((end - (*out)) >= sizeof(uint16_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
+    for (idx = 0; idx < len; ++idx) {
       if (!pushs16(in[idx], out, end))
         return 0;
     }
@@ -397,14 +412,14 @@ uint32_t pullarray32(uint8_t **values_to_pull,
                      uint32_t out[],
                      uint32_t max_num_values_to_pull,
                      uint32_t num_values_to_pull,
-                     uint8_t *out_end) {
+                     uint8_t *out_end)
+{
   if (num_values_to_pull == 0)
 
     return 1;
 
   if (num_values_to_pull > max_num_values_to_pull) {
-    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n",
-                __FUNCTION__, num_values_to_pull, max_num_values_to_pull);
+    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, num_values_to_pull, max_num_values_to_pull);
     on_error();
     return 0;
   }
@@ -425,21 +440,22 @@ uint32_t pullarray32(uint8_t **values_to_pull,
   }
 }
 
-uint32_t pullarrays32(uint8_t **in, int32_t out[], uint32_t max_len, uint32_t len, uint8_t *end) {
-  if(len == 0)
+uint32_t pullarrays32(uint8_t **in, int32_t out[], uint32_t max_len, uint32_t len, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*in)) >= sizeof(uint32_t) * len) {
+  if ((end - (*in)) >= sizeof(uint32_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
-      if(!pulls32(in, &out[idx], end))
+    for (idx = 0; idx < len; ++idx) {
+      if (!pulls32(in, &out[idx], end))
         return 0;
     }
 
@@ -454,13 +470,13 @@ uint32_t pusharray32(const uint32_t *values_to_push,
                      uint32_t max_num_values_to_push,
                      uint32_t num_values_to_push,
                      uint8_t **out,
-                     uint8_t *out_end) {
+                     uint8_t *out_end)
+{
   if (num_values_to_push == 0)
     return 1;
 
   if (num_values_to_push > max_num_values_to_push) {
-    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n",
-                __FUNCTION__, num_values_to_push, max_num_values_to_push);
+    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, num_values_to_push, max_num_values_to_push);
     on_error();
     return 0;
   }
@@ -480,20 +496,21 @@ uint32_t pusharray32(const uint32_t *values_to_push,
     return 0;
   }
 }
-uint32_t pusharrays32(int32_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end) {
-  if(len == 0)
+uint32_t pusharrays32(int32_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*out)) >= sizeof(uint32_t) * len) {
+  if ((end - (*out)) >= sizeof(uint32_t) * len) {
     uint32_t idx;
 
-    for(idx = 0; idx < len; ++idx) {
+    for (idx = 0; idx < len; ++idx) {
       if (!pushs32(in[idx], out, end))
         return 0;
     }
@@ -505,19 +522,20 @@ uint32_t pusharrays32(int32_t in[], uint32_t max_len, uint32_t len, uint8_t **ou
     return 0;
   }
 }
-uint32_t pullarray8(uint8_t **in, uint8_t out[], uint32_t max_len, uint32_t len, uint8_t *end) {
-  if(len == 0)
+uint32_t pullarray8(uint8_t **in, uint8_t out[], uint32_t max_len, uint32_t len, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*in)) >= sizeof(uint8_t) * len) {
+  if ((end - (*in)) >= sizeof(uint8_t) * len) {
     memcpy(out, (*in), len);
-    (*in)+=len;
+    (*in) += len;
     return sizeof(uint8_t) * len;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -526,19 +544,20 @@ uint32_t pullarray8(uint8_t **in, uint8_t out[], uint32_t max_len, uint32_t len,
   }
 }
 
-uint32_t pusharray8(uint8_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end) {
-  if(len == 0)
+uint32_t pusharray8(uint8_t in[], uint32_t max_len, uint32_t len, uint8_t **out, uint8_t *end)
+{
+  if (len == 0)
     return 1;
 
-  if(len > max_len) {
+  if (len > max_len) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, len, max_len);
     on_error();
     return 0;
   }
 
-  if((end - (*out)) >= sizeof(uint8_t) * len) {
+  if ((end - (*out)) >= sizeof(uint8_t) * len) {
     memcpy((*out), in, len);
-    (*out)+=len;
+    (*out) += len;
     return sizeof(uint8_t) * len;
   } else {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s no space in buffer\n", __FUNCTION__);
@@ -547,8 +566,15 @@ uint32_t pusharray8(uint8_t in[], uint32_t max_len, uint32_t len, uint8_t **out,
   }
 }
 
-uint8_t packarray(void *array, uint16_t array_element_size, uint16_t max_count, uint16_t count, uint8_t **ppwritepackedmsg, uint8_t *end, pack_array_elem_fn fn) {
-  if(count > max_count) {
+uint8_t packarray(void *array,
+                  uint16_t array_element_size,
+                  uint16_t max_count,
+                  uint16_t count,
+                  uint8_t **ppwritepackedmsg,
+                  uint8_t *end,
+                  pack_array_elem_fn fn)
+{
+  if (count > max_count) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, count, max_count);
     on_error();
     return 0;
@@ -556,8 +582,8 @@ uint8_t packarray(void *array, uint16_t array_element_size, uint16_t max_count, 
 
   uint16_t i = 0;
 
-  for(i = 0; i < count; ++i) {
-    if((fn)(array, ppwritepackedmsg, end) == 0)
+  for (i = 0; i < count; ++i) {
+    if ((fn)(array, ppwritepackedmsg, end) == 0)
       return 0;
 
     array += array_element_size;
@@ -566,8 +592,15 @@ uint8_t packarray(void *array, uint16_t array_element_size, uint16_t max_count, 
   return 1;
 }
 
-uint8_t unpackarray(uint8_t **ppReadPackedMsg, void *array, uint16_t array_element_size, uint16_t max_count, uint16_t count, uint8_t *end, unpack_array_elem_fn fn) {
-  if(count > max_count) {
+uint8_t unpackarray(uint8_t **ppReadPackedMsg,
+                    void *array,
+                    uint16_t array_element_size,
+                    uint16_t max_count,
+                    uint16_t count,
+                    uint8_t *end,
+                    unpack_array_elem_fn fn)
+{
+  if (count > max_count) {
     NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s exceed array size (%d > %d)\n", __FUNCTION__, count, max_count);
     on_error();
     return 0;
@@ -575,8 +608,8 @@ uint8_t unpackarray(uint8_t **ppReadPackedMsg, void *array, uint16_t array_eleme
 
   uint16_t i = 0;
 
-  for(i = 0; i < count; ++i) {
-    if((fn)(array, ppReadPackedMsg, end) == 0)
+  for (i = 0; i < count; ++i) {
+    if ((fn)(array, ppReadPackedMsg, end) == 0)
       return 0;
 
     array += array_element_size;
@@ -623,17 +656,18 @@ uint32_t unpack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t
   return pullresult;
 }
 
-uint32_t pack_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config) {
-  if(ve != 0 && config != 0) {
-    if(config->pack_vendor_extension_tlv) {
+uint32_t pack_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config)
+{
+  if (ve != 0 && config != 0) {
+    if (config->pack_vendor_extension_tlv) {
       uint8_t *pStartOfTlv = *ppWritePackedMsg;
 
-      if(pack_tl(ve, ppWritePackedMsg, end) == 0)
+      if (pack_tl(ve, ppWritePackedMsg, end) == 0)
         return 0;
 
       uint8_t *pStartOfValue = *ppWritePackedMsg;
 
-      if((config->pack_vendor_extension_tlv)(ve, ppWritePackedMsg, end, config) == 0)
+      if ((config->pack_vendor_extension_tlv)(ve, ppWritePackedMsg, end, config) == 0)
         return 0;
 
       ve->length = (*ppWritePackedMsg) - pStartOfValue;
@@ -660,17 +694,18 @@ int unpack_vendor_extension_tlv(nfapi_tl_t *tl,
   return 1;
 }
 
-uint32_t pack_p7_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end,nfapi_p7_codec_config_t *config) {
-  if(ve != 0 && config != 0) {
-    if(config->pack_vendor_extension_tlv) {
+uint32_t pack_p7_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p7_codec_config_t *config)
+{
+  if (ve != 0 && config != 0) {
+    if (config->pack_vendor_extension_tlv) {
       uint8_t *pStartOfTlv = *ppWritePackedMsg;
 
-      if(pack_tl(ve, ppWritePackedMsg, end) == 0)
+      if (pack_tl(ve, ppWritePackedMsg, end) == 0)
         return 0;
 
       uint8_t *pStartOfValue = *ppWritePackedMsg;
 
-      if((config->pack_vendor_extension_tlv)(ve, ppWritePackedMsg, end, config) == 0)
+      if ((config->pack_vendor_extension_tlv)(ve, ppWritePackedMsg, end, config) == 0)
         return 0;
 
       ve->length = (*ppWritePackedMsg) - pStartOfValue;
@@ -682,9 +717,14 @@ uint32_t pack_p7_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg
   return 1;
 }
 
-int unpack_p7_vendor_extension_tlv(nfapi_tl_t *tl, uint8_t **ppReadPackedMsg, uint8_t *end, nfapi_p7_codec_config_t *config, nfapi_tl_t **ve_tlv) {
-  if(ve_tlv != 0 && config != 0) {
-    if(config->unpack_vendor_extension_tlv) {
+int unpack_p7_vendor_extension_tlv(nfapi_tl_t *tl,
+                                   uint8_t **ppReadPackedMsg,
+                                   uint8_t *end,
+                                   nfapi_p7_codec_config_t *config,
+                                   nfapi_tl_t **ve_tlv)
+{
+  if (ve_tlv != 0 && config != 0) {
+    if (config->unpack_vendor_extension_tlv) {
       return (config->unpack_vendor_extension_tlv)(tl, ppReadPackedMsg, end, (void **)ve_tlv, config);
     }
   }
@@ -692,59 +732,67 @@ int unpack_p7_vendor_extension_tlv(nfapi_tl_t *tl, uint8_t **ppReadPackedMsg, ui
   return 1;
 }
 
-
-uint8_t pack_tl(nfapi_tl_t *tl, uint8_t **ppWritePackedMsg, uint8_t *end) {
-  return (push16(tl->tag, ppWritePackedMsg, end) &&
-          push16(tl->length, ppWritePackedMsg, end));
+uint8_t pack_tl(nfapi_tl_t *tl, uint8_t **ppWritePackedMsg, uint8_t *end)
+{
+  return (push16(tl->tag, ppWritePackedMsg, end) && push16(tl->length, ppWritePackedMsg, end));
 }
 
-uint8_t unpack_tl(uint8_t **ppReadPackedMsg, nfapi_tl_t *tl, uint8_t *end) {
-  return (pull16(ppReadPackedMsg, &tl->tag, end) &&
-          pull16(ppReadPackedMsg, &tl->length, end));
+uint8_t unpack_tl(uint8_t **ppReadPackedMsg, nfapi_tl_t *tl, uint8_t *end)
+{
+  return (pull16(ppReadPackedMsg, &tl->tag, end) && pull16(ppReadPackedMsg, &tl->length, end));
 }
 
-int unpack_tlv_list(unpack_tlv_t unpack_fns[], uint16_t size, uint8_t **ppReadPackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config, nfapi_tl_t **ve) {
+int unpack_tlv_list(unpack_tlv_t unpack_fns[],
+                    uint16_t size,
+                    uint8_t **ppReadPackedMsg,
+                    uint8_t *end,
+                    nfapi_p4_p5_codec_config_t *config,
+                    nfapi_tl_t **ve)
+{
   nfapi_tl_t generic_tl;
   uint8_t numBadTags = 0;
   uint16_t idx = 0;
 
   while ((uint8_t *)(*ppReadPackedMsg) < end) {
     // unpack the tl and process the values accordingly
-    if(unpack_tl(ppReadPackedMsg, &generic_tl, end) == 0)
+    if (unpack_tl(ppReadPackedMsg, &generic_tl, end) == 0)
       return 0;
 
     uint8_t tagMatch = 0;
     uint8_t *pStartOfValue = *ppReadPackedMsg;
 
-    for(idx = 0; idx < size; ++idx) {
-      if(unpack_fns[idx].tag == generic_tl.tag) { // match the extracted tag value with all the tags in unpack_fn list
+    for (idx = 0; idx < size; ++idx) {
+      if (unpack_fns[idx].tag == generic_tl.tag) { // match the extracted tag value with all the tags in unpack_fn list
         tagMatch = 1;
         nfapi_tl_t *tl = (nfapi_tl_t *)(unpack_fns[idx].tlv);
         tl->tag = generic_tl.tag;
         tl->length = generic_tl.length;
         int result = (*unpack_fns[idx].unpack_func)(tl, ppReadPackedMsg, end);
 
-        if(result == 0) {
+        if (result == 0) {
           return 0;
         }
 
         // check if the length was right;
-        if(tl->length != (*ppReadPackedMsg - pStartOfValue)) {
-          NFAPI_TRACE(NFAPI_TRACE_ERROR, "Warning tlv tag 0x%x length %d not equal to unpack %ld\n", tl->tag, tl->length, (*ppReadPackedMsg - pStartOfValue));
+        if (tl->length != (*ppReadPackedMsg - pStartOfValue)) {
+          NFAPI_TRACE(NFAPI_TRACE_ERROR,
+                      "Warning tlv tag 0x%x length %d not equal to unpack %ld\n",
+                      tl->tag,
+                      tl->length,
+                      (*ppReadPackedMsg - pStartOfValue));
           on_error();
         }
       }
     }
 
-    if(tagMatch == 0) {
-      if(generic_tl.tag >= NFAPI_VENDOR_EXTENSION_MIN_TAG_VALUE &&
-          generic_tl.tag <= NFAPI_VENDOR_EXTENSION_MAX_TAG_VALUE) {
+    if (tagMatch == 0) {
+      if (generic_tl.tag >= NFAPI_VENDOR_EXTENSION_MIN_TAG_VALUE && generic_tl.tag <= NFAPI_VENDOR_EXTENSION_MAX_TAG_VALUE) {
         int result = unpack_vendor_extension_tlv(&generic_tl, ppReadPackedMsg, end, config, ve);
 
-        if(result == 0) {
+        if (result == 0) {
           // got tot the end.
           return 0;
-        } else if(result < 0) {
+        } else if (result < 0) {
           NFAPI_TRACE(NFAPI_TRACE_ERROR, "Unknown VE TAG value: 0x%04x\n", generic_tl.tag);
           on_error();
 
@@ -754,7 +802,7 @@ int unpack_tlv_list(unpack_tlv_t unpack_fns[], uint16_t size, uint8_t **ppReadPa
             return 0;
           }
 
-          if((end - *ppReadPackedMsg) >= generic_tl.length) {
+          if ((end - *ppReadPackedMsg) >= generic_tl.length) {
             // Advance past the unknown TLV
             (*ppReadPackedMsg) += generic_tl.length;
           } else {
@@ -772,7 +820,7 @@ int unpack_tlv_list(unpack_tlv_t unpack_fns[], uint16_t size, uint8_t **ppReadPa
           return 0;
         }
 
-        if((end - *ppReadPackedMsg) >= generic_tl.length) {
+        if ((end - *ppReadPackedMsg) >= generic_tl.length) {
           // Advance past the unknown TLV
           (*ppReadPackedMsg) += generic_tl.length;
         } else {
@@ -882,48 +930,57 @@ int unpack_nr_tlv_list(unpack_tlv_t unpack_fns[],
   return 1;
 }
 
-int unpack_p7_tlv_list(unpack_p7_tlv_t unpack_fns[], uint16_t size, uint8_t **ppReadPackedMsg, uint8_t *end, nfapi_p7_codec_config_t *config, nfapi_tl_t **ve) {
+int unpack_p7_tlv_list(unpack_p7_tlv_t unpack_fns[],
+                       uint16_t size,
+                       uint8_t **ppReadPackedMsg,
+                       uint8_t *end,
+                       nfapi_p7_codec_config_t *config,
+                       nfapi_tl_t **ve)
+{
   nfapi_tl_t generic_tl;
   uint8_t numBadTags = 0;
   uint16_t idx = 0;
 
   while ((uint8_t *)(*ppReadPackedMsg) < end) {
     // unpack the tl and process the values accordingly
-    if(unpack_tl(ppReadPackedMsg, &generic_tl, end) == 0)
+    if (unpack_tl(ppReadPackedMsg, &generic_tl, end) == 0)
       return 0;
 
     uint8_t tagMatch = 0;
     uint8_t *pStartOfValue = *ppReadPackedMsg;
 
-    for(idx = 0; idx < size; ++idx) {
-      if(unpack_fns[idx].tag == generic_tl.tag) {
+    for (idx = 0; idx < size; ++idx) {
+      if (unpack_fns[idx].tag == generic_tl.tag) {
         tagMatch = 1;
         nfapi_tl_t *tl = (nfapi_tl_t *)(unpack_fns[idx].tlv);
         tl->tag = generic_tl.tag;
         tl->length = generic_tl.length;
         int result = (*unpack_fns[idx].unpack_func)(tl, ppReadPackedMsg, end, config);
 
-        if(result == 0) {
-          return  0;
+        if (result == 0) {
+          return 0;
         }
 
         // check if the length was right;
-        if(tl->length != (*ppReadPackedMsg - pStartOfValue)) {
-          NFAPI_TRACE(NFAPI_TRACE_ERROR, "Warning tlv tag 0x%x length %d not equal to unpack %ld\n", tl->tag, tl->length, (*ppReadPackedMsg - pStartOfValue));
+        if (tl->length != (*ppReadPackedMsg - pStartOfValue)) {
+          NFAPI_TRACE(NFAPI_TRACE_ERROR,
+                      "Warning tlv tag 0x%x length %d not equal to unpack %ld\n",
+                      tl->tag,
+                      tl->length,
+                      (*ppReadPackedMsg - pStartOfValue));
           on_error();
         }
       }
     }
 
-    if(tagMatch == 0) {
-      if(generic_tl.tag >= NFAPI_VENDOR_EXTENSION_MIN_TAG_VALUE &&
-          generic_tl.tag <= NFAPI_VENDOR_EXTENSION_MAX_TAG_VALUE) {
+    if (tagMatch == 0) {
+      if (generic_tl.tag >= NFAPI_VENDOR_EXTENSION_MIN_TAG_VALUE && generic_tl.tag <= NFAPI_VENDOR_EXTENSION_MAX_TAG_VALUE) {
         int result = unpack_p7_vendor_extension_tlv(&generic_tl, ppReadPackedMsg, end, config, ve);
 
-        if(result == 0) {
+        if (result == 0) {
           // got to end
           return 0;
-        } else if(result < 0) {
+        } else if (result < 0) {
           NFAPI_TRACE(NFAPI_TRACE_ERROR, "Unknown TAG value: 0x%04x\n", generic_tl.tag);
           on_error();
 
@@ -933,7 +990,7 @@ int unpack_p7_tlv_list(unpack_p7_tlv_t unpack_fns[], uint16_t size, uint8_t **pp
             return -1;
           }
 
-          if((end - *ppReadPackedMsg) >= generic_tl.length) {
+          if ((end - *ppReadPackedMsg) >= generic_tl.length) {
             // Advance past the unknown TLV
             (*ppReadPackedMsg) += generic_tl.length;
           } else {
@@ -951,7 +1008,7 @@ int unpack_p7_tlv_list(unpack_p7_tlv_t unpack_fns[], uint16_t size, uint8_t **pp
           return -1;
         }
 
-        if((end - *ppReadPackedMsg) >= generic_tl.length) {
+        if ((end - *ppReadPackedMsg) >= generic_tl.length) {
           // Advance past the unknown TLV
           (*ppReadPackedMsg) += generic_tl.length;
         } else {
@@ -1064,22 +1121,23 @@ int unpack_nr_p7_tlv_list(unpack_p7_tlv_t unpack_fns[],
 
 // This intermediate function deals with calculating the length of the value
 // and writing into the tlv header.
-uint8_t pack_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn) {
+uint8_t pack_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn)
+{
   nfapi_tl_t *tl = (nfapi_tl_t *)tlv;
 
   // If the tag is defined
-  if(tl->tag == tag) {
+  if (tl->tag == tag) {
     uint8_t *pStartOfTlv = *ppWritePackedMsg;
 
     // write a dumy tlv header
-    if(pack_tl(tl, ppWritePackedMsg, end) == 0)
+    if (pack_tl(tl, ppWritePackedMsg, end) == 0)
       return 0;
 
     // Record the start of the value
     uint8_t *pStartOfValue = *ppWritePackedMsg;
 
     // pack the tlv value
-    if(fn(tlv, ppWritePackedMsg, end) == 0)
+    if (fn(tlv, ppWritePackedMsg, end) == 0)
       return 0;
 
     // calculate the length of the value and rewrite the tl header
@@ -1087,10 +1145,10 @@ uint8_t pack_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *e
     // rewrite the header with the correct length
     pack_tl(tl, &pStartOfTlv, end);
   } else {
-    if(tl->tag != 0) {
+    if (tl->tag != 0) {
       NFAPI_TRACE(NFAPI_TRACE_WARN, "Warning pack_tlv tag 0x%x does not match expected 0x%x\n", tl->tag, tag);
     } else {
-      //NFAPI_TRACE(NFAPI_TRACE_ERROR, "Warning pack_tlv tag 0x%x ZERO does not match expected 0x%x\n", tl->tag, tag);
+      // NFAPI_TRACE(NFAPI_TRACE_ERROR, "Warning pack_tlv tag 0x%x ZERO does not match expected 0x%x\n", tl->tag, tag);
     }
   }
 
@@ -1138,8 +1196,9 @@ uint8_t pack_nr_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t
   return 1;
 }
 
-const char *nfapi_error_code_to_str(nfapi_error_code_e value) {
-  switch(value) {
+const char *nfapi_error_code_to_str(nfapi_error_code_e value)
+{
+  switch (value) {
     case NFAPI_MSG_OK:
       return "NFAPI_MSG_OK";
 
@@ -1180,50 +1239,40 @@ uint8_t get_tlv_padding(uint16_t tlv_length)
 uint8_t pack_pnf_param_general_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end)
 {
   nfapi_pnf_param_general_t *value = (nfapi_pnf_param_general_t *)tlv;
-  return push8(value->nfapi_sync_mode, ppWritePackedMsg, end)
-         && push8(value->location_mode, ppWritePackedMsg, end)
+  return push8(value->nfapi_sync_mode, ppWritePackedMsg, end) && push8(value->location_mode, ppWritePackedMsg, end)
          && push16(value->location_coordinates_length, ppWritePackedMsg, end)
          && pusharray8(value->location_coordinates,
                        NFAPI_PNF_PARAM_GENERAL_LOCATION_LENGTH,
                        value->location_coordinates_length,
                        ppWritePackedMsg,
                        end)
-         && push32(value->dl_config_timing, ppWritePackedMsg, end)
-         && push32(value->tx_timing, ppWritePackedMsg, end)
-         && push32(value->ul_config_timing, ppWritePackedMsg, end)
-         && push32(value->hi_dci0_timing, ppWritePackedMsg, end)
+         && push32(value->dl_config_timing, ppWritePackedMsg, end) && push32(value->tx_timing, ppWritePackedMsg, end)
+         && push32(value->ul_config_timing, ppWritePackedMsg, end) && push32(value->hi_dci0_timing, ppWritePackedMsg, end)
          && push16(value->maximum_number_phys, ppWritePackedMsg, end)
          && push16(value->maximum_total_bandwidth, ppWritePackedMsg, end)
          && push8(value->maximum_total_number_dl_layers, ppWritePackedMsg, end)
-         && push8(value->maximum_total_number_ul_layers, ppWritePackedMsg, end)
-         && push8(value->shared_bands, ppWritePackedMsg, end)
-         && push8(value->shared_pa, ppWritePackedMsg, end)
-         && pushs16(value->maximum_total_power, ppWritePackedMsg, end)
+         && push8(value->maximum_total_number_ul_layers, ppWritePackedMsg, end) && push8(value->shared_bands, ppWritePackedMsg, end)
+         && push8(value->shared_pa, ppWritePackedMsg, end) && pushs16(value->maximum_total_power, ppWritePackedMsg, end)
          && pusharray8(value->oui, NFAPI_PNF_PARAM_GENERAL_OUI_LENGTH, NFAPI_PNF_PARAM_GENERAL_OUI_LENGTH, ppWritePackedMsg, end);
 }
 
 uint8_t unpack_pnf_param_general_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end)
 {
   nfapi_pnf_param_general_t *value = (nfapi_pnf_param_general_t *)tlv;
-  return pull8(ppReadPackedMsg, &value->nfapi_sync_mode, end)
-         && pull8(ppReadPackedMsg, &value->location_mode, end)
+  return pull8(ppReadPackedMsg, &value->nfapi_sync_mode, end) && pull8(ppReadPackedMsg, &value->location_mode, end)
          && pull16(ppReadPackedMsg, &value->location_coordinates_length, end)
          && pullarray8(ppReadPackedMsg,
                        value->location_coordinates,
                        NFAPI_PNF_PARAM_GENERAL_LOCATION_LENGTH,
                        value->location_coordinates_length,
                        end)
-         && pull32(ppReadPackedMsg, &value->dl_config_timing, end)
-         && pull32(ppReadPackedMsg, &value->tx_timing, end)
-         && pull32(ppReadPackedMsg, &value->ul_config_timing, end)
-         && pull32(ppReadPackedMsg, &value->hi_dci0_timing, end)
+         && pull32(ppReadPackedMsg, &value->dl_config_timing, end) && pull32(ppReadPackedMsg, &value->tx_timing, end)
+         && pull32(ppReadPackedMsg, &value->ul_config_timing, end) && pull32(ppReadPackedMsg, &value->hi_dci0_timing, end)
          && pull16(ppReadPackedMsg, &value->maximum_number_phys, end)
          && pull16(ppReadPackedMsg, &value->maximum_total_bandwidth, end)
          && pull8(ppReadPackedMsg, &value->maximum_total_number_dl_layers, end)
-         && pull8(ppReadPackedMsg, &value->maximum_total_number_ul_layers, end)
-         && pull8(ppReadPackedMsg, &value->shared_bands, end)
-         && pull8(ppReadPackedMsg, &value->shared_pa, end)
-         && pulls16(ppReadPackedMsg, &value->maximum_total_power, end)
+         && pull8(ppReadPackedMsg, &value->maximum_total_number_ul_layers, end) && pull8(ppReadPackedMsg, &value->shared_bands, end)
+         && pull8(ppReadPackedMsg, &value->shared_pa, end) && pulls16(ppReadPackedMsg, &value->maximum_total_power, end)
          && pullarray8(ppReadPackedMsg, value->oui, NFAPI_PNF_PARAM_GENERAL_OUI_LENGTH, NFAPI_PNF_PARAM_GENERAL_OUI_LENGTH, end);
 }
 
@@ -1242,8 +1291,7 @@ uint8_t unpack_rf_config_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *en
 uint8_t pack_pnf_phy_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end)
 {
   nfapi_pnf_phy_info_t *phy = (nfapi_pnf_phy_info_t *)elem;
-  return push16(phy->phy_config_index, ppWritePackedMsg, end)
-         && push16(phy->number_of_rfs, ppWritePackedMsg, end)
+  return push16(phy->phy_config_index, ppWritePackedMsg, end) && push16(phy->number_of_rfs, ppWritePackedMsg, end)
          && packarray(phy->rf_config,
                       sizeof(nfapi_rf_config_info_t),
                       NFAPI_MAX_PNF_PHY_RF_CONFIG,
@@ -1270,8 +1318,7 @@ uint8_t pack_pnf_phy_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end)
 uint8_t unpack_pnf_phy_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *end)
 {
   nfapi_pnf_phy_info_t *phy = (nfapi_pnf_phy_info_t *)elem;
-  return pull16(ppReadPackedMsg, &phy->phy_config_index, end)
-         && pull16(ppReadPackedMsg, &phy->number_of_rfs, end)
+  return pull16(ppReadPackedMsg, &phy->phy_config_index, end) && pull16(ppReadPackedMsg, &phy->number_of_rfs, end)
          && unpackarray(ppReadPackedMsg,
                         phy->rf_config,
                         sizeof(nfapi_rf_config_info_t),
@@ -1324,16 +1371,14 @@ uint8_t unpack_pnf_phy_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end)
 uint8_t pack_phy_rf_config_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end)
 {
   nfapi_phy_rf_config_info_t *rf = (nfapi_phy_rf_config_info_t *)elem;
-  return push16(rf->phy_id, ppWritePackedMsg, end)
-         && push16(rf->phy_config_index, ppWritePackedMsg, end)
+  return push16(rf->phy_id, ppWritePackedMsg, end) && push16(rf->phy_config_index, ppWritePackedMsg, end)
          && push16(rf->rf_config_index, ppWritePackedMsg, end);
 }
 
 uint8_t unpack_phy_rf_config_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *end)
 {
   nfapi_phy_rf_config_info_t *rf = (nfapi_phy_rf_config_info_t *)elem;
-  return pull16(ppReadPackedMsg, &rf->phy_id, end)
-         && pull16(ppReadPackedMsg, &rf->phy_config_index, end)
+  return pull16(ppReadPackedMsg, &rf->phy_id, end) && pull16(ppReadPackedMsg, &rf->phy_config_index, end)
          && pull16(ppReadPackedMsg, &rf->rf_config_index, end);
 }
 
