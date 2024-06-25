@@ -164,11 +164,11 @@ int main(int argc, char **argv){
 
   randominit(0);
 
-  while ((c = getopt (argc, argv, "--:hHaA:Cc:l:r:p:g:m:n:s:S:t:x:y:v:V:z:N:F:d:Z:L:R:E")) != -1) {
+  while ((c = getopt (argc, argv, "--:O:hHaA:Cc:l:r:p:g:m:n:s:S:t:x:y:v:V:z:N:F:d:Z:L:R:E")) != -1) {
 
-    /* ignore long options starting with '--' and their arguments that are handled by configmodule */
+    /* ignore long options starting with '--', option '-O' and their arguments that are handled by configmodule */
     /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
-    if (c == 1 || c == '-')
+    if (c == 1 || c == '-' || c == 'O')
       continue;
 
     printf("handling optarg %c\n",c);

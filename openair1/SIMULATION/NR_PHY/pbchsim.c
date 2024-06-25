@@ -244,11 +244,11 @@ int main(int argc, char **argv)
     exit_fun("[NR_PBCHSIM] Error, configuration module init failed\n");
   }
 
-  while ((c = getopt (argc, argv, "--:c:F:g:hIL:m:M:n:N:o:P:r:R:s:S:x:y:z:")) != -1) {
+  while ((c = getopt (argc, argv, "--:O:c:F:g:hIL:m:M:n:N:o:P:r:R:s:S:x:y:z:")) != -1) {
 
     /* ignore long options starting with '--', option '-O' and their arguments that are handled by configmodule */
     /* with this opstring getopt returns 1 for non-option arguments, refer to 'man 3 getopt' */
-    if (c == 1 || c == '-')
+    if (c == 1 || c == '-' || c == 'O')
       continue;
 
     printf("handling optarg %c\n",c);
