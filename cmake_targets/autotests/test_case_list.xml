@@ -116,7 +116,7 @@
       <main_exec>nr_pbchsim</main_exec>
       <main_exec_args>-s-11 -S-8 -n10 -R106 -N2
                       -s-11 -S-8 -n10 -o8000 -I -R106
-                      -s-11 -S-8 -n10 -R106 -O6</main_exec_args>
+                      -s-11 -S-8 -n10 -R106 -c6</main_exec_args>
       <tags>test1 test2 test3</tags>
       <search_expr_true>PBCH test OK</search_expr_true>
       <search_expr_false>segmentation fault|assertion|exiting|fatal</search_expr_false>
