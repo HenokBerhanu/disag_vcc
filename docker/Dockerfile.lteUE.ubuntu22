@@ -64,7 +64,14 @@ RUN apt-get update && \
         iputils-ping \
         iproute2 \
         iperf3 \
-        iperf && \
+        wget && \
+# Installing older version of iperf2 for feMBMS test
+    wget --quiet http://fr.archive.ubuntu.com/ubuntu/pool/universe/i/iperf/iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+    dpkg -i iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+# iperf --version returns 1 that fails docker build
+    iperf --version || true && \
+    rm -f iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+    apt-get remove -y wget && \
 # if the --sanitize option was used to build, additional packages are required
     /bin/bash -c 'if [[ "$BUILD_OPTION" = "--sanitize" ]]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes \
         #libasan5 \ # see below
