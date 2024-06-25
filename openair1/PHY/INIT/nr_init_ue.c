@@ -296,8 +296,12 @@ int init_nr_ue_signal(PHY_VARS_NR_UE *ue, int nb_connected_gNB)
   // init RX buffers
   common_vars->rxdata = malloc16(fp->nb_antennas_rx * sizeof(c16_t *));
 
+  int num_samples = 2 * fp->samples_per_frame + fp->ofdm_symbol_size;
+  if (ue->sl_mode == 2)
+    num_samples = (SL_NR_PSBCH_REPETITION_IN_FRAMES * fp->samples_per_frame) + fp->ofdm_symbol_size;
+
   for (i=0; i<fp->nb_antennas_rx; i++) {
-    common_vars->rxdata[i] = malloc16_clear((2 * (fp->samples_per_frame) + fp->ofdm_symbol_size) * sizeof(c16_t));
+    common_vars->rxdata[i] = malloc16_clear(num_samples * sizeof(c16_t));
   }
 
   // ceil(((NB_RB<<1)*3)/32) // 3 RE *2(QPSK)
@@ -655,7 +659,8 @@ void init_N_TA_offset(PHY_VARS_NR_UE *ue){
 
   NR_DL_FRAME_PARMS *fp = &ue->frame_parms;
 
-  if (fp->frame_type == FDD) {
+  // No timing offset for Sidelink, refer to 3GPP 38.211 Section 8.5
+  if (fp->frame_type == FDD || ue->sl_mode == 2) {
     ue->N_TA_offset = 0;
   } else {
     int N_TA_offset = fp->ul_CarrierFreq < 6e9 ? 400 : 431; // reference samples  for 25600Tc @ 30.72 Ms/s for FR1, same @ 61.44 Ms/s for FR2
@@ -771,6 +776,4 @@ void sl_ue_phy_init(PHY_VARS_NR_UE *UE)
   // Generate PSS time domain samples used for correlation during SLSS reception.
   sl_generate_pss_ifft_samples(&UE->SL_UE_PHY_PARAMS, &UE->SL_UE_PHY_PARAMS.init_params);
 
-  init_symbol_rotation(sl_fp);
-  init_timeshift_rotation(sl_fp);
 }

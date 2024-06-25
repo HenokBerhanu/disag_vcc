@@ -114,6 +114,8 @@ void apply_nr_rotation_TX(const NR_DL_FRAME_PARMS *fp,
                           int first_symbol,
                           int nsymb);
 
+void perform_symbol_rotation(NR_DL_FRAME_PARMS *fp, double f0, c16_t *symbol_rotation);
+
 void init_symbol_rotation(NR_DL_FRAME_PARMS *fp);
 
 void init_timeshift_rotation(NR_DL_FRAME_PARMS *fp);

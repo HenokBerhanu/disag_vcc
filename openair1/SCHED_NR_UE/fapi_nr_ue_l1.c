@@ -298,7 +298,15 @@ static void configure_dlsch(NR_UE_DLSCH_t *dlsch0,
   //get nrOfLayers from DCI info
   uint8_t Nl = 0;
   for (int i = 0; i < 12; i++) { // max 12 ports
-    if ((dlsch_config_pdu->dmrs_ports>>i)&0x01) Nl += 1;
+    if ((dlsch_config_pdu->dmrs_ports >> i) & 0x01)
+      Nl += 1;
+  }
+  if (Nl == 0) {
+    LOG_E(PHY, "Invalid number of layers %d for DLSCH\n", Nl);
+    // setting NACK for this TB
+    dlsch0->active = false;
+    update_harq_status(mac, current_harq_pid, 0);
+    return;
   }
   dlsch0->Nl = Nl;
   if (dlsch_config_pdu->new_data_indicator) {
@@ -456,7 +464,7 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
         NR_UL_UE_HARQ_t *harq_process_ul_ue = &phy->ul_harq_processes[current_harq_pid];
         nfapi_nr_ue_pusch_pdu_t *pusch_pdu = &phy_data->ulsch.pusch_pdu;
         LOG_D(PHY,
-              "copy pusch_config_pdu nrOfLayers:%d, num_dmrs_cdm_grps_no_data:%d \n",
+              "copy pusch_config_pdu nrOfLayers: %d, num_dmrs_cdm_grps_no_data: %d\n",
               pdu->pusch_config_pdu.nrOfLayers,
               pdu->pusch_config_pdu.num_dmrs_cdm_grps_no_data);
 
@@ -523,7 +531,8 @@ static void nr_ue_scheduled_response_ul(PHY_VARS_NR_UE *phy, fapi_nr_ul_config_r
 int8_t nr_ue_scheduled_response(nr_scheduled_response_t *scheduled_response)
 {
   PHY_VARS_NR_UE *phy = PHY_vars_UE_g[scheduled_response->module_id][scheduled_response->CC_id];
-  AssertFatal(!scheduled_response->dl_config || !scheduled_response->ul_config,
+  AssertFatal(!scheduled_response->dl_config || !scheduled_response->ul_config || !scheduled_response->sl_rx_config
+                  || !scheduled_response->sl_tx_config,
               "phy_data parameter will be cast to two different types!\n");
 
   if (scheduled_response->dl_config)
@@ -533,6 +542,11 @@ int8_t nr_ue_scheduled_response(nr_scheduled_response_t *scheduled_response)
                                 (nr_phy_data_t *)scheduled_response->phy_data);
   if (scheduled_response->ul_config)
     nr_ue_scheduled_response_ul(phy, scheduled_response->ul_config, (nr_phy_data_tx_t *)scheduled_response->phy_data);
+
+  if (scheduled_response->sl_rx_config || scheduled_response->sl_tx_config) {
+    sl_handle_scheduled_response(scheduled_response);
+  }
+
   return 0;
 }
 
@@ -552,3 +566,78 @@ void nr_ue_synch_request(nr_synch_request_t *synch_request)
   PHY_vars_UE_g[synch_request->Mod_id][synch_request->CC_id]->synch_request.received_synch_request = 1;
 }
 
+void nr_ue_sl_phy_config_request(nr_sl_phy_config_t *phy_config)
+{
+  sl_nr_phy_config_request_t *sl_config = &PHY_vars_UE_g[phy_config->Mod_id][phy_config->CC_id]->SL_UE_PHY_PARAMS.sl_config;
+  if (phy_config != NULL) {
+    memcpy(sl_config, &phy_config->sl_config_req, sizeof(sl_nr_phy_config_request_t));
+  }
+}
+
+/*
+ * MAC sends the scheduled response with either TX configrequest for Sidelink Transmission requests
+ * or RX config request for Sidelink Reception requests.
+ * This procedure handles these TX/RX config requests received in this slot and configures PHY
+ * with a TTI action to be performed in this slot(TTI)
+ */
+void sl_handle_scheduled_response(nr_scheduled_response_t *scheduled_response)
+{
+  module_id_t module_id = scheduled_response->module_id;
+  const char *sl_rx_action[] = {"NONE", "RX_PSBCH", "RX_PSCCH", "RX_SCI2_ON_PSSCH", "RX_SLSCH_ON_PSSCH"};
+  const char *sl_tx_action[] = {"TX_PSBCH", "TX_PSCCH_PSSCH", "TX_PSFCH"};
+
+  if (scheduled_response->sl_rx_config != NULL) {
+    sl_nr_rx_config_request_t *sl_rx_config = scheduled_response->sl_rx_config;
+    nr_phy_data_t *phy_data = (nr_phy_data_t *)scheduled_response->phy_data;
+
+    AssertFatal(sl_rx_config->number_pdus == SL_NR_RX_CONFIG_LIST_NUM, "sl_rx_config->number_pdus incorrect\n");
+
+    switch (sl_rx_config->sl_rx_config_list[0].pdu_type) {
+      case SL_NR_CONFIG_TYPE_RX_PSBCH:
+        phy_data->sl_rx_action = SL_NR_CONFIG_TYPE_RX_PSBCH;
+        LOG_D(PHY, "Recvd CONFIG_TYPE_RX_PSBCH\n");
+        break;
+      default:
+        AssertFatal(0, "Incorrect sl_rx config req pdutype \n");
+        break;
+    }
+
+    LOG_D(PHY,
+          "[UE%d] TTI %d:%d, SL-RX action:%s\n",
+          module_id,
+          sl_rx_config->sfn,
+          sl_rx_config->slot,
+          sl_rx_action[phy_data->sl_rx_action]);
+
+  } else if (scheduled_response->sl_tx_config != NULL) {
+    sl_nr_tx_config_request_t *sl_tx_config = scheduled_response->sl_tx_config;
+    nr_phy_data_tx_t *phy_data_tx = (nr_phy_data_tx_t *)scheduled_response->phy_data;
+
+    AssertFatal(sl_tx_config->number_pdus == SL_NR_TX_CONFIG_LIST_NUM, "sl_tx_config->number_pdus incorrect \n");
+
+    switch (sl_tx_config->tx_config_list[0].pdu_type) {
+      case SL_NR_CONFIG_TYPE_TX_PSBCH:
+        phy_data_tx->sl_tx_action = SL_NR_CONFIG_TYPE_TX_PSBCH;
+        LOG_D(PHY, "Recvd CONFIG_TYPE_TX_PSBCH\n");
+        *((uint32_t *)phy_data_tx->psbch_vars.psbch_payload) =
+            *((uint32_t *)sl_tx_config->tx_config_list[0].tx_psbch_config_pdu.psbch_payload);
+        phy_data_tx->psbch_vars.psbch_tx_power = sl_tx_config->tx_config_list[0].tx_psbch_config_pdu.psbch_tx_power;
+        phy_data_tx->psbch_vars.tx_slss_id = sl_tx_config->tx_config_list[0].tx_psbch_config_pdu.tx_slss_id;
+        break;
+      default:
+        AssertFatal(0, "Incorrect sl_tx config req pdutype \n");
+        break;
+    }
+
+    LOG_D(PHY,
+          "[UE%d] TTI %d:%d, SL-TX action:%s slss_id:%d, sl-mib:%x, psbch pwr:%d\n",
+          module_id,
+          sl_tx_config->sfn,
+          sl_tx_config->slot,
+          sl_tx_action[phy_data_tx->sl_tx_action - 6],
+          phy_data_tx->psbch_vars.tx_slss_id,
+          *((uint32_t *)phy_data_tx->psbch_vars.psbch_payload),
+          phy_data_tx->psbch_vars.psbch_tx_power);
+  }
+
+}

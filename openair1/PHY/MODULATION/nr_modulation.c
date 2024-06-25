@@ -578,61 +578,59 @@ void nr_dft(c16_t *z, c16_t *d, uint32_t Msc_PUSCH)
 
 }
 
-
-void init_symbol_rotation(NR_DL_FRAME_PARMS *fp) {
-
-  uint64_t dl_CarrierFreq = fp->dl_CarrierFreq;
-  uint64_t ul_CarrierFreq = fp->ul_CarrierFreq;
-  uint64_t sl_CarrierFreq = fp->sl_CarrierFreq;
-  double f[2] = {(double)dl_CarrierFreq, (double)ul_CarrierFreq};
-
+void perform_symbol_rotation(NR_DL_FRAME_PARMS *fp, double f0, c16_t *symbol_rotation)
+{
   const int nsymb = fp->symbols_per_slot * fp->slots_per_frame/10;
   const double Tc=(1/480e3/4096);
   const double Nu=2048*64*(1/(float)(1<<fp->numerology_index));
   const double Ncp0=16*64 + (144*64*(1/(float)(1<<fp->numerology_index)));
   const double Ncp1=(144*64*(1/(float)(1<<fp->numerology_index)));
 
-  for (uint8_t ll = 0; ll < 2; ll++){
+  LOG_I(PHY, "Doing symbol rotation calculation for TX/RX, f0 %f Hz, Nsymb %d\n", f0, nsymb);
 
+  double tl = 0.0;
+  double poff = 0.0;
+  double exp_re = 0.0;
+  double exp_im = 0.0;
+
+  for (int l = 0; l < nsymb; l++) {
+    double Ncp;
+    if (l == 0 || l == (7 * (1 << fp->numerology_index))) {
+      Ncp = Ncp0;
+    } else {
+      Ncp = Ncp1;
+    }
+
+    poff = 2 * M_PI * (tl + (Ncp * Tc)) * f0;
+    exp_re = cos(poff);
+    exp_im = sin(-poff);
+    symbol_rotation[l].r = (int16_t)floor(exp_re * 32767);
+    symbol_rotation[l].i = (int16_t)floor(exp_im * 32767);
+
+    LOG_D(PHY,
+          "Symbol rotation %d/%d => tl %f (%d,%d) (%f)\n",
+          l,
+          nsymb,
+          tl,
+          symbol_rotation[l].r,
+          symbol_rotation[l].i,
+          (poff / 2 / M_PI) - floor(poff / 2 / M_PI));
+
+    tl += (Nu + Ncp) * Tc;
+  }
+}
+
+void init_symbol_rotation(NR_DL_FRAME_PARMS *fp)
+{
+  double f[2] = {(double)fp->dl_CarrierFreq, (double)fp->ul_CarrierFreq};
+
+  for (int ll = 0; ll < 2; ll++) {
     double f0 = f[ll];
-    LOG_D(PHY, "Doing symbol rotation calculation for gNB TX/RX, f0 %f Hz, Nsymb %d\n", f0, nsymb);
-    c16_t *symbol_rotation = fp->symbol_rotation[ll];
-    if (get_softmodem_params()->sl_mode == 2) {
-      f0 = (double)sl_CarrierFreq;
-      symbol_rotation = fp->symbol_rotation[link_type_sl];
-    }
+    if (f0 == 0)
+      continue;
+    c16_t *rot = fp->symbol_rotation[ll];
 
-    double tl = 0.0;
-    double poff = 0.0;
-    double exp_re = 0.0;
-    double exp_im = 0.0;
-
-    for (int l = 0; l < nsymb; l++) {
-
-      double Ncp;
-      if (l == 0 || l == (7 * (1 << fp->numerology_index))) {
-        Ncp = Ncp0;
-      } else {
-        Ncp = Ncp1;
-      }
-
-      poff = 2 * M_PI * (tl + (Ncp * Tc)) * f0;
-      exp_re = cos(poff);
-      exp_im = sin(-poff);
-      symbol_rotation[l].r = (int16_t)floor(exp_re * 32767);
-      symbol_rotation[l].i = (int16_t)floor(exp_im * 32767);
-
-      LOG_D(PHY, "Symbol rotation %d/%d => tl %f (%d,%d) (%f)\n",
-        l,
-        nsymb,
-        tl,
-        symbol_rotation[l].r,
-        symbol_rotation[l].i,
-        (poff / 2 / M_PI) - floor(poff / 2 / M_PI));
-
-      tl += (Nu + Ncp) * Tc;
-
-    }
+    perform_symbol_rotation(fp, f0, rot);
   }
 }
 

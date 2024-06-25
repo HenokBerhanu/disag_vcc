@@ -196,6 +196,12 @@ void gNB_dlsch_ulsch_scheduler(module_id_t module_idP, frame_t frame, sub_frame_
   gNB_MAC_INST *gNB = RC.nrmac[module_idP];
   NR_COMMON_channels_t *cc = gNB->common_channels;
   NR_ServingCellConfigCommon_t        *scc     = cc->ServingCellConfigCommon;
+  // Assert to detect segfault during gNB teardown. scc->ssbSubcarrierSpacing pointer is most likely overwritten
+  AssertFatal(
+    *scc->ssbSubcarrierSpacing >= 0 && *scc->ssbSubcarrierSpacing < sizeofArray(nr_slots_per_frame),
+    "ssbSubcarrierSpacing %ld is out of range, ssbSubcarrierSpacing pointer (%p) might be overwritten, known segfault condition",
+    *scc->ssbSubcarrierSpacing,
+    scc->ssbSubcarrierSpacing);
 
   NR_SCHED_LOCK(&gNB->sched_lock);
 

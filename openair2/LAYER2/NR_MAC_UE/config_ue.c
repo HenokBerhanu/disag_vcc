@@ -1306,6 +1306,7 @@ static void configure_dedicated_BWP_dl(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP
       if (dl_dedicated->pdcch_Config->present == NR_SetupRelease_PDCCH_Config_PR_setup)
         configure_ss_coreset(pdcch, dl_dedicated->pdcch_Config->choice.setup);
     }
+    AssertFatal(!dl_dedicated->sps_Config, "SPS handling not implemented\n");
   }
 }
 
@@ -1548,17 +1549,13 @@ static void configure_physicalcellgroup(NR_UE_MAC_INST_t *mac,
   mac->pdsch_HARQ_ACK_Codebook = phyConfig->pdsch_HARQ_ACK_Codebook;
   mac->harq_ACK_SpatialBundlingPUCCH = phyConfig->harq_ACK_SpatialBundlingPUCCH ? true : false;
   mac->harq_ACK_SpatialBundlingPUSCH = phyConfig->harq_ACK_SpatialBundlingPUSCH ? true : false;
-
+  AssertFatal(!phyConfig->ext1 || !phyConfig->ext1->mcs_C_RNTI, "Handling of mcs-C-RNTI not implemented\n");
   NR_P_Max_t *p_NR_FR1 = phyConfig->p_NR_FR1;
-  NR_P_Max_t *p_UE_FR1 = phyConfig->ext1 ?
-                         phyConfig->ext1->p_UE_FR1 :
-                         NULL;
+  NR_P_Max_t *p_UE_FR1 = phyConfig->ext1 ? phyConfig->ext1->p_UE_FR1 : NULL;
   if (p_NR_FR1 == NULL)
     mac->p_Max_alt = p_UE_FR1 == NULL ? INT_MIN : *p_UE_FR1;
   else
-    mac->p_Max_alt = p_UE_FR1 == NULL ? *p_NR_FR1 :
-                                        (*p_UE_FR1 < *p_NR_FR1 ?
-                                        *p_UE_FR1 : *p_NR_FR1);
+    mac->p_Max_alt = p_UE_FR1 == NULL ? *p_NR_FR1 : (*p_UE_FR1 < *p_NR_FR1 ? *p_UE_FR1 : *p_NR_FR1);
 }
 
 static uint32_t get_sr_DelayTimer(long logicalChannelSR_DelayTimer)

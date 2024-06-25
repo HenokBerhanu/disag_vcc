@@ -113,8 +113,7 @@ int8_t nr_mac_rrc_data_ind_ue(const module_id_t module_id,
         NR_RRC_MAC_SBCCH_DATA_IND (message_p).frame = frame; //frameP
         NR_RRC_MAC_SBCCH_DATA_IND (message_p).slot = slot;
         NR_RRC_MAC_SBCCH_DATA_IND (message_p).sdu_size = sdu_size;
-        NR_RRC_MAC_SBCCH_DATA_IND (message_p).gnb_index = gNB_index;
-        NR_RRC_MAC_SBCCH_DATA_IND (message_p).rx_slss_id = rnti;//rx_slss_id is rnti
+        NR_RRC_MAC_SBCCH_DATA_IND(message_p).rx_slss_id = cellid; // cellid is rx slss id
         itti_send_msg_to_task(TASK_RRC_NRUE, GNB_MODULE_ID_TO_INSTANCE(module_id), message_p);
       }
       break;

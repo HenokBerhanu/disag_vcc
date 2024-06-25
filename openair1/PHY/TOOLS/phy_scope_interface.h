@@ -67,6 +67,9 @@ enum scopeDataType {
   pdschRxdataF_comp,
   commonRxdataF,
   gNBRxdataF,
+  psbchDlChEstimateTime,
+  psbchLlr,
+  psbchRxdataF_comp,
   MAX_SCOPE_TYPES
 };
 
