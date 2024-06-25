@@ -257,7 +257,8 @@ uint8_t nr_ue_pusch_common_procedures(PHY_VARS_NR_UE *UE,
                                       const uint8_t slot,
                                       const NR_DL_FRAME_PARMS *frame_parms,
                                       const uint8_t n_antenna_ports,
-                                      c16_t **txdataF);
+                                      c16_t **txdataF,
+                                      uint32_t linktype);
 
 void clean_UE_harq(PHY_VARS_NR_UE *UE);
 
@@ -429,7 +430,7 @@ void dump_nrdlsch(PHY_VARS_NR_UE *ue,uint8_t gNB_id,uint8_t nr_slot_rx,unsigned 
 void nr_a_sum_b(c16_t *input_x, c16_t *input_y, unsigned short nb_rb);
 
 int nr_rx_psbch(PHY_VARS_NR_UE *ue,
-                UE_nr_rxtx_proc_t *proc,
+                const UE_nr_rxtx_proc_t *proc,
                 int estimateSz,
                 struct complex16 dl_ch_estimates[][estimateSz],
                 NR_DL_FRAME_PARMS *frame_parms,

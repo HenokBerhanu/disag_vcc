@@ -462,9 +462,7 @@ static int8_t nr_sl_rrc_ue_decode_SL_MIB(const uint8_t gNB_index,
 
     uint8_t val_slot = sl_mib->slotIndex_r16.buf[0];
 
-    LOG_D(NR_RRC, "SL-RRC - Received MIB\n");
-    LOG_D(NR_RRC, "SL-MIB Contents - DFN:%d\n" , val_fn);
-    LOG_D(NR_RRC, "SL-MIB Contents - SLOT:%d\n" , val_slot >> 1);
+    LOG_D(NR_RRC, "%d:%d SL-RRC - Received MIB.\n", val_fn, val_slot >> 1);
     LOG_D(NR_RRC, "SL-MIB Contents - Incoverage:%d\n", sl_mib->inCoverage_r16);
     LOG_D(NR_RRC, "SL-MIB Contents - sl-TDD-Config:%x\n" , *((uint16_t *)(sl_mib->sl_TDD_Config_r16.buf)));
 

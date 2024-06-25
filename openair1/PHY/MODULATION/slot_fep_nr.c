@@ -94,7 +94,7 @@ int sl_nr_slot_fep(PHY_VARS_NR_UE *ue,
     dft(dftsize, rxdata_ptr, (int16_t *)&rxdataF[aa][frame_params->ofdm_symbol_size * symbol], 1);
 
     int symb_offset = (Ns % frame_params->slots_per_subframe) * frame_params->symbols_per_slot;
-    int32_t rot2 = ((uint32_t *)frame_params->symbol_rotation[1])[symbol + symb_offset];
+    int32_t rot2 = ((uint32_t *)frame_params->symbol_rotation[2])[symbol + symb_offset];
     ((int16_t *)&rot2)[1] = -((int16_t *)&rot2)[1];
 
 #ifdef SL_DEBUG_SLOT_FEP
