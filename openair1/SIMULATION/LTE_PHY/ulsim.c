@@ -438,7 +438,7 @@ int main(int argc, char **argv) {
     { "bundling_disable", "bundling disable",PARAMFLAG_BOOL,  .iptr=&disable_bundling, .defintval=0, TYPE_INT, 0 },
     { "Y",  "n_ch_rlz",0, .iptr=&n_ch_rlz,  .defintval=1, TYPE_INT, 0 },
     { "X",  "abstx", PARAMFLAG_BOOL,  .iptr=&abstx, .defintval=0, TYPE_INT, 0 },
-    { "Operf", "Set the percentage of effective rate to testbench the modem performance (typically 30 and 70, range 1-100)",0, .iptr=&test_perf,  .defintval=0, TYPE_INT, 0 },
+    { "Tperf", "Set the percentage of effective rate to testbench the modem performance (typically 30 and 70, range 1-100)",0, .iptr=&test_perf,  .defintval=0, TYPE_INT, 0 },
     { "verbose", "display debug text", PARAMFLAG_BOOL,  .iptr=&verbose, .defintval=0, TYPE_INT, 0 },
     { "help", "display help and exit", PARAMFLAG_BOOL,  .iptr=&help, .defintval=0, TYPE_INT, 0 },
     { "", "",0,  .iptr=NULL, .defintval=0, TYPE_INT, 0 },

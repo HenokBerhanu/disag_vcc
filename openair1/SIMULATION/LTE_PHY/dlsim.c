@@ -630,7 +630,7 @@ int main(int argc, char **argv) {
     { "lMuMimo", "offset_mumimo_llr_drange_fix",0, .u8ptr=&offset_mumimo_llr_drange_fix,  .defintval=0, TYPE_UINT8, 0 },
     { "mcs1", "The MCS for TB 1", 0, .iptr=&mcs1,  .defintval=0, TYPE_INT, 0 },
     { "Mcs2", "The MCS for TB 2", 0, .iptr=&mcs2,  .defintval=0, TYPE_INT, 0 },
-    { "Operf", "Set the percenatge of effective rate to testbench the modem performance (typically 30 and 70, range 1-100)",0, .iptr=&test_perf,  .defintval=0, TYPE_INT, 0 },
+    { "Tperf", "Set the percenatge of effective rate to testbench the modem performance (typically 30 and 70, range 1-100)",0, .iptr=&test_perf,  .defintval=0, TYPE_INT, 0 },
     { "tmcs_i", "MCS of interfering UE",0, .iptr=NULL,  .defintval=0, TYPE_INT, 0 },
     { "nb_frame", "number of frame in a test",0, .iptr=&n_frames,  .defintval=1, TYPE_INT, 0 },
     { "offsetRxSample", "Sample offset for receiver", 0, .iptr=&rx_sample_offset,  .defintval=0, TYPE_INT, 0 },
