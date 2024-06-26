@@ -149,7 +149,7 @@ cd openairinterface5g/cmake_targets/
 
 After completing the build, the binaries are available in the `cmake_targets/ran_build/build` directory.
 
-Detailed information about these simulators can be found [in this dedicated page](https://gitlab.eurecom.fr/oai/openairinterface5g/wikis/OpenAirLTEPhySimul)
+Detailed information about these simulators can be found [in the dedicated page](./physical-simulators.md)
 
 ## Building UEs, eNodeB and gNodeB Executables
 

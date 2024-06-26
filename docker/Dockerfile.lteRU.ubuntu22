@@ -25,83 +25,68 @@
 #
 #---------------------------------------------------------------------
 
-FROM ran-base:latest as ran-build
+FROM ran-base:latest as ru-base
 
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
-    DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-       wget \
-       ninja-build \
-       #unzip is needed for protobuf
-       unzip \
-       moreutils \
-       vim-tiny \
-       nano \
-       # To build libnvipc
-       cmake libpcap-dev libcunit1-dev libnuma-dev pkg-config
-
-RUN rm -Rf /oai-ran
-WORKDIR /oai-ran
-COPY . .
-
-RUN /bin/sh oaienv && \
-    tar -xvzf nvipc_src.*.tar.gz && \
-    cd nvipc_src.* && \
-    rm -rf build && mkdir build && cd build && \
-    cmake .. -DNVIPC_DPDK_ENABLE=OFF -DNVIPC_DOCA_ENABLE=OFF -DNVIPC_CUDA_ENABLE=OFF -DENABLE_SLT_RSP=ON && \
-    make -j && make install
-
-RUN /bin/sh oaienv && \
-    cd cmake_targets && \
-    mkdir -p log && \
-    ./build_oai -w AERIAL --gNB --ninja --sanitize-address
+FROM ran-build:latest AS ru-build
 
 
 #start from scratch for target executable
-FROM ubuntu:focal as oai-gnb-aerial
+FROM ubuntu:jammy as oai-lte-ru
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe
+ENV TZ=Europe/Paris
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-        software-properties-common \
-        procps \
-        libsctp1 \
         tzdata \
+        procps \
+        software-properties-common \
+        libblas3 \
         libatlas3-base \
         libconfig9 \
-        openssl \
         net-tools \
-        iperf \
-        iproute2 \
-        iputils-ping \
         gdb \
-        libusb-1.0-0 && \
+        python3 \
+        python3-six \
+        python3-requests \
+        libusb-1.0-0 \
+        iputils-ping \
+        iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/oai-gnb/bin
-COPY --from=ran-build \
-    /oai-ran/cmake_targets/ran_build/build/nr-softmodem ./
-COPY ./docker/scripts/gnb_entrypoint.sh ./entrypoint.sh
+WORKDIR /opt/oai-lte-ru/bin
+COPY --from=ru-build \
+    /oai-ran/cmake_targets/ran_build/build/oairu ./
+COPY ./docker/scripts/lte_ru_entrypoint.sh ./entrypoint.sh
 
-COPY --from=ran-build \
-    /oai-ran/cmake_targets/ran_build/build/libcoding.so \
+COPY --from=ru-build \
+    /oai-ran/cmake_targets/ran_build/build/liboai_eth_transpro.so \
     /oai-ran/cmake_targets/ran_build/build/librfsimulator.so \
+    /oai-ran/cmake_targets/ran_build/build/liboai_usrpdevif.so \
     /oai-ran/cmake_targets/ran_build/build/libparams_libconfig.so \
     /oai-ran/cmake_targets/ran_build/build/libdfts.so \
-    /oai-ran/cmake_targets/ran_build/build/libldpc*.so \
     /usr/local/lib/
 
-#copy files from nvIPC
-COPY --from=ran-build \
-    /usr/local/lib/libfmtlog-shared.so \
-    /usr/local/lib/libnvlog.so \
-    /usr/local/lib/libnvipc.so \
-    /usr/local/lib/
+# Now we are copying from builder-image the UHD files.
+COPY --from=ru-base /usr/local/bin/uhd_find_devices /usr/local/bin
+COPY --from=ru-base /usr/local/lib/libuhd.so.4.4.0 /usr/local/lib
+COPY --from=ru-base /usr/local/lib/uhd/utils/uhd_images_downloader.py /opt/oai-lte-ru/bin
 
+COPY --from=ru-base \
+    /usr/lib/x86_64-linux-gnu/libboost_chrono.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_date_time.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_regex.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/libboost_system.so.1.74.0 \
+    /usr/lib/x86_64-linux-gnu/
 
-WORKDIR /opt/oai-gnb
-COPY --from=ran-build /tini /tini
-ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-gnb/bin/entrypoint.sh"]
-CMD ["/opt/oai-gnb/bin/nr-softmodem", "-O", "/opt/oai-gnb/etc/gnb.conf"]
+RUN /bin/bash -c "ln -s /usr/local/lib/liboai_usrpdevif.so /usr/local/lib/liboai_device.so" && \
+    ldconfig
+
+WORKDIR /opt/oai-lte-ru
+
+COPY --from=ru-base /tini /tini
+ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-lte-ru/bin/entrypoint.sh"]
+CMD ["/opt/oai-lte-ru/bin/oairu", "-O", "/opt/oai-lte-ru/etc/rru.conf"]

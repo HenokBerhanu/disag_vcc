@@ -286,7 +286,7 @@ class Containerize():
 		self.host = result.group(0)
 		if self.host == 'Ubuntu':
 			self.cli = 'docker'
-			self.dockerfileprefix = '.ubuntu20'
+			self.dockerfileprefix = '.ubuntu22'
 			self.cliBuildOptions = ''
 		elif self.host == 'Red Hat':
 			self.cli = 'sudo podman'
@@ -321,7 +321,7 @@ class Containerize():
 				imageNames.append(('oai-nr-cuup', 'nr-cuup', 'oai-nr-cuup-asan', '--build-arg "BUILD_OPTION=--sanitize"'))
 		result = re.search('build_cross_arm64', self.imageKind)
 		if result is not None:
-			self.dockerfileprefix = '.ubuntu20.cross-arm64'
+			self.dockerfileprefix = '.ubuntu22.cross-arm64'
 		
 		# Workaround for some servers, we need to erase completely the workspace
 		if self.forcedWorkspaceCleanup:
@@ -677,7 +677,7 @@ class Containerize():
 			return False
 
 		# build ran-unittests image
-		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu20"
+		dockerfile = "ci-scripts/docker/Dockerfile.unittest.ubuntu22"
 		ret = cmd.run(f'docker build --progress=plain --tag ran-unittests:{baseTag} --file {dockerfile} . &> {lSourcePath}/cmake_targets/log/unittest-build.log')
 		if ret.returncode != 0:
 			build_log_name = f'build_log_{self.testCase_id}'

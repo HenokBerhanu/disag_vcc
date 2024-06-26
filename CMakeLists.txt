@@ -21,7 +21,7 @@
 
 # Author: laurent THOMAS, Lionel GAUTHIER
 
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.16)
 project (OpenAirInterface LANGUAGES C CXX)
 
 #########################################################
@@ -180,22 +180,6 @@ add_boolean_option(SANITIZE_ADDRESS False "enable the address sanitizer (ASan)" 
 if (SANITIZE_ADDRESS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-common")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-common")
-  # There seems to be some incompatibility with pthread_create and the RT scheduler, which
-  # results in pthread_create hanging.
-  #
-  # When we switch from Ubuntu 16.04 to 18.04, we found that running with the address sanitizer,
-  # the pthread_create function calls were not working. The inital thought was that we were
-  # trying to create a thread that was not-blocking and would eventually crash the machine during
-  # the run. After more debugging, we found that we would never even start the thread. We narrowed
-  # down the first two instances of pthread_create in the gNB and NR UE to be sctp_eNB_task and
-  # one_thread, respectively. We found that adding sleeps, and various other pauses to the threads
-  # had not effect. From there, we found that if we add an abort(); prior to the thread loop, we
-  # do not execute that. This indicated to us that the problem is not likely to be a non-blocking
-  # thread, but perhaps and issue with pthread_create itself. From there we begain to research the
-  # issue on the web. See: https://github.com/google/sanitizers/issues/1125
-  #
-  # Google searching indicates this appears to be a problem since at least 2018. This could be something
-  # wrong in the pthread library, or something subtly wrong in this CMakeLists.txt. Use Ubuntu 20.04 instead.
 endif ()
 
 add_boolean_option(SANITIZE_THREAD False "enable the address sanitizer (TSan)" ON)
@@ -650,20 +634,11 @@ add_library(HASHTABLE
 include_directories(${OPENAIR_DIR}/common/utils/hashtable)
 
 add_library(UTIL
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   ${OPENAIR_DIR}/common/utils/LOG/vcd_signal_dumper.c
-  ${OPENAIR2_DIR}/UTIL/MATH/oml.c
   ${OPENAIR2_DIR}/UTIL/OPT/probe.c
-  ${OPENAIR_DIR}/common/utils/threadPool/thread-pool.c
-  ${OPENAIR_DIR}/common/utils/utils.c
-  ${OPENAIR_DIR}/common/utils/system.c
-  ${OPENAIR_DIR}/common/utils/time_meas.c
-  ${OPENAIR_DIR}/common/utils/time_stat.c
 )
 if (ENABLE_LTTNG)
   find_package(LTTngUST 2.3.8 EXACT REQUIRED)
-  target_sources(UTIL PRIVATE common/utils/LOG/lttng-tp.c)
-  target_link_libraries(UTIL PUBLIC lttng-ust)
 else()
   message(STATUS "LTTNG support disabled")
 endif()
@@ -674,7 +649,7 @@ if (cap_FOUND)
   target_link_libraries(UTIL PRIVATE cap)
   target_compile_definitions(UTIL PRIVATE HAVE_LIB_CAP)
 endif()
-target_link_libraries(UTIL PUBLIC ${T_LIB} pthread)
+target_link_libraries(UTIL PUBLIC ${T_LIB} pthread LOG thread-pool utils)
 
 set(SECURITY_SRC
   ${OPENAIR3_DIR}/SECU/secu_defs.c
@@ -1207,10 +1182,9 @@ set(PHY_MEX_UE
   ${OPENAIR1_DIR}/PHY/TOOLS/simde_operations.c
   ${OPENAIR1_DIR}/PHY/LTE_UE_TRANSPORT/dlsch_llr_computation_avx2.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_ue_measurements.c
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   )
 add_library(PHY_MEX ${PHY_MEX_UE})
-target_link_libraries(PHY_MEX PRIVATE asn1_lte_rrc_hdrs)
+target_link_libraries(PHY_MEX PRIVATE asn1_lte_rrc_hdrs UTIL)
 
 #Layer 2 library
 #####################
@@ -1949,10 +1923,9 @@ set(CMAKE_MODULE_PATH "${OPENAIR_DIR}/cmake_targets/tools/MODULES" "${CMAKE_MODU
 # add executables for operation
 #################################
 add_library(minimal_lib
-  ${OPENAIR_DIR}/common/utils/LOG/log.c
   ${OPENAIR_DIR}/common/utils/minimal_stub.c
   )
-target_link_libraries(minimal_lib pthread dl ${T_LIB})
+target_link_libraries(minimal_lib PUBLIC pthread dl ${T_LIB} LOG)
 
 add_executable(nfapi_test
   ${OPENAIR_DIR}/openair2/NR_PHY_INTERFACE/nfapi_5g_test.c

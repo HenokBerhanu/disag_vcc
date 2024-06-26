@@ -12,7 +12,7 @@
   </tr>
 </table>
 
-This page is only valid for an `Ubuntu18` host.
+This page is only valid for an `Ubuntu 22` host.
 
 **NOTE: this version (2023-01-27) has been updated  for the `v1.5.0` version of the `OAI 5G CN`.**
 

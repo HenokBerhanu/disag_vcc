@@ -89,8 +89,8 @@ information on how the images are built.
 - [RAN-ARM-Cross-Compile-Builder](https://jenkins-oai.eurecom.fr/job/RAN-ARM-Cross-Compile-Builder/)
   ~BUILD-ONLY ~4G-LTE ~5G-NR
   - orion: Cross-compilation from Intel to ARM
-  - base image from `Dockerfile.base.ubuntu20.cross-arm64`
-  - build image from `Dockerfile.build.ubuntu20.cross-arm64` (no target images)
+  - base image from `Dockerfile.base.ubuntu22.cross-arm64`
+  - build image from `Dockerfile.build.ubuntu22.cross-arm64` (no target images)
 - [RAN-cppcheck](https://jenkins-oai.eurecom.fr/job/RAN-cppcheck/)
   ~BUILD-ONLY ~4G-LTE ~5G-NR
   - bellatrix
@@ -112,16 +112,16 @@ information on how the images are built.
 - [RAN-Ubuntu18-Image-Builder](https://jenkins-oai.eurecom.fr/job/RAN-Ubuntu18-Image-Builder/)
   ~BUILD-ONLY ~4G-LTE ~5G-NR
   - run formatting check from `ci-scripts/docker/Dockerfile.formatting.bionic`
-  - obelix: Ubuntu 20 image build using docker (Note: builds U20 images while pipeline is named U18!)
-  - base image from `Dockerfile.base.ubuntu20`
-  - build image from `Dockerfile.build.ubuntu20`, followed by
-    - target image from `Dockerfile.eNB.ubuntu20`
-    - target image from `Dockerfile.gNB.ubuntu20`
-    - target image from `Dockerfile.nr-cuup.ubuntu20`
-    - target image from `Dockerfile.nrUE.ubuntu20`
-    - target image from `Dockerfile.lteUE.ubuntu20`
-    - target image from `Dockerfile.lteRU.ubuntu20`
-  - build unit tests from `ci-scripts/docker/Dockerfile.unittest.ubuntu20`, and run them
+  - obelix: Ubuntu 22 image build using docker (Note: builds U22 images while pipeline is named U18!)
+  - base image from `Dockerfile.base.ubuntu22`
+  - build image from `Dockerfile.build.ubuntu22`, followed by
+    - target image from `Dockerfile.eNB.ubuntu22`
+    - target image from `Dockerfile.gNB.ubuntu22`
+    - target image from `Dockerfile.nr-cuup.ubuntu22`
+    - target image from `Dockerfile.nrUE.ubuntu22`
+    - target image from `Dockerfile.lteUE.ubuntu22`
+    - target image from `Dockerfile.lteRU.ubuntu22`
+  - build unit tests from `ci-scripts/docker/Dockerfile.unittest.ubuntu22`, and run them
 
 #### Image Test pipelines
 

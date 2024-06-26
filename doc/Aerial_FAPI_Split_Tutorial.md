@@ -202,8 +202,8 @@ With the nvIPC sources in the project directory, the docker image can be built.
 In order to build the final image, there is an intermediary image to be built (ran-base)
 ```bash
 ~$ cd ~/openairinterface5g/
-~/openairinterface5g$ docker build . -f docker/Dockerfile.base.ubuntu20 --tag ran-base:latest
-~/openairinterface5g$ docker build . -f docker/Dockerfile.gNB.aerial.ubuntu20 --tag oai-gnb-aerial:latest
+~/openairinterface5g$ docker build . -f docker/Dockerfile.base.ubuntu22 --tag ran-base:latest
+~/openairinterface5g$ docker build . -f docker/Dockerfile.gNB.aerial.ubuntu22 --tag oai-gnb-aerial:latest
 ```
 
 

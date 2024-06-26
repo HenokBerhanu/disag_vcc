@@ -75,18 +75,18 @@ Targets can be:
 The currently-supported OS are:
 
 - `rhel9` for Red Hat Entreprise Linux (including images for an OpenShift cluster)
-- `ubuntu20` for Ubuntu 20.04 LTS
+- `ubuntu22` for Ubuntu 22.04 LTS
 - `rocky` for Rocky-Linux 8.7
 
 For more details regarding the build on an Openshift Cluster, see [OpenShift README](../openshift/README.md).
 
-# 3. Building using `docker` under Ubuntu 20.04 #
+# 3. Building using `docker` under Ubuntu 22.04 #
 
 ## 3.1. Pre-requisites ##
 
 * `git` installed
 * `docker-ce` installed
-* Pulling `ubuntu:focal` from DockerHub
+* Pulling `ubuntu:jammy` from DockerHub
 
 ## 3.2. Building the shared images ##
 
@@ -96,8 +96,8 @@ There are two shared images: one that has all dependencies, and a second that co
 git clone https://gitlab.eurecom.fr/oai/openairinterface5g.git
 cd openairinterface5g
 git checkout develop
-docker build --target ran-base --tag ran-base:latest --file docker/Dockerfile.base.ubuntu20 .
-docker build --target ran-build --tag ran-build:latest --file docker/Dockerfile.build.ubuntu20 .
+docker build --target ran-base --tag ran-base:latest --file docker/Dockerfile.base.ubuntu22 .
+docker build --target ran-build --tag ran-build:latest --file docker/Dockerfile.build.ubuntu22 .
 ```
 
 After building both:
@@ -115,12 +115,12 @@ Note that the steps are identical for `rocky-linux`.
 
 ### 3.2.1. Additional build otions
 
-This is only available for the Ubuntu-20 version.
+This is only available for the Ubuntu version of Dockerfiles.
 
 You can, for example, create a `sanitizer` version of the ran-build image.
 
 ```bash
-docker build --target ran-build --tag ran-build:latest --file docker/Dockerfile.build.ubuntu20 --build-arg "BUILD_OPTION=--sanitize" .
+docker build --target ran-build --tag ran-build:latest --file docker/Dockerfile.build.ubuntu22 --build-arg "BUILD_OPTION=--sanitize" .
 ```
 
 Currently the `--sanitize` option for `build_oai` enables:
@@ -146,7 +146,7 @@ You can also use this docker build arguments to pass any available option(s) on 
 For example, the eNB:
 
 ```bash
-docker build --target oai-enb --tag oai-enb:latest --file docker/Dockerfile.eNB.ubuntu20 .
+docker build --target oai-enb --tag oai-enb:latest --file docker/Dockerfile.eNB.ubuntu22 .
 ```
 
 After a while:
@@ -171,7 +171,7 @@ Note that the steps are identical for `rocky-linux`.
 If you have used the sanitizer option, then you should also pass it when building the target image:
 
 ```bash
-docker build --target oai-gnb --tag oai-gnb:latest --file docker/Dockerfile.gNB.ubuntu20 --build-arg "BUILD_OPTION=--sanitize" .
+docker build --target oai-gnb --tag oai-gnb:latest --file docker/Dockerfile.gNB.ubuntu22 --build-arg "BUILD_OPTION=--sanitize" .
 ```
 
 Normally the target image will be around 200 Mbytes bigger.

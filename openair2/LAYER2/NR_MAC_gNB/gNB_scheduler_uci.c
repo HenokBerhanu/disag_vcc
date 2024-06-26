@@ -1353,7 +1353,7 @@ int nr_acknack_scheduling(gNB_MAC_INST *mac,
       return pucch_index; // index of current PUCCH structure
     }
   }
-  LOG_W(NR_MAC, "DL %4d.%2d, Couldn't find scheduling occasion for this HARQ process\n", frame, slot);
+  LOG_D(NR_MAC, "DL %4d.%2d, Couldn't find scheduling occasion for this HARQ process\n", frame, slot);
   return -1;
 }
 

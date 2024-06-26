@@ -21,54 +21,20 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04
+#   Valid for Ubuntu 22.04
 #
 #---------------------------------------------------------------------
 
+FROM ran-base:develop as ran-tests
 
-FROM ubuntu:focal AS ran-base
-ARG NEEDED_GIT_PROXY
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Paris
-ENV BUILD_UHD_FROM_SOURCE=True
-ENV UHD_VERSION=4.4.0.0
-
-#install developers pkg/repo
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-       #gcc needed for build_oai
-       build-essential \
-       psmisc \
-       git \
-       xxd \
-       # python3-pip for conf template generation
-       python3-pip && \
-    pip3 install --ignore-installed pyyaml
+        libgtest-dev
 
-# Add "Tini - A tiny but valid init for containers", https://github.com/krallin/tini
-# it will be copied into target containers, to print exit numbers and handle signals properly
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-
-# In some network environments, GIT proxy is required
-RUN /bin/bash -c "if [[ -v NEEDED_GIT_PROXY ]]; then git config --global http.proxy $NEEDED_GIT_PROXY; fi"
-
-# Copying only the needed files to create ran-base
-WORKDIR /oai-ran/cmake_targets/tools
-COPY cmake_targets/tools/build_helper \
-     cmake_targets/tools/uhd-4.x-tdd-patch.diff \
-     ./
-
-WORKDIR /oai-ran/cmake_targets
-COPY cmake_targets/build_oai .
-
+RUN rm -Rf /oai-ran
 WORKDIR /oai-ran
-COPY oaienv .
+COPY . .
 
-#run build_oai -I to get the builder image
-RUN /bin/sh oaienv && \ 
-    cd cmake_targets && \
-    mkdir -p log && \
-    ./build_oai -I -w USRP --install-optional-packages
+WORKDIR /oai-ran/build
+RUN cmake -GNinja -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Debug .. && ninja tests
