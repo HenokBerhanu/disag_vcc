@@ -56,7 +56,6 @@
 #include "nfapi/oai_integration/vendor_ext.h"
 #include "UTIL/OTG/otg_tx.h"
 #include "UTIL/OTG/otg_externs.h"
-#include "UTIL/MATH/oml.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "UTIL/OPT/opt.h"
 #include "lte-softmodem.h"
