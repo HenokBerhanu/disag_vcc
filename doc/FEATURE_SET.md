@@ -117,9 +117,7 @@ Furthermore, the gNB and UE support
   - evalution of RSRP report
   - evaluation of CQI report
 - MAC scheduling of SR reception
-- Bandwidth part (BWP) operation
-  - Handle multiple dedicated BWPs, supports one UE
-  - BWP switching through RRCReconfiguration method
+- Support of up to 16 UEs (can be increased to 32)
 
 ## gNB RLC
 
@@ -154,18 +152,15 @@ Furthermore, the gNB and UE support
 
 - NR RRC (38.331) Rel 17 messages using new [asn1c](https://github.com/mouse07410/asn1c)
 - LTE RRC (36.331) also updated to Rel 15
-- Generation of CellGroupConfig (for eNB) and MIB
-- Generation of system information block 1 (SIB1)
-- Generation of system information block 2 (SIB2)
-- Application to read configuration file and program gNB RRC
+- Generation of MIB/SIB1 (received from DU)
 - RRC can configure PDCP, RLC, MAC
-- Interface with GTP-U (tunnel creation/handling for S1-U (NSA), N3 (SA) interfaces)
+- Interface with GTP-U (tunnel creation/handling for S1-U (NSA), N3 (SA), F1 interfaces)
 - Integration of RRC messages and procedures supporting UE 5G SA connection
   - RRCSetupRequest/RRCSetup/RRCSetupComplete
   - RRC Uplink/Downlink Information transfer carrying NAS messages transparently
   - RRC Reconfiguration/Reconfiguration complete
   - RRC Reestablishment/Reestablishment complete
-  - Support for master cell group configuration
+  - Support for MasterCellGroup configuration (from DU)
   - Interface with NGAP for the interactions with the AMF
   - Interface with F1AP for CU/DU split deployment option
   - Periodic RRC measurements of serving cell (no A/B events)
@@ -200,7 +195,8 @@ Furthermore, the gNB and UE support
   - F1 UE Context release req/cmd/complete
   - F1 gNB CU configuration update
 - Interface with RRC
-- Interface with gtp-u (tunnel creation/handling for F1-U interface)
+- Interface with GTP-u (tunnel creation/handling for F1-U interface)
+- One CU(-CP) can handle multiple DUs
 
 ## gNB E1AP
 
@@ -216,6 +212,7 @@ Furthermore, the gNB and UE support
       - E1 Bearer Context Modification Request
       - E1 Bearer Context Modification Response
 - Interface with RRC and PDCP
+- One CU-CP can handle multiple CU-UPs
 
 ## gNB GTP-U
 
