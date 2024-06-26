@@ -2017,8 +2017,7 @@ static uint8_t pack_hi_dci0_request(void *msg, uint8_t **ppWritePackedMsg, uint8
 static uint8_t pack_tx_data_pdu_list_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end)
 {
   nfapi_nr_pdu_t *value = (nfapi_nr_pdu_t *)tlv;
-  AssertFatal(value->PDU_length <= 0xFFFF,"TX_DATA.request PDU_Length should be within 16 bit, according to SCF222.10.02");
-  if (!(push16(value->PDU_length, ppWritePackedMsg, end) && push16(value->PDU_index, ppWritePackedMsg, end)
+  if (!(push32(value->PDU_length, ppWritePackedMsg, end) && push16(value->PDU_index, ppWritePackedMsg, end)
         && push32(value->num_TLV, ppWritePackedMsg, end)))
     return 0;
 
@@ -2026,12 +2025,16 @@ static uint8_t pack_tx_data_pdu_list_value(void *tlv, uint8_t **ppWritePackedMsg
   uint16_t total_number_of_tlvs = value->num_TLV;
 
   for (; i < total_number_of_tlvs; ++i) {
-    if (!(push16(value->TLVs[i].tag, ppWritePackedMsg, end) && push16(value->TLVs[i].length, ppWritePackedMsg, end)))
+    if (!(push16(value->TLVs[i].tag, ppWritePackedMsg, end) && push32(value->TLVs[i].length, ppWritePackedMsg, end)))
       return 0;
 
     switch (value->TLVs[i].tag) {
       case 0: {
-        if (!pusharray32(value->TLVs[i].value.direct, 16384, (value->TLVs[i].length + 3) / 4, ppWritePackedMsg, end)) {
+        if (!pusharray32(value->TLVs[i].value.direct,
+                         (value->TLVs[i].length + 3) / 4,
+                         (value->TLVs[i].length + 3) / 4,
+                         ppWritePackedMsg,
+                         end)) {
           NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s():%d. value->TLVs[i].length %d \n", __FUNCTION__, __LINE__, value->TLVs[i].length);
           return 0;
         }
@@ -2039,7 +2042,11 @@ static uint8_t pack_tx_data_pdu_list_value(void *tlv, uint8_t **ppWritePackedMsg
       }
 
       case 1: {
-        if (!pusharray32(value->TLVs[i].value.ptr, value->TLVs[i].length, value->TLVs[i].length, ppWritePackedMsg, end)) {
+        if (!pusharray32(value->TLVs[i].value.ptr,
+                         (value->TLVs[i].length + 3) / 4,
+                         (value->TLVs[i].length + 3) / 4,
+                         ppWritePackedMsg,
+                         end)) {
           NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s():%d. value->TLVs[i].length %d \n", __FUNCTION__, __LINE__, value->TLVs[i].length);
           return 0;
         }
@@ -5903,18 +5910,15 @@ static uint8_t unpack_hi_dci0_request(uint8_t **ppReadPackedMsg, uint8_t *end, v
 static uint8_t unpack_tx_data_pdu_list_value(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg) {
   nfapi_nr_pdu_t *pNfapiMsg = (nfapi_nr_pdu_t *)msg;
 
-  if(!(pull16(ppReadPackedMsg, (uint16_t *)&pNfapiMsg->PDU_length, end) &&
-       pull16(ppReadPackedMsg, &pNfapiMsg->PDU_index, end) &&
-       pull32(ppReadPackedMsg, &pNfapiMsg->num_TLV, end)
-  ))
+  if (!(pull32(ppReadPackedMsg, &pNfapiMsg->PDU_length, end) && pull16(ppReadPackedMsg, &pNfapiMsg->PDU_index, end)
+        && pull32(ppReadPackedMsg, &pNfapiMsg->num_TLV, end)))
     return 0;
 
   uint16_t i = 0;
   uint16_t total_number_of_tlvs = pNfapiMsg->num_TLV;
 
   for(; i < total_number_of_tlvs; ++i) {
-    if (!(pull16(ppReadPackedMsg, &pNfapiMsg->TLVs[i].tag, end) &&
-          pull16(ppReadPackedMsg, &pNfapiMsg->TLVs[i].length, end)))
+    if (!(pull16(ppReadPackedMsg, &pNfapiMsg->TLVs[i].tag, end) && pull32(ppReadPackedMsg, &pNfapiMsg->TLVs[i].length, end)))
       return 0;
 
     switch(pNfapiMsg->TLVs[i].tag) {
@@ -5928,9 +5932,11 @@ static uint8_t unpack_tx_data_pdu_list_value(uint8_t **ppReadPackedMsg, uint8_t 
       }
 
       case 1: {
-        if (!pullarray32(ppReadPackedMsg,pNfapiMsg->TLVs[i].value.ptr,
-                         pNfapiMsg->TLVs[i].length,
-                         pNfapiMsg->TLVs[i].length, end))
+        if (!pullarray32(ppReadPackedMsg,
+                         pNfapiMsg->TLVs[i].value.ptr,
+                         (pNfapiMsg->TLVs[i].length + 3) / 4,
+                         (pNfapiMsg->TLVs[i].length + 3) / 4,
+                         end))
           return 0;
 
         break;
