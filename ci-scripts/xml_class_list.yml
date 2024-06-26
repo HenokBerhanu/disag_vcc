@@ -21,6 +21,7 @@
   - CheckStatusUE
   - Ping
   - Iperf
+  - Iperf2_Unidir
   - Deploy_EPC
   - Undeploy_EPC
   - Initialize_HSS
