@@ -21,12 +21,11 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04
+#   Valid for Ubuntu 22.04 to cross-compile for ARM64
 #
 #---------------------------------------------------------------------
 
 FROM ran-base:latest as ran-build
-ARG BUILD_OPTION
 
 RUN rm -Rf /oai-ran
 WORKDIR /oai-ran
@@ -35,13 +34,19 @@ COPY . .
 # build all targets so final targets can be created afterwards
 RUN /bin/sh oaienv && \
     cd cmake_targets && \
-    mkdir -p log && \
-    ./build_oai -c --ninja \
-      --eNB --gNB --RU --UE --nrUE \
-      --build-lib "telnetsrv enbscope uescope nrscope nrqtscope" \
-      -w USRP -t Ethernet \
-      --build-e2 --cmake-opt -DXAPP_MULTILANGUAGE=OFF \
-      --noavx512 \
-      --cmake-opt -DCMAKE_C_FLAGS="-Werror -fstack-protector-strong" --cmake-opt -DCMAKE_CXX_FLAGS="-Werror -fstack-protector-strong" $BUILD_OPTION && \
-    # Mainly to see if the sanitize option was perfectly executed
-    ldd ran_build/build/nr-softmodem
+    mkdir -p log ran_build/build ran_build/build-cross && \
+    cd ran_build/build && \
+    cmake ../../.. -GNinja && \
+    echo "====== Start of log for host-tools ======" && \
+    ninja ldpc_generators generate_T > ../../log/host-tools.txt 2>&1 && \
+    echo "====== End of log for host-tools ======" && \
+    cd ../build-cross/ && \
+    cmake ../../.. -GNinja -DCMAKE_TOOLCHAIN_FILE=../../../cmake_targets/cross-arm.cmake -DNATIVE_DIR=../build && \
+    echo "====== Start of log for cross-build executables ======" && \
+    # making always passing so we can analyze the all.txt file
+    ninja dlsim ulsim ldpctest polartest smallblocktest nr_pbchsim nr_dlschsim nr_ulschsim nr_dlsim nr_ulsim nr_pucchsim nr_prachsim lte-softmodem nr-softmodem nr-cuup oairu lte-uesoftmodem nr-uesoftmodem params_libconfig coding rfsimulator > ../../log/all.txt 2>&1; \
+    # displaying errors and warnings
+    egrep -A3 "warning:|error:" ../../log/all.txt || true && \
+    # will fail only if string "errors:" is found
+    egrep "error:" -vqz ../../log/all.txt && \
+    echo "====== End of log for cross-build executables ======"

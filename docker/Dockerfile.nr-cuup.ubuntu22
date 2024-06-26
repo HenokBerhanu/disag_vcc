@@ -21,67 +21,57 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu18.04
+#   Valid for Ubuntu20.04
 #
 #---------------------------------------------------------------------
 
-FROM ran-base:latest AS gnb-base
+FROM ran-base:latest as gnb-base
 
 FROM ran-build:latest AS gnb-build
 
-COPY ./libori.so /usr/local/lib/
 
-# build AW2S fronthaul lib
-WORKDIR /oai-ran
-RUN /bin/sh oaienv && \
-    cd cmake_targets/ && \
-    ./build_oai -w AW2SORI -t Ethernet
-
-#start from scratch for target executable
-FROM ubuntu:bionic as oai-gnb-aw2s
+FROM ubuntu:jammy as oai-nr-cuup
+ARG BUILD_OPTION
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes && \
     DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-        procps \
         libsctp1 \
-        tzdata \
-        libblas3 \
-        libatlas3-base \
         libconfig9 \
-        gdb \
-        openssl \
-        net-tools \
         iproute2 \
-        iputils-ping  && \
+        net-tools \
+        openssl && \
+# if the --sanitize option was used to build, additional packages are required
+    /bin/bash -c 'if [[ "$BUILD_OPTION" = "--sanitize" ]]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes \
+        #libasan5 \ see below
+        libubsan1 \
+        liblapacke; fi' && \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./libori.so /usr/local/lib/
+# we select another compile (gcc-12) for compilation, requiring another libasan
+# library version. Installing it above would install the wrong version. Hence,
+# copy the right version from ran-build. When upgrading to Ubuntu24, install
+# the correct one above!
+COPY --from=gnb-build /usr/lib/x86_64-linux-gnu/libasan.so.8.0.0 /usr/lib/x86_64-linux-gnu/
 
-WORKDIR /opt/oai-gnb-aw2s/bin
-COPY --from=gnb-build /oai-ran/cmake_targets/ran_build/build/nr-softmodem ./
-COPY ./docker/scripts/gnb-aw2s_entrypoint.sh /opt/oai-gnb-aw2s/bin/entrypoint.sh
-
+WORKDIR /opt/oai-gnb/bin
 COPY --from=gnb-build \
-    /oai-ran/cmake_targets/ran_build/build/liboai_eth_transpro.so \
-    /oai-ran/cmake_targets/ran_build/build/librfsimulator.so \
-    /oai-ran/cmake_targets/ran_build/build/libaw2sori_transpro.so \
-    /oai-ran/cmake_targets/ran_build/build/libcoding.so \
+    /oai-ran/cmake_targets/ran_build/build/nr-cuup \
+    ./
+COPY ./docker/scripts/gnb_entrypoint.sh ./entrypoint.sh
+COPY --from=gnb-build \
     /oai-ran/cmake_targets/ran_build/build/libparams_libconfig.so \
-    /oai-ran/cmake_targets/ran_build/build/libdfts.so \
-    /oai-ran/cmake_targets/ran_build/build/libldpc*.so \
     /oai-ran/cmake_targets/ran_build/build/libtelnetsrv.so \
     /usr/local/lib/
 
+RUN ldconfig && ldd /opt/oai-gnb/bin/nr-cuup
 
-RUN /bin/bash -c "ln -s /usr/local/lib/libaw2sori_transpro.so /usr/local/lib/libthirdparty_transpro.so" && \
-    /bin/bash -c "ln -s /usr/local/lib/liboai_eth_transpro.so /usr/local/lib/liboai_transpro.so" && \
-    ldconfig
+# Create directory for configuration files
+WORKDIR /opt/oai-gnb/etc
 
-WORKDIR /opt/oai-gnb-aw2s
-
+WORKDIR /opt/oai-gnb
 COPY --from=gnb-base /tini /tini
-ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-gnb-aw2s/bin/entrypoint.sh"]
-CMD ["/opt/oai-gnb-aw2s/bin/nr-softmodem", "-O", "/opt/oai-gnb-aw2s/etc/gnb.conf"]
+ENTRYPOINT ["/tini", "-v", "--", "/opt/oai-gnb/bin/entrypoint.sh"]
+CMD ["/opt/oai-gnb/bin/nr-cuup", "-O", "/opt/oai-gnb/etc/gnb.conf"]

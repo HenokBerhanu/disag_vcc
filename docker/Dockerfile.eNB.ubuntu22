@@ -21,7 +21,7 @@
 #---------------------------------------------------------------------
 #
 # Dockerfile for the Open-Air-Interface BUILD service
-#   Valid for Ubuntu 20.04
+#   Valid for Ubuntu 22.04
 #
 #---------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ FROM ran-build:latest AS enb-build
 
 
 #start from scratch for target executable
-FROM ubuntu:focal as oai-enb
+FROM ubuntu:jammy as oai-enb
 ARG BUILD_OPTION
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Paris
@@ -42,37 +42,49 @@ RUN apt-get update && \
         software-properties-common \
         procps \
         libsctp1 \
-        libboost-chrono1.71.0 \
-        libboost-date-time1.71.0 \
-        libboost-filesystem1.71.0 \
-        libboost-regex1.71.0 \
-        libboost-serialization1.71.0 \
-        libboost-thread1.71.0 \
-        libboost-system1.71.0 \
-        libboost-program-options1.71.0 \
+        libboost-chrono1.74.0 \
+        libboost-date-time1.74.0 \
+        libboost-filesystem1.74.0 \
+        libboost-regex1.74.0 \
+        libboost-serialization1.74.0 \
+        libboost-thread1.74.0 \
+        libboost-system1.74.0 \
+        libboost-program-options1.74.0 \
         tzdata \
         libblas3 \
         libatlas3-base \
         libconfig9 \
         openssl \
         net-tools \
-        iperf \
+        wget \
         iperf3 \
         iputils-ping \
         iproute2 \
         gdb \
-        python \
         python3 \
         python3-six \
         python3-requests \
         libusb-1.0-0 && \
+# Installing older version of iperf2 for feMBMS test
+    wget --quiet http://fr.archive.ubuntu.com/ubuntu/pool/universe/i/iperf/iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+    dpkg -i iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+# iperf --version returns 1 that fails docker build
+    iperf --version || true && \
+    rm -f iperf_2.0.13+dfsg1-1build1_amd64.deb && \
+    apt-get remove -y wget && \
 # if the --sanitize option was used to build, additional packages are required
     /bin/bash -c 'if [[ "$BUILD_OPTION" = "--sanitize" ]]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes \
-        libasan5 \
+        #libasan5 \ # see below
         libubsan1 \
         liblapacke; fi' && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
+
+# we select another compile (gcc-12) for compilation, requiring another libasan
+# library version. Installing it above would install the wrong version. Hence,
+# copy the right version from ran-build. When upgrading to Ubuntu24, install
+# the correct one above!
+COPY --from=enb-build /usr/lib/x86_64-linux-gnu/libasan.so.8.0.0 /usr/lib/x86_64-linux-gnu/
 
 WORKDIR /opt/oai-enb/bin
 COPY --from=enb-build \
