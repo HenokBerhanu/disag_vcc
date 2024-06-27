@@ -527,7 +527,10 @@ static int nr_ue_process_dci_ul_01(NR_UE_MAC_INST_t *mac,
 
   if (dci->ulsch_indicator == 0) {
     // in case of CSI on PUSCH and no ULSCH we need to use reportSlotOffset in trigger state
-    AssertFatal(csi_K2 > 0, "Invalid CSI K2 value %ld\n", csi_K2);
+    if (csi_K2 <= 0) {
+      LOG_E(MAC, "Invalid CSI K2 value %ld\n", csi_K2);
+      return -1;
+    }
     tda_info.k2 = csi_K2;
   }
 
