@@ -62,7 +62,13 @@ void add_drb(int is_gnb,
              unsigned char *integrity_key);
 
 void nr_pdcp_remove_UE(ue_id_t ue_id);
-void nr_pdcp_reestablishment(ue_id_t ue_id, int rb_id, bool srb_flag);
+void nr_pdcp_reestablishment(ue_id_t ue_id,
+                             int rb_id,
+                             bool srb_flag,
+                             int ciphering_algorithm,
+                             const uint8_t *ciphering_key,
+                             int integrity_algorithm,
+                             const uint8_t *integrity_key);
 
 void nr_pdcp_suspend_srb(ue_id_t ue_id, int srb_id);
 void nr_pdcp_suspend_drb(ue_id_t ue_id, int drb_id);

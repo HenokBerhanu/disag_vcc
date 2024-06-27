@@ -255,7 +255,13 @@ void e1_bearer_context_modif(const e1ap_bearer_mod_req_t *req)
       modified->id = to_modif->id;
 
       if (to_modif->pdcp_config.pDCP_Reestablishment) {
-        nr_pdcp_reestablishment(req->gNB_cu_up_ue_id, to_modif->id, false);
+        nr_pdcp_reestablishment(req->gNB_cu_up_ue_id,
+                                to_modif->id,
+                                false,
+                                req->integrityProtectionAlgorithm,
+                                (uint8_t *)req->integrityProtectionKey,
+                                req->cipheringAlgorithm,
+                                (uint8_t *)req->encryptionKey);
       }
 
       if (f1inst < 0) // no F1-U?

@@ -631,14 +631,13 @@ static void nr_rrc_handle_msg3_indication(NR_UE_RRC_INST_t *rrc, rnti_t rnti)
       nr_timer_start(&tac->T301);
       int srb_id = 1;
       // re-establish PDCP for SRB1
-      nr_pdcp_reestablishment(rrc->ue_id, srb_id, true);
+      // (and suspend integrity protection and ciphering for SRB1)
+      nr_pdcp_reestablishment(rrc->ue_id, srb_id, true, 0, NULL, 0, NULL);
       // re-establish RLC for SRB1
       int lc_id = nr_rlc_get_lcid_from_rb(rrc->ue_id, true, 1);
       nr_rlc_reestablish_entity(rrc->ue_id, lc_id);
       // apply the specified configuration defined in 9.2.1 for SRB1
       nr_rlc_reconfigure_entity(rrc->ue_id, lc_id, NULL);
-      // suspend integrity protection and ciphering for SRB1
-      nr_pdcp_config_set_security(rrc->ue_id, srb_id, true, 0, NULL, NULL);
       // resume SRB1
       rrc->Srb[srb_id] = RB_ESTABLISHED;
       break;
@@ -1456,9 +1455,13 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
         AssertFatal(srb->discardOnPDCP == NULL, "discardOnPDCP not yet implemented\n");
         if (srb->reestablishPDCP) {
           ue_rrc->Srb[srb->srb_Identity] = RB_ESTABLISHED;
-          nr_pdcp_reestablishment(ue_rrc->ue_id, srb->srb_Identity, true);
-          // TODO configure the PDCP entity to apply the integrity protection algorithm
-          // TODO configure the PDCP entity to apply the ciphering algorithm
+          nr_pdcp_reestablishment(ue_rrc->ue_id,
+                                  srb->srb_Identity,
+                                  true,
+                                  ue_rrc->integrityProtAlgorithm,
+                                  kRRCint,
+                                  ue_rrc->cipheringAlgorithm,
+                                  kRRCenc);
         }
         if (srb->pdcp_Config && srb->pdcp_Config->t_Reordering)
           nr_pdcp_reconfigure_srb(ue_rrc->ue_id, srb->srb_Identity, *srb->pdcp_Config->t_Reordering);
@@ -1487,9 +1490,21 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
       if (get_DRB_status(ue_rrc, DRB_id) != RB_NOT_PRESENT) {
         if (drb->reestablishPDCP) {
           set_DRB_status(ue_rrc, DRB_id, RB_ESTABLISHED);
-          nr_pdcp_reestablishment(ue_rrc->ue_id, DRB_id, false);
-          // TODO configure the PDCP entity to apply the integrity protection algorithm
-          // TODO configure the PDCP entity to apply the ciphering algorithm
+          /* get integrity and cipehring settings from radioBearerConfig */
+          bool has_integrity = drb->pdcp_Config != NULL
+                               && drb->pdcp_Config->drb != NULL
+                               && drb->pdcp_Config->drb->integrityProtection != NULL;
+          bool has_ciphering = !(drb->pdcp_Config != NULL
+                                 && drb->pdcp_Config->ext1 != NULL
+                                 && drb->pdcp_Config->ext1->cipheringDisabled != NULL);
+          /* re-establish */
+          nr_pdcp_reestablishment(ue_rrc->ue_id,
+                                  DRB_id,
+                                  false,
+                                  has_integrity ? ue_rrc->integrityProtAlgorithm : 0,
+                                  kUPint,
+                                  has_ciphering ? ue_rrc->cipheringAlgorithm : 0,
+                                  kUPenc);
         }
         AssertFatal(drb->recoverPDCP == NULL, "recoverPDCP not yet implemented\n");
         /* sdap-Config is included (SA mode) */

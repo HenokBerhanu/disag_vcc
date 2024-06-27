@@ -515,23 +515,33 @@ static void free_rx_list(nr_pdcp_entity_t *entity)
  * @brief PDCP entity re-establishment according to 5.1.2 of 3GPP TS 38.323
  * @todo  deal with ciphering/integrity algos and keys for transmitting/receiving entity procedures
 */
-static void nr_pdcp_entity_reestablish_drb_am(nr_pdcp_entity_t *entity)
+static void nr_pdcp_entity_reestablish_drb_am(nr_pdcp_entity_t *entity,
+                                              int integrity_algorithm,
+                                              const uint8_t *integrity_key,
+                                              int ciphering_algorithm,
+                                              const uint8_t *ciphering_key)
 {
   /* transmitting entity procedures */
-  /* todo: deal with ciphering/integrity algos and keys */
+  /* do nothing */
 
   /* receiving entity procedures */
-  /* todo: deal with ciphering/integrity algos and keys */
+  /* do nothing */
+
+  /* ciphering and integrity: common for both tx and rx entities */
+  entity->set_security(entity, integrity_algorithm, integrity_key, ciphering_algorithm, ciphering_key);
 
   /* Flag PDCP entity as re-established */
   entity->entity_suspended = false;
 }
 
-static void nr_pdcp_entity_reestablish_drb_um(nr_pdcp_entity_t *entity)
+static void nr_pdcp_entity_reestablish_drb_um(nr_pdcp_entity_t *entity,
+                                              int integrity_algorithm,
+                                              const uint8_t *integrity_key,
+                                              int ciphering_algorithm,
+                                              const uint8_t *ciphering_key)
 {
   /* transmitting entity procedures */
   entity->tx_next = 0;
-  /* todo: deal with ciphering/integrity algos and keys */
 
   /* receiving entity procedures */
   /* deliver all SDUs if t_reordering is running */
@@ -542,17 +552,22 @@ static void nr_pdcp_entity_reestablish_drb_um(nr_pdcp_entity_t *entity)
   /* set rx_next and rx_deliv to the initial value */
   entity->rx_next = 0;
   entity->rx_deliv = 0;
-  /* todo: deal with ciphering/integrity algos and keys */
+
+  /* ciphering and integrity: common for both tx and rx entities */
+  entity->set_security(entity, integrity_algorithm, integrity_key, ciphering_algorithm, ciphering_key);
 
   /* Flag PDCP entity as re-established */
   entity->entity_suspended = false;
 }
 
-static void nr_pdcp_entity_reestablish_srb(nr_pdcp_entity_t *entity)
+static void nr_pdcp_entity_reestablish_srb(nr_pdcp_entity_t *entity,
+                                           int integrity_algorithm,
+                                           const uint8_t *integrity_key,
+                                           int ciphering_algorithm,
+                                           const uint8_t *ciphering_key)
 {
   /* transmitting entity procedures */
   entity->tx_next = 0;
-  /* todo: deal with ciphering/integrity algos and keys */
 
   /* receiving entity procedures */
   free_rx_list(entity);
@@ -561,7 +576,9 @@ static void nr_pdcp_entity_reestablish_srb(nr_pdcp_entity_t *entity)
   /* set rx_next and rx_deliv to the initial value */
   entity->rx_next = 0;
   entity->rx_deliv = 0;
-  /* todo: deal with ciphering/integrity algos and keys */
+
+  /* ciphering and integrity: common for both tx and rx entities */
+  entity->set_security(entity, integrity_algorithm, integrity_key, ciphering_algorithm, ciphering_key);
 
   /* Flag PDCP entity as re-established */
   entity->entity_suspended = false;
