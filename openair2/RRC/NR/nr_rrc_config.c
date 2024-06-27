@@ -655,6 +655,7 @@ static NR_SetupRelease_SRS_Config_t *get_config_srs(const NR_ServingCellConfigCo
                                                     const int uid,
                                                     const int res_id,
                                                     const long maxMIMO_Layers,
+                                                    const int minRXTXTIME,
                                                     int do_srs)
 {
   NR_SetupRelease_SRS_Config_t *setup_release_srs_Config = calloc(1,sizeof(*setup_release_srs_Config));
@@ -679,10 +680,10 @@ static NR_SetupRelease_SRS_Config_t *get_config_srs(const NR_ServingCellConfigCo
   } else {
     srs_resset0->resourceType.present =  NR_SRS_ResourceSet__resourceType_PR_aperiodic;
     srs_resset0->resourceType.choice.aperiodic = calloc(1,sizeof(*srs_resset0->resourceType.choice.aperiodic));
-    srs_resset0->resourceType.choice.aperiodic->aperiodicSRS_ResourceTrigger=1;
-    srs_resset0->resourceType.choice.aperiodic->csi_RS=NULL;
+    srs_resset0->resourceType.choice.aperiodic->aperiodicSRS_ResourceTrigger = 1;
+    srs_resset0->resourceType.choice.aperiodic->csi_RS = NULL;
     srs_resset0->resourceType.choice.aperiodic->slotOffset = calloc(1,sizeof(*srs_resset0->resourceType.choice.aperiodic->slotOffset));
-    *srs_resset0->resourceType.choice.aperiodic->slotOffset = 2;
+    *srs_resset0->resourceType.choice.aperiodic->slotOffset = minRXTXTIME;
     srs_resset0->resourceType.choice.aperiodic->ext1 = NULL;
   }
   srs_resset0->usage=NR_SRS_ResourceSet__usage_codebook;
@@ -1487,7 +1488,14 @@ static void config_uplinkBWP(NR_BWP_Uplink_t *ubwp,
                                 && servingcellconfigdedicated->uplinkConfig->pusch_ServingCellConfig->choice.setup->ext1->maxMIMO_Layers ?
                             *servingcellconfigdedicated->uplinkConfig->pusch_ServingCellConfig->choice.setup->ext1->maxMIMO_Layers : 1;
 
-  ubwp->bwp_Dedicated->srs_Config = get_config_srs(scc, NULL, curr_bwp, uid, bwp_loop + 1, maxMIMO_Layers, configuration->do_SRS);
+  ubwp->bwp_Dedicated->srs_Config = get_config_srs(scc,
+                                                   NULL,
+                                                   curr_bwp,
+                                                   uid,
+                                                   bwp_loop + 1,
+                                                   maxMIMO_Layers,
+                                                   configuration->minRXTXTIME,
+                                                   configuration->do_SRS);
 
   ubwp->bwp_Dedicated->configuredGrantConfig = NULL;
   ubwp->bwp_Dedicated->beamFailureRecoveryConfig = NULL;
@@ -2633,7 +2641,7 @@ static NR_SpCellConfig_t *get_initial_SpCellConfig(int uid,
                             : 1;
 
   // We are using do_srs = 0 here because the periodic SRS will only be enabled in update_cellGroupConfig() if do_srs == 1
-  initialUplinkBWP->srs_Config = get_config_srs(scc, NULL, curr_bwp, uid, 0, maxMIMO_Layers, 0);
+  initialUplinkBWP->srs_Config = get_config_srs(scc, NULL, curr_bwp, uid, 0, maxMIMO_Layers, configuration->minRXTXTIME, 0);
 
   scheduling_request_config(scc, pucch_Config, scc->uplinkConfigCommon->initialUplinkBWP->genericParameters.subcarrierSpacing);
 
@@ -2937,7 +2945,14 @@ void update_cellGroupConfig(NR_CellGroupConfig_t *cellGroupConfig,
   // UL and SRS configuration
   if (configuration->do_SRS && uplinkConfig && uplinkConfig->initialUplinkBWP) {
     ASN_STRUCT_FREE(asn_DEF_NR_SetupRelease_SRS_Config, uplinkConfig->initialUplinkBWP->srs_Config);
-    uplinkConfig->initialUplinkBWP->srs_Config = get_config_srs(scc, uecap, curr_bwp, uid, 0, maxMIMO_Layers, configuration->do_SRS);
+    uplinkConfig->initialUplinkBWP->srs_Config = get_config_srs(scc,
+                                                                uecap,
+                                                                curr_bwp,
+                                                                uid,
+                                                                0,
+                                                                maxMIMO_Layers,
+                                                                configuration->minRXTXTIME,
+                                                                configuration->do_SRS);
   }
 
   // Set DL MCS table
@@ -2974,7 +2989,14 @@ void update_cellGroupConfig(NR_CellGroupConfig_t *cellGroupConfig,
       }
 
       ASN_STRUCT_FREE(asn_DEF_NR_SetupRelease_SRS_Config, ul_bwp->bwp_Dedicated->srs_Config);
-      ul_bwp->bwp_Dedicated->srs_Config = get_config_srs(scc, uecap, bwp_size, uid, i + 1, maxMIMO_Layers, configuration->do_SRS);
+      ul_bwp->bwp_Dedicated->srs_Config = get_config_srs(scc,
+                                                         uecap,
+                                                         bwp_size,
+                                                         uid,
+                                                         i + 1,
+                                                         maxMIMO_Layers,
+                                                         configuration->minRXTXTIME,
+                                                         configuration->do_SRS);
     }
   }
   update_cqitables(bwp_Dedicated->pdsch_Config, csi_MeasConfig);
@@ -3172,7 +3194,14 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
 
   int curr_bwp = NRRIV2BW(servingcellconfigcommon->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth,
                           MAX_BWP_SIZE);
-  initialUplinkBWP->srs_Config = get_config_srs(servingcellconfigcommon, NULL, curr_bwp, uid, 0, maxMIMO_Layers, configuration->do_SRS);
+  initialUplinkBWP->srs_Config = get_config_srs(servingcellconfigcommon,
+                                                NULL,
+                                                curr_bwp,
+                                                uid,
+                                                0,
+                                                maxMIMO_Layers,
+                                                configuration->minRXTXTIME,
+                                                configuration->do_SRS);
 
   // Downlink BWPs
   int n_dl_bwp = 1;
