@@ -1601,6 +1601,8 @@ static bool allocate_ul_retransmission(gNB_MAC_INST *nrmac,
                                            sched_ctrl->search_space->searchSpaceType->present,
                                            TYPE_C_RNTI_,
                                            tda);
+  if (!tda_info.valid_tda)
+    return false;
   bool reuse_old_tda = (retInfo->tda_info.startSymbolIndex == tda_info.startSymbolIndex) && (retInfo->tda_info.nrOfSymbols <= tda_info.nrOfSymbols);
   if (reuse_old_tda && nrOfLayers == retInfo->nrOfLayers) {
     /* Check the resource is enough for retransmission */
@@ -1844,6 +1846,7 @@ static void pf_ul(module_id_t module_id,
                                               sched_ctrl->search_space->searchSpaceType->present,
                                               TYPE_C_RNTI_,
                                               sched_pusch->time_domain_allocation);
+      AssertFatal(sched_pusch->tda_info.valid_tda, "Invalid TDA from get_ul_tda_info\n");
       sched_pusch->dmrs_info = get_ul_dmrs_params(scc,
                                                   current_BWP,
                                                   &sched_pusch->tda_info,
@@ -1967,6 +1970,7 @@ static void pf_ul(module_id_t module_id,
                                             sched_ctrl->search_space->searchSpaceType->present,
                                             TYPE_C_RNTI_,
                                             sched_pusch->time_domain_allocation);
+    AssertFatal(sched_pusch->tda_info.valid_tda, "Invalid TDA from get_ul_tda_info\n");
     sched_pusch->dmrs_info = get_ul_dmrs_params(scc,
                                                 current_BWP,
                                                 &sched_pusch->tda_info,

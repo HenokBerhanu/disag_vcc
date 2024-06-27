@@ -455,6 +455,8 @@ static bool allocate_dl_retransmission(module_id_t module_id,
                                            TYPE_C_RNTI_,
                                            coresetid,
                                            false);
+  if (!temp_tda.valid_tda)
+    return false;
 
   bool reuse_old_tda = (retInfo->tda_info.startSymbolIndex == temp_tda.startSymbolIndex) && (retInfo->tda_info.nrOfSymbols <= temp_tda.nrOfSymbols);
   LOG_D(NR_MAC, "[UE %x] %s old TDA, %s number of layers\n",
@@ -775,6 +777,7 @@ static void pf_dl(module_id_t module_id,
                                             TYPE_C_RNTI_,
                                             coresetid,
                                             false);
+    AssertFatal(sched_pdsch->tda_info.valid_tda, "Invalid TDA from get_dl_tda_info\n");
 
     NR_tda_info_t *tda_info = &sched_pdsch->tda_info;
 
