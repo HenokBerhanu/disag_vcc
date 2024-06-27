@@ -898,7 +898,7 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
   /* SRBs */
   for (int srb_id = 1; srb_id < NR_NUM_SRB; srb_id++) {
     if (ue_p->Srb[srb_id].Active)
-      nr_pdcp_config_set_security(ue_p->rrc_ue_id, srb_id, security_mode, kRRCenc, kRRCint, kUPenc);
+      nr_pdcp_config_set_security(ue_p->rrc_ue_id, srb_id, true, security_mode, kRRCenc, kRRCint);
   }
   /* Re-establish PDCP for SRB1, according to 5.3.7.4 of 3GPP TS 38.331 */
   nr_pdcp_reestablishment(ue_p->rrc_ue_id, 1, true);

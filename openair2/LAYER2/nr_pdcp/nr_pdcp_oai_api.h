@@ -82,10 +82,10 @@ void add_srb(int is_gnb,
 
 void nr_pdcp_config_set_security(ue_id_t ue_id,
                                  const rb_id_t rb_id,
-                                 const uint8_t security_modeP,
-                                 uint8_t *const kRRCenc_pP,
-                                 uint8_t *const kRRCint_pP,
-                                 uint8_t *const kUPenc_pP);
+                                 const bool is_srb,
+                                 const uint8_t security_mode,
+                                 const uint8_t *kenc,
+                                 const uint8_t *kint);
 
 bool nr_pdcp_check_integrity_srb(ue_id_t ue_id,
                                  int srb_id,

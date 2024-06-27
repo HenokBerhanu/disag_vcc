@@ -101,9 +101,9 @@ typedef struct nr_pdcp_entity_t {
    */
   void (*set_security)(struct nr_pdcp_entity_t *entity,
                        int integrity_algorithm,
-                       char *integrity_key,
+                       const uint8_t *integrity_key,
                        int ciphering_algorithm,
-                       char *ciphering_key);
+                       const uint8_t *ciphering_key);
 
   /* check_integrity is used by RRC */
   bool (*check_integrity)(struct nr_pdcp_entity_t *entity,

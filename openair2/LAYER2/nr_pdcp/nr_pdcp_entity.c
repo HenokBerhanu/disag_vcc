@@ -330,9 +330,9 @@ static bool nr_pdcp_entity_check_integrity(struct nr_pdcp_entity_t *entity,
 /* may be called several times, take care to clean previous settings */
 static void nr_pdcp_entity_set_security(nr_pdcp_entity_t *entity,
                                         int integrity_algorithm,
-                                        char *integrity_key,
+                                        const uint8_t *integrity_key,
                                         int ciphering_algorithm,
-                                        char *ciphering_key)
+                                        const uint8_t *ciphering_key)
 {
   if (integrity_algorithm != -1)
     entity->integrity_algorithm = integrity_algorithm;
@@ -663,9 +663,7 @@ nr_pdcp_entity_t *new_nr_pdcp_entity(
 
   ret->is_gnb = is_gnb;
 
-  nr_pdcp_entity_set_security(ret,
-                              integrity_algorithm, (char *)integrity_key,
-                              ciphering_algorithm, (char *)ciphering_key);
+  nr_pdcp_entity_set_security(ret, integrity_algorithm, integrity_key, ciphering_algorithm, ciphering_key);
 
   return ret;
 }

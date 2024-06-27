@@ -1027,10 +1027,10 @@ void pdcp_config_set_security(const protocol_ctxt_t *const ctxt_pP,
 
 void nr_pdcp_config_set_security(ue_id_t ue_id,
                                  const rb_id_t rb_id,
-                                 const uint8_t security_modeP,
-                                 uint8_t *const kRRCenc_pP,
-                                 uint8_t *const kRRCint_pP,
-                                 uint8_t *const kUPenc_pP)
+                                 const bool is_srb,
+                                 const uint8_t security_mode,
+                                 const uint8_t *kenc,
+                                 const uint8_t *kint)
 {
   nr_pdcp_ue_t *ue;
   nr_pdcp_entity_t *rb;
@@ -1041,20 +1041,17 @@ void nr_pdcp_config_set_security(ue_id_t ue_id,
 
   ue = nr_pdcp_manager_get_ue(nr_pdcp_ue_manager, ue_id);
 
-  /* TODO: proper handling of DRBs, for the moment only SRBs are handled */
-
-  rb = nr_pdcp_get_rb(ue, rb_id, true);
+  rb = nr_pdcp_get_rb(ue, rb_id, is_srb);
 
   if (rb == NULL) {
     nr_pdcp_manager_unlock(nr_pdcp_ue_manager);
-    LOG_E(PDCP, "no SRB found (ue_id %ld, rb_id %ld)\n", ue_id, rb_id);
+    LOG_E(PDCP, "no %s found (ue_id %ld, rb_id %ld)\n", is_srb ? "SRB" : "DRB", ue_id, rb_id);
     return;
   }
 
-  integrity_algorithm = (security_modeP>>4) & 0xf;
-  ciphering_algorithm = security_modeP & 0x0f;
-  rb->set_security(rb, integrity_algorithm, (char *)kRRCint_pP,
-                   ciphering_algorithm, (char *)kRRCenc_pP);
+  integrity_algorithm = (security_mode >> 4) & 0xf;
+  ciphering_algorithm = security_mode & 0x0f;
+  rb->set_security(rb, integrity_algorithm, kint, ciphering_algorithm, kenc);
 
   nr_pdcp_manager_unlock(nr_pdcp_ue_manager);
 }
@@ -1240,7 +1237,13 @@ void nr_pdcp_release_drb(ue_id_t ue_id, int drb_id)
   nr_pdcp_manager_unlock(nr_pdcp_ue_manager);
 }
 
-void nr_pdcp_reestablishment(ue_id_t ue_id, int rb_id, bool srb_flag)
+void nr_pdcp_reestablishment(ue_id_t ue_id,
+                             int rb_id,
+                             bool srb_flag,
+                             int ciphering_algorithm,
+                             const uint8_t *ciphering_key,
+                             int integrity_algorithm,
+                             const uint8_t *integrity_key)
 {
   nr_pdcp_ue_t     *ue;
   nr_pdcp_entity_t *rb;
@@ -1251,7 +1254,7 @@ void nr_pdcp_reestablishment(ue_id_t ue_id, int rb_id, bool srb_flag)
 
   if (rb != NULL) {
     LOG_D(PDCP, "UE %4.4lx re-establishment of %sRB %d\n", ue_id, srb_flag ? "S" : "D", rb_id);
-    rb->reestablish_entity(rb);
+    rb->reestablish_entity(rb, ciphering_algorithm, ciphering_key, integrity_algorithm, integrity_key);
     LOG_I(PDCP, "%s %d re-established\n", srb_flag ? "SRB" : "DRB" , rb_id);
   } else {
     LOG_W(PDCP, "UE %4.4lx cannot re-establish %sRB %d, RB not found\n", ue_id, srb_flag ? "S" : "D", rb_id);

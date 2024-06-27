@@ -137,16 +137,11 @@ nr_rrc_pdcp_config_security(
 {
   uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
   uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-  uint8_t kUPenc[NR_K_KEY_SIZE]  = {0};
   //uint8_t                            *k_kdf  = NULL;
   static int                          print_keys= 1;
   gNB_RRC_UE_t *UE = &ue_context_pP->ue_context;
 
   /* Derive the keys from kgnb */
-  if (UE->Srb[1].Active || UE->Srb[2].Active) {
-    nr_derive_key(UP_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, kUPenc);
-  }
-
   nr_derive_key(RRC_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, kRRCenc);
   nr_derive_key(RRC_INT_ALG, UE->integrity_algorithm, UE->kgnb, kRRCint);
 
@@ -161,7 +156,7 @@ nr_rrc_pdcp_config_security(
 
   uint8_t security_mode =
       enable_ciphering ? UE->ciphering_algorithm | (UE->integrity_algorithm << 4) : 0 | (UE->integrity_algorithm << 4);
-  nr_pdcp_config_set_security(ctxt_pP->rntiMaybeUEid, DCCH, security_mode, kRRCenc, kRRCint, kUPenc);
+  nr_pdcp_config_set_security(ctxt_pP->rntiMaybeUEid, DCCH, true, security_mode, kRRCenc, kRRCint);
 }
 
 //------------------------------------------------------------------------------

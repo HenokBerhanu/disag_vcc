@@ -638,7 +638,7 @@ static void nr_rrc_handle_msg3_indication(NR_UE_RRC_INST_t *rrc, rnti_t rnti)
       // apply the specified configuration defined in 9.2.1 for SRB1
       nr_rlc_reconfigure_entity(rrc->ue_id, lc_id, NULL);
       // suspend integrity protection and ciphering for SRB1
-      nr_pdcp_config_set_security(rrc->ue_id, srb_id, 0, NULL, NULL, NULL);
+      nr_pdcp_config_set_security(rrc->ue_id, srb_id, true, 0, NULL, NULL);
       // resume SRB1
       rrc->Srb[srb_id] = RB_ESTABLISHED;
       break;
@@ -1048,20 +1048,18 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
   }
 
   uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t  kUPenc[NR_K_KEY_SIZE] = {0};
   uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-  nr_derive_key(UP_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kUPenc);
   nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kRRCenc);
   nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kRRCint);
 
-  log_dump(NR_RRC, ue_rrc->kgnb, 32, LOG_DUMP_CHAR, "deriving kRRCenc, kRRCint and kUPenc from KgNB=");
+  log_dump(NR_RRC, ue_rrc->kgnb, 32, LOG_DUMP_CHAR, "deriving kRRCenc, kRRCint from KgNB=");
 
   /* for SecurityModeComplete, ciphering is not activated yet, only integrity */
   uint8_t security_mode = ue_rrc->integrityProtAlgorithm << 4;
   // configure lower layers to apply SRB integrity protection and ciphering
   for (int i = 1; i < NR_NUM_SRB; i++) {
     if (ue_rrc->Srb[i] == RB_ESTABLISHED)
-      nr_pdcp_config_set_security(ue_rrc->ue_id, i, security_mode, kRRCenc, kRRCint, kUPenc);
+      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, kRRCenc, kRRCint);
   }
 
   NR_UL_DCCH_Message_t ul_dcch_msg = {0};
@@ -1097,7 +1095,7 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
     security_mode = 0;
     for (int i = 1; i < NR_NUM_SRB; i++) {
       if (ue_rrc->Srb[i] == RB_ESTABLISHED)
-        nr_pdcp_config_set_security(ue_rrc->ue_id, i, security_mode, NULL, NULL, NULL);
+        nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, NULL, NULL);
     }
 
     srb_id = 1; // SecurityModeFailure in SRB1
@@ -1144,7 +1142,7 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
   for (int i = 1; i < NR_NUM_SRB; i++) {
     if (ue_rrc->Srb[i] == RB_ESTABLISHED)
       /* pass NULL to keep current keys */
-      nr_pdcp_config_set_security(ue_rrc->ue_id, i, security_mode, NULL, NULL, NULL);
+      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, NULL, NULL);
   }
 }
 
@@ -1550,15 +1548,11 @@ static void nr_rrc_ue_process_rrcReestablishment(NR_UE_RRC_INST_t *rrc,
   // update the K gNB key based on the current K gNB key or the NH, using the stored nextHopChainingCount value
   nr_derive_key_ng_ran_star(rrc->phyCellID, rrc->arfcn_ssb, rrc->kgnb, rrc->kgnb);
 
-  // derive the K RRCenc and K UPenc keys associated with the previously configured cipheringAlgorithm
-  // derive the K RRCint and K UPint keys associated with the previously configured integrityProtAlgorithm
-  uint8_t kRRCenc[16] = {0};
-  uint8_t kRRCint[16] = {0};
-  uint8_t kUPenc[16] = {0};
-  uint8_t kUPint[16] = {0};
+  // derive the K RRCenc key associated with the previously configured cipheringAlgorithm
+  // derive the K RRCint key associated with the previously configured integrityProtAlgorithm
+  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
+  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
 
-  nr_derive_key(UP_ENC_ALG, rrc->cipheringAlgorithm, rrc->kgnb, kUPenc);
-  nr_derive_key(UP_INT_ALG, rrc->integrityProtAlgorithm, rrc->kgnb, kUPint);
   nr_derive_key(RRC_ENC_ALG, rrc->cipheringAlgorithm, rrc->kgnb, kRRCenc);
   nr_derive_key(RRC_INT_ALG, rrc->integrityProtAlgorithm, rrc->kgnb, kRRCint);
 
@@ -1570,7 +1564,7 @@ static void nr_rrc_ue_process_rrcReestablishment(NR_UE_RRC_INST_t *rrc,
   int srb_id = 1;
   int security_mode = (rrc->integrityProtAlgorithm << 4)
                       | rrc->cipheringAlgorithm;
-  nr_pdcp_config_set_security(rrc->ue_id, srb_id, security_mode, kRRCenc, kRRCint, kUPenc);
+  nr_pdcp_config_set_security(rrc->ue_id, srb_id, true, security_mode, kRRCenc, kRRCint);
 
   // release the measurement gap configuration indicated by the measGapConfig, if configured
   rrcPerNB_t *rrcNB = rrc->perNB + gNB_index;
