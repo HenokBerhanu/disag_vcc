@@ -286,6 +286,7 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
   UE->rf_map.card          = card_offset;
   UE->rf_map.chain         = CC_id + chain_offset;
   UE->max_ldpc_iterations  = nrUE_params.max_ldpc_iterations;
+  UE->ldpc_offload_enable  = nrUE_params.ldpc_offload_flag;
   UE->UE_scan_carrier      = nrUE_params.UE_scan_carrier;
   UE->UE_fo_compensation   = nrUE_params.UE_fo_compensation;
   UE->if_freq              = nrUE_params.if_freq;
@@ -491,7 +492,11 @@ int main(int argc, char **argv)
   cpuf=get_cpu_freq_GHz();
   itti_init(TASK_MAX, tasks_info);
 
-  init_opt() ;
+  init_opt();
+
+  if (nrUE_params.ldpc_offload_flag)
+    load_LDPClib("_t2", &ldpc_interface_offload);
+
   load_LDPClib(NULL, &ldpc_interface);
 
   if (ouput_vcd) {

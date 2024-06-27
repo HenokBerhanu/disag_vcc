@@ -137,6 +137,9 @@ int phy_init_nr_gNB(PHY_VARS_gNB *gNB)
 
   if (gNB->ldpc_offload_flag)
     load_LDPClib("_t2", &ldpc_interface_offload);
+  else
+    load_LDPClib(NULL, &ldpc_interface);
+
   gNB->max_nb_pdsch = MAX_MOBILES_PER_GNB;
   init_delay_table(fp->ofdm_symbol_size, MAX_DELAY_COMP, NR_MAX_OFDM_SYMBOL_SIZE, fp->delay_table);
 

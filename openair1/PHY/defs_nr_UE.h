@@ -504,6 +504,7 @@ typedef struct PHY_VARS_NR_UE_s {
 
   uint8_t max_ldpc_iterations;
 
+  int ldpc_offload_enable;
   /// SRS variables
   nr_srs_info_t *nr_srs_info;
 
