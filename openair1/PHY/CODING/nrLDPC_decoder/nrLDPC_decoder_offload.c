@@ -771,7 +771,7 @@ int start_pmd_dec(struct active_device *ad,
   rte_atomic16_set(&op_params->sync, SYNC_WAIT);
   /* Master core is set at first entry */
   t_params[0].dev_id = ad->dev_id;
-  t_params[0].lcore_id = 15;
+  t_params[0].lcore_id = rte_lcore_id();
   t_params[0].op_params = op_params;
   t_params[0].queue_id = ad->dec_queue;
   t_params[0].iter_count = 0;
@@ -815,7 +815,7 @@ int32_t start_pmd_enc(struct active_device *ad,
   struct thread_params *t_params = rte_zmalloc(NULL, num_lcores * sizeof(struct thread_params), RTE_CACHE_LINE_SIZE);
   rte_atomic16_set(&op_params->sync, SYNC_WAIT);
   t_params[0].dev_id = ad->dev_id;
-  t_params[0].lcore_id = 14;
+  t_params[0].lcore_id = rte_lcore_id() + 1;
   t_params[0].op_params = op_params;
   t_params[0].queue_id = ad->enc_queue;
   t_params[0].iter_count = 0;
@@ -852,8 +852,17 @@ int32_t LDPCinit()
   int dev_id = 0;
   struct rte_bbdev_info info;
   struct active_device *ad = active_devs;
-  char *dpdk_dev = "d8:00.0"; //PCI address of the card
-  char *argv_re[] = {"bbdev", "-a", dpdk_dev, "-l", "14-15", "--file-prefix=b6", "--"};
+  char *dpdk_dev = NULL; // PCI address of the card
+  char *dpdk_core_list = NULL; // cores used by DPDK for T2
+  char *dpdk_file_prefix = NULL;
+  paramdef_t LoaderParams[] = {
+    {"dpdk_dev",         NULL, 0, .strptr = &dpdk_dev,         .defstrval = NULL,     TYPE_STRING, 0, NULL},
+    {"dpdk_core_list",   NULL, 0, .strptr = &dpdk_core_list,   .defstrval = "11-12",  TYPE_STRING, 0, NULL},
+    {"dpdk_file_prefix", NULL, 0, .strptr = &dpdk_file_prefix, .defstrval = "b6",     TYPE_STRING, 0, NULL}
+  };
+  config_get(config_get_if(), LoaderParams, sizeofArray(LoaderParams), "ldpc_offload");
+  AssertFatal(dpdk_dev != NULL, "ldpc_offload.dpdk_dev was not provided");
+  char *argv_re[] = {"bbdev", "-a", dpdk_dev, "-l", dpdk_core_list, "--file-prefix", dpdk_file_prefix, "--"};
   // EAL initialization, if already initialized (init in xran lib) try to probe DPDK device
   ret = rte_eal_init(sizeofArray(argv_re), argv_re);
   if (ret < 0) {
