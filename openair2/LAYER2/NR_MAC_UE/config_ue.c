@@ -1409,11 +1409,14 @@ static void configure_common_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP_Up
                   ul_common->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList,
                   NR_PUSCH_TimeDomainResourceAllocationList_t);
         UPDATE_IE(bwp->msg3_DeltaPreamble, ul_common->pusch_ConfigCommon->choice.setup->msg3_DeltaPreamble, long);
+        UPDATE_IE(bwp->p0_NominalWithGrant, ul_common->pusch_ConfigCommon->choice.setup->p0_NominalWithGrant, long);
       }
       if (ul_common->pusch_ConfigCommon->present == NR_SetupRelease_PUSCH_ConfigCommon_PR_release) {
         asn1cFreeStruc(asn_DEF_NR_PUSCH_TimeDomainResourceAllocationList, bwp->tdaList_Common);
         free(bwp->msg3_DeltaPreamble);
         bwp->msg3_DeltaPreamble = NULL;
+        free(bwp->p0_NominalWithGrant);
+        bwp->p0_NominalWithGrant = NULL;
       }
     }
   }
@@ -2130,6 +2133,8 @@ void release_ul_BWP(NR_UE_MAC_INST_t *mac, int index)
   asn1cFreeStruc(asn_DEF_NR_SRS_Config, bwp->srs_Config);
   free(bwp->msg3_DeltaPreamble);
   bwp->msg3_DeltaPreamble = NULL;
+  free(bwp->p0_NominalWithGrant);
+  bwp->p0_NominalWithGrant = NULL;
   free(bwp);
 }
 

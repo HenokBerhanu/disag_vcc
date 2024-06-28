@@ -65,62 +65,34 @@ static int get_deltatf(uint16_t nb_of_prbs,
                        int N_sc_ctrl_RB,
                        int O_UCI);
 
-// Implementation of 6.2.4 Configured ransmitted power
-// 3GPP TS 38.101-1 version 16.5.0 Release 16
-// -
-// The UE is allowed to set its configured maximum output power PCMAX,f,c for carrier f of serving cell c in each slot.
-// The configured maximum output power PCMAX,f,c is set within the following bounds: PCMAX_L,f,c <=  PCMAX,f,c <=  PCMAX_H,f,c
-// -
-// Measurement units:
-// - p_max:              dBm
-// - delta_TC_c:         dB
-// - P_powerclass:       dBm
-// - delta_P_powerclass: dB
-// - MPR_c:              dB
-// - delta_MPR_c:        dB
-// - delta_T_IB_c        dB
-// - delta_rx_SRS        dB
-// note:
-// - Assuming:
-// -- Powerclass 3 capable UE (which is default power class unless otherwise stated)
-// -- Maximum power reduction (MPR_c) for power class 3
-// -- no additional MPR (A_MPR_c)
-int nr_get_Pcmax(int p_Max,
-                 uint16_t nr_band,
-                 frequency_range_t frequency_range,
-                 int Qm,
-                 bool powerBoostPi2BPSK,
-                 int scs,
-                 int N_RB_UL,
-                 bool is_transform_precoding,
-                 int n_prbs,
-                 int start_prb)
+// ∆MPR according to Table 6.2.2-3 38.101-1
+static float get_delta_mpr(uint16_t nr_band, int scs, int N_RB_UL, int n_prbs, int start_prb, int power_class)
 {
-  if (frequency_range == FR1) {
-    // TODO configure P-MAX from the upper layers according to 38.331
-    int p_powerclass = 23; // dBm assuming poweclass 3 UE
-    int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
-    int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
-    if (p_Max && Qm == 1 && powerBoostPi2BPSK
-        && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
-      p_emax += 3;
-      delta_P_powerclass -= 3;
+  frame_type_t frame_type = get_frame_type(nr_band, scs);
+  if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
+    if (power_class == 3) {
+      if ((nr_band == 28 || nr_band == 83) && get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL) == 30) {
+        return 0.5f;
+      }
     }
+    if (power_class == 3 || power_class == 2) {
+      if ((nr_band == 40 || nr_band == 97) && get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL) == 100) {
+        return 1.0f;
+      }
+    }
+  }
+  return 0;
+}
 
-    // TODO to be set for CA and DC
-    int delta_T_IB = 0;
-
-    // TODO in case of band 41 and PRB allocation within 4MHz of the upper or lower limit of the band -> delta_TC = 1.5
-    if (nr_band == 41)
-      LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
-    int delta_TC = 0;
-
-    float MPR = 0;
-    frame_type_t frame_type = get_frame_type(nr_band, scs);
-    if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
-      int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
-      int rb_high = N_RB_UL - rb_low - n_prbs;
-      bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
+// MPR according to 38-101 6.2.2
+static float get_mpr(int Qm, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb, int power_class)
+{
+  float MPR = 0;
+  int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
+  int rb_high = N_RB_UL - rb_low - n_prbs;
+  bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
+  switch (power_class) {
+    case 3:
       // Table 6.2.2-1 in 38.101
       switch (Qm) {
         case 1:
@@ -166,16 +138,73 @@ int nr_get_Pcmax(int p_Max,
         default:
           AssertFatal(false, "Invalid Qm %d\n", Qm);
       }
+      break;
+    default:
+      AssertFatal(false, "PowerClass != 3 not implemented\n");
+  }
+  return MPR;
+}
+
+// Implementation of 6.2.4 Configured ransmitted power
+// 3GPP TS 38.101-1 version 16.5.0 Release 16
+// -
+// The UE is allowed to set its configured maximum output power PCMAX,f,c for carrier f of serving cell c in each slot.
+// The configured maximum output power PCMAX,f,c is set within the following bounds: PCMAX_L,f,c <=  PCMAX,f,c <=  PCMAX_H,f,c
+// -
+// Measurement units:
+// - p_max:              dBm
+// - delta_TC_c:         dB
+// - P_powerclass:       dBm
+// - delta_P_powerclass: dB
+// - MPR_c:              dB
+// - delta_MPR_c:        dB
+// - delta_T_IB_c        dB
+// - delta_rx_SRS        dB
+// note:
+// - Assuming:
+// -- Powerclass 3 capable UE (which is default power class unless otherwise stated)
+// -- Maximum power reduction (MPR_c) for power class 3
+// -- no additional MPR (A_MPR_c)
+float nr_get_Pcmax(int p_Max,
+                   uint16_t nr_band,
+                   frequency_range_t frequency_range,
+                   int Qm,
+                   bool powerBoostPi2BPSK,
+                   int scs,
+                   int N_RB_UL,
+                   bool is_transform_precoding,
+                   int n_prbs,
+                   int start_prb)
+{
+  const int power_class = 3; // Assume power class 3
+  if (frequency_range == FR1) {
+    // TODO configure P-MAX from the upper layers according to 38.331
+    int p_powerclass = 23; // dBm assuming poweclass 3 UE
+    int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
+    int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
+    if (p_Max && Qm == 1 && powerBoostPi2BPSK
+        && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
+      p_emax += 3;
+      delta_P_powerclass -= 3;
     }
 
+    // TODO to be set for CA and DC
+    int delta_T_IB = 0;
+
+    // TODO in case of band 41 and PRB allocation within 4MHz of the upper or lower limit of the band -> delta_TC = 1.5
+    if (nr_band == 41)
+      LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
+    int delta_TC = 0;
+
+    float MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, power_class);
+    float delta_MPR = get_delta_mpr(nr_band, scs, N_RB_UL, n_prbs, start_prb, power_class);
     int A_MPR = 0; // TODO too complicated to implement for now (see 6.2.3 in 38.101-1)
     int delta_rx_SRS = 0; // TODO for SRS
     int P_MPR = 0; // to ensure compliance with applicable electromagnetic energy absorption requirements
 
-    float total_reduction = (MPR > A_MPR ? MPR : A_MPR) + delta_T_IB + delta_TC + delta_rx_SRS;
-    if (P_MPR > total_reduction)
-      total_reduction = P_MPR;
-    int pcmax_high, pcmax_low;
+    float total_reduction = max(max(MPR + delta_MPR, A_MPR) + delta_T_IB + delta_TC + delta_rx_SRS, P_MPR);
+
+    float pcmax_high, pcmax_low;
     if (p_Max) {
       pcmax_high = p_emax < (p_powerclass - delta_P_powerclass) ? p_emax : (p_powerclass - delta_P_powerclass);
       pcmax_low = (p_emax - delta_TC) < (p_powerclass - delta_P_powerclass - total_reduction)
@@ -186,13 +215,21 @@ int nr_get_Pcmax(int p_Max,
       pcmax_low = p_powerclass - delta_P_powerclass - total_reduction;
     }
     // TODO we need a strategy to select a value between minimum and maximum allowed PC_max
-    int pcmax = (pcmax_low + pcmax_high) / 2;
-    LOG_D(MAC, "Configured maximum output power:  %d dBm <= PCMAX %d dBm <= %d dBm \n", pcmax_low, pcmax, pcmax_high);
+    float pcmax = (pcmax_low + pcmax_high) / 2;
+    LOG_D(MAC, "Configured maximum output power:  %f dBm <= PCMAX %f dBm <= %f dBm \n", pcmax_low, pcmax, pcmax_high);
     return pcmax;
   } else {
     // FR2 TODO it is even more complex because it is radiated power
     return 23;
   }
+}
+
+float nr_get_Pcmin(int scs, int nr_band, int N_RB_UL) {
+  int band_index = get_supported_band_index(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL);
+  const float table_38101_6_3_1_1[] = {
+    -40, -40, -40, -40, -39, -38.2, -37.5, -37, -36.5, -35.2, -34.6, -34, -33.5, -33
+  };
+  return table_38101_6_3_1_1[band_index];
 }
 
 // This is not entirely correct. In certain k2/k1/k0 settings we might postpone accumulating delta_PUCCH until next HARQ feedback
@@ -297,8 +334,9 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
     delta_F_PUCCH = *delta_F_PUCCH_config;
   }
 
-  // PUCCH shall be as specified for QPSK modulated DFT-s-OFDM of equivalent RB allocation (38.101-1)
-  // TODO: P_CMAX for format 2
+  // 38.101-1: The allowed MPR for SRS, PUCCH formats 0, 1, 3 and 4, and PRACH shall be as specified for QPSK modulated DFT-
+  // s-OFDM of equivalent RB allocation. The allowed MPR for PUCCH format 2 shall be as specified for QPSK
+  // modulated CP-OFDM of equivalent RB allocation.
   int P_CMAX = nr_get_Pcmax(mac->p_Max,
                             mac->nr_band,
                             mac->frequency_range,
@@ -306,10 +344,10 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             false,
                             mac->current_UL_BWP->scs,
                             mac->current_UL_BWP->BWPSize,
-                            true,
+                            format_type == 2,
                             1,
                             start_prb);
-  int P_CMIN = -40; // TODO: minimum TX power, possibly 38.101-1 6.3.1
+  int P_CMIN = nr_get_Pcmin(mac->current_UL_BWP->scs, mac->nr_band,  mac->current_UL_BWP->BWPSize);
   int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
 
   if (power_config->twoPUCCH_PC_AdjustmentStates && *power_config->twoPUCCH_PC_AdjustmentStates > 1) {
@@ -395,4 +433,137 @@ int16_t compute_nr_SSB_PL(NR_UE_MAC_INST_t *mac, short ssb_rsrp_dBm)
         pow(10, ssb_rsrp_dBm/10));
 
   return pathloss;
+}
+
+// PUSCH transmission power according to 38.213 7.1
+int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
+                          int num_rb,
+                          int start_prb,
+                          uint16_t nb_symb_sch,
+                          uint16_t nb_dmrs_prb,
+                          uint16_t nb_ptrs_prb,
+                          uint16_t qm,
+                          uint16_t R,
+                          uint16_t beta_offset_csi1,
+                          uint32_t sum_bits_in_codeblocks,
+                          int delta_pusch,
+                          bool is_rar_tx_retx,
+                          bool transform_precoding)
+{
+  LOG_D(NR_MAC,
+        "PUSCH tx power determination num_rb=%d start_prb=%d nb_symb_sch=%u nb_dmrs_prb=%u nb_ptrs_prb=%u Qm=%u R= %u "
+        "beta_offset_cs1=%u sum_bits_in_codeblocks=%u delta_pusch=%d is_rar_tx_retx=%d transform_precoding=%d\n",
+        num_rb,
+        start_prb,
+        nb_symb_sch,
+        nb_dmrs_prb,
+        nb_ptrs_prb,
+        qm,
+        R,
+        beta_offset_csi1,
+        sum_bits_in_codeblocks,
+        delta_pusch,
+        is_rar_tx_retx,
+        transform_precoding);
+  NR_UE_UL_BWP_t *current_UL_BWP = mac->current_UL_BWP;
+  AssertFatal(current_UL_BWP, "Missing configuration: need UL_BWP to calculate PUSCH tx power\n");
+  NR_PUSCH_Config_t *pusch_Config = current_UL_BWP->pusch_Config;
+  bool has_pusch_config = pusch_Config != NULL;
+  bool has_pusch_power_control_config = has_pusch_config && pusch_Config->pusch_PowerControl != NULL;
+  bool is_provided_alpha_sets = has_pusch_power_control_config && pusch_Config->pusch_PowerControl->p0_AlphaSets != NULL;
+  AssertFatal(!has_pusch_power_control_config || pusch_Config->pusch_PowerControl->sri_PUSCH_MappingToAddModList == NULL,
+              "SRI-PUSCH-PowerControl handling not implemented\n");
+
+  int P_O_NOMINAL_PUSCH;
+  float alpha;
+  const float alpha_factor_table[8] = {0.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+  if (is_rar_tx_retx || !is_provided_alpha_sets || current_UL_BWP->p0_NominalWithGrant == NULL) {
+    int DELTA_PREAMBLE_MSG3 = 0;
+    if (current_UL_BWP->msg3_DeltaPreamble) {
+      DELTA_PREAMBLE_MSG3 = *current_UL_BWP->msg3_DeltaPreamble;
+    }
+    NR_RACH_ConfigCommon_t *nr_rach_ConfigCommon = current_UL_BWP->rach_ConfigCommon;
+    long preambleReceivedTargetPower = nr_rach_ConfigCommon->rach_ConfigGeneric.preambleReceivedTargetPower;
+    int P_O_PRE = preambleReceivedTargetPower;
+    P_O_NOMINAL_PUSCH = P_O_PRE + DELTA_PREAMBLE_MSG3;
+
+    if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->msg3_Alpha) {
+      alpha = alpha_factor_table[*pusch_Config->pusch_PowerControl->msg3_Alpha];
+    } else {
+      alpha = 1.0f;
+    }
+  } else {
+    P_O_NOMINAL_PUSCH = *current_UL_BWP->p0_NominalWithGrant;
+    if (pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->alpha) {
+      alpha = alpha_factor_table[*pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->alpha];
+    } else {
+      // Default according to 38.331 P0-PUSCH-AlphaSet field descriptions
+      alpha = 1.0f;
+    }
+  }
+
+  int P_O_UE_PUSCH;
+  if (is_rar_tx_retx || !is_provided_alpha_sets) {
+    P_O_UE_PUSCH = 0;
+  } else {
+    if (pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->p0) {
+      P_O_UE_PUSCH = *pusch_Config->pusch_PowerControl->p0_AlphaSets->list.array[0]->p0;
+    } else {
+      // Default according to 38.331 P0-PUSCH-AlphaSet field descriptions
+      P_O_UE_PUSCH = 0;
+    }
+  }
+
+  int mu = current_UL_BWP->scs;
+
+  int M_pusch_component = 10 * log10((pow(2, mu)) * num_rb);
+  int P_CMAX = nr_get_Pcmax(mac->p_Max,
+                            mac->nr_band,
+                            mac->frequency_range,
+                            2,
+                            false,
+                            mac->current_UL_BWP->scs,
+                            mac->current_UL_BWP->BWPSize,
+                            transform_precoding,
+                            1,
+                            start_prb);
+
+  int P_O_PUSCH = P_O_NOMINAL_PUSCH + P_O_UE_PUSCH;
+
+  float DELTA_TF = 0;
+  if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->deltaMCS) {
+    float beta_offset = 1;
+    float BPRE;
+    if (sum_bits_in_codeblocks == 0) {
+      float table_38_213_9_3_2[] = {
+          1.125,   11.250,  21.375,  31.625,  41.750,  52.000,   62.250,   72.500,   82.875,   93.125,
+          103.500, 114.000, 125.000, 136.250, 148.000, 1510.000, 1612.625, 1715.875, 1820.000,
+      };
+      beta_offset = table_38_213_9_3_2[beta_offset_csi1];
+      BPRE = (qm * R / beta_offset) / 1024;
+    } else {
+      const int nb_subcarrier_per_rb = 12;
+      const uint32_t N_RE = nb_subcarrier_per_rb * nb_symb_sch - nb_dmrs_prb - nb_ptrs_prb;
+      BPRE = sum_bits_in_codeblocks / (float)(N_RE * num_rb);
+    }
+    DELTA_TF = 10 * log10(pow(2, BPRE * 1.25f) * beta_offset);
+  }
+
+  // TODO: compute pathoss using correct reference
+  int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
+
+  int f_b_f_c = 0;
+  if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->tpc_Accumulation) {
+    f_b_f_c = delta_pusch;
+  } else {
+    // TODO: PUSCH power control state
+  }
+  LOG_D(NR_MAC,
+        "PUSCH tx power components P_O_PUSCH=%d, M_pusch_component=%d, alpha*pathloss=%f, delta_TF=%f, f_b_f_c=%d\n",
+        P_O_PUSCH,
+        M_pusch_component,
+        alpha * pathloss,
+        DELTA_TF,
+        f_b_f_c);
+  return min(P_CMAX, P_O_PUSCH + M_pusch_component + alpha * pathloss + DELTA_TF + f_b_f_c);
 }

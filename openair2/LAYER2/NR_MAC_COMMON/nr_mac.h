@@ -571,6 +571,7 @@ typedef struct NR_UE_UL_BWP {
   uint8_t mcs_table;
   nr_dci_format_t dci_format;
   int max_fb_time;
+  long *p0_NominalWithGrant;
 } NR_UE_UL_BWP_t;
 
 // non-BWP serving cell configuration
