@@ -46,7 +46,7 @@ void displayList(notifiedFIFO_t *nf)
 struct testData {
   int id;
   int sleepTime;
-  char txt[30];
+  char txt[50];
 };
 
 void processing(void *arg)
@@ -64,21 +64,27 @@ int main()
   logInit();
   notifiedFIFO_t myFifo;
   initNotifiedFIFO(&myFifo);
+  int num_elements_on_queue = 0;
   pushNotifiedFIFO(&myFifo, newNotifiedFIFO_elt(sizeof(struct testData), 1234, NULL, NULL));
+  num_elements_on_queue++;
 
   for (int i = 10; i > 1; i--) {
     pushNotifiedFIFO(&myFifo, newNotifiedFIFO_elt(sizeof(struct testData), 1000 + i, NULL, NULL));
+    num_elements_on_queue++;
   }
 
   displayList(&myFifo);
   notifiedFIFO_elt_t *tmp = pullNotifiedFIFO(&myFifo);
   printf("pulled: %lu\n", tmp->key);
   displayList(&myFifo);
+  delNotifiedFIFO_elt(tmp);
   tmp = pullNotifiedFIFO(&myFifo);
+  num_elements_on_queue--;
   printf("pulled: %lu\n", tmp->key);
   displayList(&myFifo);
   pushNotifiedFIFO(&myFifo, newNotifiedFIFO_elt(sizeof(struct testData), 12345678, NULL, NULL));
   displayList(&myFifo);
+  delNotifiedFIFO_elt(tmp);
 
   do {
     tmp = pollNotifiedFIFO(&myFifo);
@@ -86,9 +92,12 @@ int main()
     if (tmp) {
       printf("pulled: %lu\n", tmp->key);
       displayList(&myFifo);
+      delNotifiedFIFO_elt(tmp);
+      num_elements_on_queue--;
     } else
       printf("Empty list \n");
-  } while (tmp);
+  } while (num_elements_on_queue > 0);
+  AssertFatal(pollNotifiedFIFO(&myFifo) == NULL, "Unexpected extra element on queue\n");
 
   tpool_t pool;
   char params[] = "1,2,3,4,5";
@@ -129,5 +138,6 @@ int main()
          dur / 1000,
          cumulProcessTime / 1000,
          (dur - cumulProcessTime) / (1000 * nb_jobs));
+  abortTpool(&pool);
   return 0;
 }

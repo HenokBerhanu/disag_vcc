@@ -37,4 +37,4 @@ WORKDIR /oai-ran
 COPY . .
 
 WORKDIR /oai-ran/build
-RUN cmake -GNinja -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Debug .. && ninja tests
+RUN cmake -GNinja -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DSANITIZE_ADDRESS=True .. && ninja tests
