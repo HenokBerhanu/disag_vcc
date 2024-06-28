@@ -258,7 +258,8 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
     offset += LDPC_MAX_CB_SIZE;
   }
 
-  int8_t *p_outDec = calloc(harq_process->C * Kr_bytes, sizeof(int8_t));
+  int8_t p_outDec[harq_process->C * Kr_bytes];
+  memset(p_outDec, 0, sizeof(p_outDec));
   decodeIterations =
       ldpc_interface_offload.LDPCdecoder(decParams, harq_pid, ULSCH_id, harq_process->C, (int8_t *)l_ol, p_outDec, NULL, NULL);
 
@@ -307,7 +308,6 @@ int decode_offload(PHY_VARS_gNB *phy_vars_gNB,
   }
 
   ulsch->last_iteration_cnt = decodeIterations;
-  free(p_outDec);
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_gNB_ULSCH_DECODING,0);
   return 0;
 }
