@@ -1194,13 +1194,27 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
                                  uint32_t csi_res_bitmap,
                                  int chest_time_type)
 {
-  if (config_type == NFAPI_NR_DMRS_TYPE1) {
-    AssertFatal(n_dmrs_cdm_groups == 1 || n_dmrs_cdm_groups == 2,
-                "n_dmrs_cdm_groups %d is illegal\n",n_dmrs_cdm_groups);
-  } else {
+  if (config_type == NFAPI_NR_DMRS_TYPE1)
+    AssertFatal(n_dmrs_cdm_groups == 1 || n_dmrs_cdm_groups == 2, "n_dmrs_cdm_groups %d is illegal\n",n_dmrs_cdm_groups);
+  else
     AssertFatal(n_dmrs_cdm_groups == 1 || n_dmrs_cdm_groups == 2 || n_dmrs_cdm_groups == 3,
                 "n_dmrs_cdm_groups %d is illegal\n",n_dmrs_cdm_groups);
-  }
+
+  uint32_t dmrs_rb_bitmap = 0xfff; // all REs taken by dmrs
+  if (config_type == NFAPI_NR_DMRS_TYPE1 && n_dmrs_cdm_groups == 1)
+    dmrs_rb_bitmap = 0x555; // alternating REs starting from 0
+  if (config_type == NFAPI_NR_DMRS_TYPE2 && n_dmrs_cdm_groups == 1)
+    dmrs_rb_bitmap = 0xc3;  // REs 0,1 and 6,7
+  if (config_type == NFAPI_NR_DMRS_TYPE2 && n_dmrs_cdm_groups == 2)
+    dmrs_rb_bitmap = 0x3cf;  // REs 0,1,2,3 and 6,7,8,9
+
+  // csi_res_bitmap LS 16 bits for even RBs, MS 16 bits for odd RBs
+  uint32_t csi_res_even = csi_res_bitmap & 0xfff;
+  uint32_t csi_res_odd = (csi_res_bitmap >> 16) & 0xfff;
+  AssertFatal((dmrs_rb_bitmap & csi_res_even) == 0, "DMRS RE overlapping with CSI RE, it shouldn't happen\n");
+  AssertFatal((dmrs_rb_bitmap & csi_res_odd) == 0, "DMRS RE overlapping with CSI RE, it shouldn't happen\n");
+  uint32_t dmrs_csi_overlap_even = csi_res_even + dmrs_rb_bitmap;
+  uint32_t dmrs_csi_overlap_odd = csi_res_odd + dmrs_rb_bitmap;
 
   const unsigned short start_re = (frame_parms->first_carrier_offset + start_rb * NR_NB_SC_PER_RB) % frame_parms->ofdm_symbol_size;
   int8_t validDmrsEst;
@@ -1235,25 +1249,15 @@ static void nr_dlsch_extract_rbs(uint32_t rxdataF_sz,
       else {
         int j = 0;
         int k = start_re;
-        int max_cdm = (config_type == NFAPI_NR_DMRS_TYPE1) ? 2 : 3;
-        int shift = (config_type == NFAPI_NR_DMRS_TYPE1) ? 0 : 1;
         for (int rb = 0; rb < nb_rb_pdsch; rb++) {
-          uint32_t csi_rb_map = (csi_res_bitmap >> (16 * (rb % 2))) & 0x1fff;
+          uint32_t overlap_map = rb % 2 ?  dmrs_csi_overlap_odd : dmrs_csi_overlap_even;
           for (int re = 0; re < 12; re++) {
-            bool is_csi_re = (csi_rb_map >> re) & 0x01;
-            if (((re >> shift) % max_cdm) < n_dmrs_cdm_groups) {
-              // DMRS RE
-              AssertFatal(!is_csi_re, "DMRS RE overlapping with CSI RE, it shouldn't happen\n");
-            }
-            else {
+            if (((overlap_map >> re) & 0x01) == 0) {
               // DATA RE
-              if (!is_csi_re) {
-                // Process RE only if not overlapping with CSI
-                if (l == 0)
-                  rxF_ext[j] = rxF[k];
-                dl_ch0_ext[j] = dl_ch0[re];
-                j++;
-              }
+              if (l == 0)
+                rxF_ext[j] = rxF[k];
+              dl_ch0_ext[j] = dl_ch0[re];
+              j++;
             }
             k++;
             if (k >= frame_parms->ofdm_symbol_size)
