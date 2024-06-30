@@ -390,7 +390,7 @@ static int nr_process_mac_pdu(instance_t module_idP,
         // fixed length
         mac_subheader_len = 1;
 
-        if ( rx_lcid == UL_SCH_LCID_CCCH1 ) {
+        if (rx_lcid == UL_SCH_LCID_CCCH1) {
           // RRCResumeRequest1 message includes the full I-RNTI and has a size of 8 bytes
           mac_len = 8;
 
@@ -615,6 +615,26 @@ void handle_nr_ul_harq(const int CC_idP,
   NR_SCHED_UNLOCK(&nrmac->sched_lock);
 }
 
+static void handle_msg3_failed_rx(NR_RA_t *ra, int i, int harq_round_max)
+{
+  // for CFRA (NSA) do not schedule retransmission of msg3
+  if (ra->cfra) {
+    LOG_D(NR_MAC, "Random Access %i failed at state %s (NSA msg3 reception failed)\n", i, nrra_text[ra->ra_state]);
+    nr_clear_ra_proc(ra);
+    return;
+  }
+
+  if (ra->msg3_round >= harq_round_max - 1) {
+    LOG_W(NR_MAC, "Random Access %i failed at state %s (Reached msg3 max harq rounds)\n", i, nrra_text[ra->ra_state]);
+    nr_clear_ra_proc(ra);
+    return;
+  }
+
+  LOG_D(NR_MAC, "Random Access %i Msg3 CRC did not pass\n", i);
+  ra->msg3_round++;
+  ra->ra_state = nrRA_Msg3_retransmission;
+}
+
 /*
 * When data are received on PHY and transmitted to MAC
 */
@@ -714,7 +734,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
 
 #endif
 
-    if (sduP != NULL){
+    if (sduP != NULL) {
       LOG_D(NR_MAC, "Received PDU at MAC gNB \n");
 
       UE->UE_sched_ctrl.pusch_consecutive_dtx_cnt = 0;
@@ -728,7 +748,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
     else {
       NR_UE_ul_harq_t *cur_harq = &UE_scheduling_control->ul_harq_processes[harq_pid];
       /* reduce sched_ul_bytes when cur_harq->round == 3 */
-      if (cur_harq->round == 3){
+      if (cur_harq->round == 3) {
         const uint32_t tb_size = UE_scheduling_control->ul_harq_processes[harq_pid].sched_pusch.tb_size;
         UE_scheduling_control->sched_ul_bytes -= tb_size;
         if (UE_scheduling_control->sched_ul_bytes < 0)
@@ -747,18 +767,14 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         nr_mac_trigger_ul_failure(&UE->UE_sched_ctrl, UE->current_UL_BWP.scs);
       }
     }
-  } else if(sduP) {
+  } else if (sduP) {
 
     bool no_sig = true;
     for (int k = 0; k < sdu_lenP; k++) {
-      if(sduP[k]!=0) {
+      if(sduP[k] != 0) {
         no_sig = false;
         break;
       }
-    }
-
-    if(no_sig) {
-      LOG_W(NR_MAC, "No signal\n");
     }
 
     T(T_GNB_MAC_UL_PDU_WITH_DATA, T_INT(gnb_mod_idP), T_INT(CC_idP),
@@ -774,8 +790,8 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         continue;
 
       if (no_sig) {
-        LOG_D(NR_MAC, "Random Access %i failed at state %s (no signal)\n", i, nrra_text[ra->ra_state]);
-        nr_clear_ra_proc(ra);
+        LOG_W(NR_MAC, "Random Access %i ULSCH with no signal\n", i);
+        handle_msg3_failed_rx(ra, i, gNB_mac->ul_bler.harq_round_max);
         continue;
       }
 
@@ -912,23 +928,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       if( (frameP!=ra->Msg3_frame) || (slotP!=ra->Msg3_slot))
         continue;
 
-      // for CFRA (NSA) do not schedule retransmission of msg3
-      if (ra->cfra) {
-        LOG_D(NR_MAC, "Random Access %i failed at state %s (NSA msg3 reception failed)\n", i, nrra_text[ra->ra_state]);
-        nr_clear_ra_proc(ra);
-        return;
-      }
-
-      if (ra->msg3_round >= gNB_mac->ul_bler.harq_round_max - 1) {
-        LOG_W(NR_MAC, "Random Access %i failed at state %s (Reached msg3 max harq rounds)\n", i, nrra_text[ra->ra_state]);
-        nr_clear_ra_proc(ra);
-        return;
-      }
-
-      LOG_D(NR_MAC, "Random Access %i Msg3 CRC did not pass)\n", i);
-
-      ra->msg3_round++;
-      ra->ra_state = nrRA_Msg3_retransmission;
+      handle_msg3_failed_rx(ra, i, gNB_mac->ul_bler.harq_round_max);
     }
   }
 }
