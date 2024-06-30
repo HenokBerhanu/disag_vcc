@@ -180,6 +180,7 @@ static void nr_processULSegment(void *arg)
 
     LOG_E(PHY, "ulsch_decoding.c: Problem in rate_matching\n");
     rdata->decodeIterations = max_ldpc_iterations + 1;
+    set_abort(&ulsch_harq->abort_decode, true);
     return;
   }
 

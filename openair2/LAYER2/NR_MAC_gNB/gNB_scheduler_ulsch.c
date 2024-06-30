@@ -1935,7 +1935,7 @@ static void pf_ul(module_id_t module_id,
   UEsched_t *iterator=UE_sched;
 
   /* Loop UE_sched to find max coeff and allocate transmission */
-  while (remainUEs> 0 && n_rb_sched >= min_rb && iterator->UE != NULL) {
+  while (remainUEs > 0 && n_rb_sched >= min_rb && iterator->UE != NULL) {
 
     NR_UE_sched_ctrl_t *sched_ctrl = &iterator->UE->UE_sched_ctrl;
     int CCEIndex = get_cce_index(nrmac,
