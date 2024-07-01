@@ -435,11 +435,12 @@ static int nr_ue_process_dci_ul_00(NR_UE_MAC_INST_t *mac,
                                            dci_ind->ss_type,
                                            get_rnti_type(mac, dci_ind->rnti),
                                            dci->time_domain_assignment.val);
-  frame_t frame_tx;
-  int slot_tx;
-  if (tda_info.nrOfSymbols == 0)
+
+  if (!tda_info.valid_tda || tda_info.nrOfSymbols == 0)
     return -1;
 
+  frame_t frame_tx;
+  int slot_tx;
   if (-1 == nr_ue_pusch_scheduler(mac, 0, frame, slot, &frame_tx, &slot_tx, tda_info.k2)) {
     LOG_E(MAC, "Cannot schedule PUSCH\n");
     return -1;
@@ -525,14 +526,17 @@ static int nr_ue_process_dci_ul_01(NR_UE_MAC_INST_t *mac,
                                            get_rnti_type(mac, dci_ind->rnti),
                                            dci->time_domain_assignment.val);
 
+  if (!tda_info.valid_tda || tda_info.nrOfSymbols == 0)
+    return -1;
+
   if (dci->ulsch_indicator == 0) {
     // in case of CSI on PUSCH and no ULSCH we need to use reportSlotOffset in trigger state
-    AssertFatal(csi_K2 > 0, "Invalid CSI K2 value %ld\n", csi_K2);
+    if (csi_K2 <= 0) {
+      LOG_E(MAC, "Invalid CSI K2 value %ld\n", csi_K2);
+      return -1;
+    }
     tda_info.k2 = csi_K2;
   }
-
-  if (tda_info.nrOfSymbols == 0)
-    return -1;
 
   if (-1 == nr_ue_pusch_scheduler(mac, 0, frame, slot, &frame_tx, &slot_tx, tda_info.k2)) {
     LOG_E(MAC, "Cannot schedule PUSCH\n");
@@ -679,6 +683,8 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
                                            rnti_type,
                                            coreset_type,
                                            mac->get_sib1);
+  if (!tda_info.valid_tda)
+    return -1;
 
   dlsch_pdu->number_symbols = tda_info.nrOfSymbols;
   dlsch_pdu->start_symbol = tda_info.startSymbolIndex;
@@ -990,6 +996,8 @@ static int nr_ue_process_dci_dl_11(NR_UE_MAC_INST_t *mac,
                                            rnti_type,
                                            coreset_type,
                                            false);
+  if (!tda_info.valid_tda)
+    return -1;
 
   dlsch_pdu->number_symbols = tda_info.nrOfSymbols;
   dlsch_pdu->start_symbol = tda_info.startSymbolIndex;
@@ -3949,7 +3957,7 @@ static void nr_ue_process_rar(NR_UE_MAC_INST_t *mac, nr_downlink_indication_t *d
                                              pdcch_config->ra_SS->searchSpaceType->present,
                                              TYPE_RA_RNTI_,
                                              rar_grant.Msg3_t_alloc);
-    if (tda_info.nrOfSymbols == 0) {
+    if (!tda_info.valid_tda || tda_info.nrOfSymbols == 0) {
       LOG_E(MAC, "Cannot schedule Msg3. Something wrong in TDA information\n");
       return;
     }

@@ -1271,6 +1271,8 @@ static void nr_generate_Msg2(module_id_t module_idP,
                                            TYPE_RA_RNTI_,
                                            coresetid,
                                            false);
+  if (!tda_info.valid_tda)
+    return;
 
   uint16_t *vrb_map = cc[CC_id].vrb_map;
   for (int i = 0; (i < rbSize) && (rbStart <= (BWPSize - rbSize)); i++) {
@@ -1804,6 +1806,8 @@ static void nr_generate_Msg4(module_id_t module_idP,
                                              TYPE_TC_RNTI_,
                                              coreset->controlResourceSetId,
                                              false);
+    if (!msg4_tda.valid_tda)
+      return;
 
     NR_pdsch_dmrs_t dmrs_info = get_dl_dmrs_params(scc,
                                                    dl_bwp,

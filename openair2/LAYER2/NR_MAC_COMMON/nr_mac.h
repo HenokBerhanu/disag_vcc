@@ -615,6 +615,7 @@ typedef struct NR_tda_info {
   int startSymbolIndex;
   int nrOfSymbols;
   long k2;
+  bool valid_tda;
 } NR_tda_info_t;
 
 #endif /*__LAYER2_MAC_H__ */
