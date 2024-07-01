@@ -32,8 +32,9 @@
 #ifdef ENABLE_AERIAL
 #include "fapi_vnf_p5.h"
 #include "fapi_vnf_p7.h"
-#include "nfapi/open-nFAPI/nfapi/src/nfapi_p5.c"
 #include "nfapi/open-nFAPI/vnf/inc/vnf_p7.h"
+#include "nr_fapi.h"
+#include "nr_fapi_p5.h"
 
 extern RAN_CONTEXT_t RC;
 extern UL_RCC_IND_t UL_RCC_INFO;
@@ -620,61 +621,6 @@ int aerial_nfapi_nr_vnf_p7_start(nfapi_vnf_p7_config_t *config)
 
   return 0;
 }
-
-int fapi_nr_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t *config){
-
-  nfapi_p4_p5_message_header_t *pMessageHeader = pMessageBuf;
-  uint8_t *pWritePackedMessage = pPackedBuf;
-
-  uint32_t packedMsgLen;
-  //uint16_t packedMsgLen16;
-
-  if (pMessageBuf == NULL || pPackedBuf == NULL) {
-    NFAPI_TRACE(NFAPI_TRACE_ERROR, "P5 Pack supplied pointers are null\n");
-    return -1;
-  }
-  uint8_t *pPackMessageEnd = pPackedBuf + packedBufLen;
-  uint8_t *pPackedLengthField = &pWritePackedMessage[4];
-  uint8_t *pPacketBodyField = &pWritePackedMessage[8];
-  uint8_t *pPacketBodyFieldStart = &pWritePackedMessage[8];
-
-  pack_nr_p5_message_body(pMessageHeader, &pPacketBodyField, pPackMessageEnd, config);
-
-  // PHY API message header
-  push8(1, &pWritePackedMessage, pPackMessageEnd); // Number of messages
-  push8(0, &pWritePackedMessage, pPackMessageEnd); // Opaque handle
-
-  // PHY API Message structure
-  push16(pMessageHeader->message_id, &pWritePackedMessage, pPackMessageEnd); // Message type ID
-
-  if(1==1) {
-    // check for a valid message length
-    packedMsgLen = get_packed_msg_len((uintptr_t)pPacketBodyFieldStart, (uintptr_t)pPacketBodyField);
-    packedMsgLen-=1;
-    if(pMessageHeader->message_id == NFAPI_NR_PHY_MSG_TYPE_START_REQUEST){
-      //START.request doesn't have a body, length is 0
-      packedMsgLen = 0;
-    }else if (packedMsgLen > 0xFFFF || packedMsgLen > packedBufLen) {
-      NFAPI_TRACE(NFAPI_TRACE_ERROR, "Packed message 0x%02x length error %d, buffer supplied %d\n",pMessageHeader->message_id, packedMsgLen, packedBufLen);
-      return -1;
-    } else {
-
-    }
-
-    // Update the message length in the header
-    if(!push32(packedMsgLen, &pPackedLengthField, pPackMessageEnd))
-      return -1;
-
-    // return the packed length
-    return (packedMsgLen);
-  } else {
-    // Failed to pack the meassage
-    NFAPI_TRACE(NFAPI_TRACE_ERROR, "P5 Failed to pack message\n");
-    return -1;
-  }
-
-}
-
 
 int oai_fapi_ul_tti_req(nfapi_nr_ul_tti_request_t *ul_tti_req)
 {

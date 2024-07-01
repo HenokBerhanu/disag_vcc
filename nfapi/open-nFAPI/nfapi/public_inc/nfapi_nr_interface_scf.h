@@ -44,36 +44,36 @@ typedef struct {
 //PHY API message types
 
 typedef enum {
-  NFAPI_NR_PHY_MSG_TYPE_PARAM_REQUEST=  0x00,
-  NFAPI_NR_PHY_MSG_TYPE_PARAM_RESPONSE= 0x01,
-  NFAPI_NR_PHY_MSG_TYPE_CONFIG_REQUEST= 0x02,
-  NFAPI_NR_PHY_MSG_TYPE_CONFIG_RESPONSE=0X03,
-  NFAPI_NR_PHY_MSG_TYPE_START_REQUEST=  0X04,
-  NFAPI_NR_PHY_MSG_TYPE_STOP_REQUEST=   0X05,
-  NFAPI_NR_PHY_MSG_TYPE_STOP_INDICATION=0X06,
-  NFAPI_NR_PHY_MSG_TYPE_ERROR_INDICATION=0X07,
-  NFAPI_NR_PHY_MSG_TYPE_START_RESPONSE=0X010D,
-  NFAPI_NR_PHY_MSG_TYPE_STOP_RESPONSE=0X010F,
-  //RESERVED 0X08 ~ 0X7F
-  NFAPI_NR_PHY_MSG_TYPE_DL_TTI_REQUEST= 0X80,
-  NFAPI_NR_PHY_MSG_TYPE_UL_TTI_REQUEST= 0X81,
-  NFAPI_NR_PHY_MSG_TYPE_SLOT_INDICATION=0X82,
-  NFAPI_NR_PHY_MSG_TYPE_UL_DCI_REQUEST= 0X83,
-  NFAPI_NR_PHY_MSG_TYPE_TX_DATA_REQUEST=0X84, // CHANGED TO 0X84
-  NFAPI_NR_PHY_MSG_TYPE_RX_DATA_INDICATION=0X85,
-  NFAPI_NR_PHY_MSG_TYPE_CRC_INDICATION= 0X86,
-  NFAPI_NR_PHY_MSG_TYPE_UCI_INDICATION= 0X87,
-  NFAPI_NR_PHY_MSG_TYPE_SRS_INDICATION= 0X88,
-  NFAPI_NR_PHY_MSG_TYPE_RACH_INDICATION= 0X89,
-  //RESERVED 0X8a ~ 0xff
+  NFAPI_NR_PHY_MSG_TYPE_PARAM_REQUEST = 0x00,
+  NFAPI_NR_PHY_MSG_TYPE_PARAM_RESPONSE = 0x01,
+  NFAPI_NR_PHY_MSG_TYPE_CONFIG_REQUEST = 0x02,
+  NFAPI_NR_PHY_MSG_TYPE_CONFIG_RESPONSE = 0X03,
+  NFAPI_NR_PHY_MSG_TYPE_START_REQUEST = 0X04,
+  NFAPI_NR_PHY_MSG_TYPE_STOP_REQUEST = 0X05,
+  NFAPI_NR_PHY_MSG_TYPE_STOP_INDICATION = 0X06,
+  NFAPI_NR_PHY_MSG_TYPE_ERROR_INDICATION = 0X07,
+  NFAPI_NR_PHY_MSG_TYPE_START_RESPONSE = 0X0108, // SCF 222.10.04 Section 3.2 Start.Response - 0x108, as of nFAPIv2
+  NFAPI_NR_PHY_MSG_TYPE_STOP_RESPONSE = 0X010F,
+  // RESERVED 0X08 ~ 0X7F
+  NFAPI_NR_PHY_MSG_TYPE_DL_TTI_REQUEST = 0X80,
+  NFAPI_NR_PHY_MSG_TYPE_UL_TTI_REQUEST = 0X81,
+  NFAPI_NR_PHY_MSG_TYPE_SLOT_INDICATION = 0X82,
+  NFAPI_NR_PHY_MSG_TYPE_UL_DCI_REQUEST = 0X83,
+  NFAPI_NR_PHY_MSG_TYPE_TX_DATA_REQUEST = 0X84, // CHANGED TO 0X84
+  NFAPI_NR_PHY_MSG_TYPE_RX_DATA_INDICATION = 0X85,
+  NFAPI_NR_PHY_MSG_TYPE_CRC_INDICATION = 0X86,
+  NFAPI_NR_PHY_MSG_TYPE_UCI_INDICATION = 0X87,
+  NFAPI_NR_PHY_MSG_TYPE_SRS_INDICATION = 0X88,
+  NFAPI_NR_PHY_MSG_TYPE_RACH_INDICATION = 0X89,
+  // RESERVED 0X8a ~ 0xff
   NFAPI_NR_PHY_MSG_TYPE_PNF_PARAM_REQUEST = 0x0100,
   NFAPI_NR_PHY_MSG_TYPE_PNF_PARAM_RESPONSE = 0x0101,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_CONFIG_REQUEST= 0x0102,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_CONFIG_RESPONSE= 0x0103,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_START_REQUEST= 0x0104,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_START_RESPONSE= 0x0105,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_STOP_REQUEST= 0x0106,
-  NFAPI_NR_PHY_MSG_TYPE_PNF_STOP_RESPONSE= 0x0107,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_CONFIG_REQUEST = 0x0102,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_CONFIG_RESPONSE = 0x0103,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_START_REQUEST = 0x0104,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_START_RESPONSE = 0x0105,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_STOP_REQUEST = 0x0106,
+  NFAPI_NR_PHY_MSG_TYPE_PNF_STOP_RESPONSE = 0x0107,
 
   NFAPI_NR_PHY_MSG_TYPE_UL_NODE_SYNC = 0x0180,
   NFAPI_NR_PHY_MSG_TYPE_DL_NODE_SYNC,
@@ -129,7 +129,7 @@ typedef enum {
 #define  NFAPI_NR_PARAM_TLV_PDSCH_DMRS_CONFIG_TYPES_TAG 0x0017
 #define  NFAPI_NR_PARAM_TLV_PDSCH_DMRS_MAX_LENGTH_TAG 0x0018
 #define  NFAPI_NR_PARAM_TLV_PDSCH_DMRS_ADDITIONAL_POS_TAG 0x0019
-#define  NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_YBS_PER_SLOT_TAG 0x001A
+#define NFAPI_NR_PARAM_TLV_MAX_PDSCH_S_TBS_PER_SLOT_TAG 0x001A
 #define  NFAPI_NR_PARAM_TLV_MAX_NUMBER_MIMO_LAYERS_PDSCH_TAG 0x001B
 #define  NFAPI_NR_PARAM_TLV_SUPPORTED_MAX_MODULATION_ORDER_DL_TAG 0x001C
 #define  NFAPI_NR_PARAM_TLV_MAX_MU_MIMO_USERS_DL_TAG 0x001D
@@ -577,6 +577,23 @@ typedef struct {
   nfapi_nr_pm_list_t            pmi_list;
 } nfapi_nr_config_request_scf_t;
 
+typedef enum {
+  UINT_8 = sizeof(uint8_t),
+  UINT_16 = sizeof(uint16_t),
+  UINT_32 = sizeof(uint32_t),
+  ARRAY_UINT_16 = 5 * sizeof(uint16_t),
+  UNKNOWN = 0xffff
+} nfapi_nr_config_response_tlv_value_type_t;
+
+typedef struct {
+  nfapi_tl_t tl;
+  union {
+    uint8_t u8;
+    uint16_t u16;
+    uint32_t u32;
+    uint16_t array_u16[5]; // 4 TLVs defined as array ( dlK0, dlGridSize, ulK0, ulGridSize )
+  } value;
+} nfapi_nr_generic_tlv_scf_t;
 
 /* CONFIG.RESPONSE */
 typedef struct {
@@ -586,8 +603,11 @@ typedef struct {
   uint8_t num_invalid_tlvs_configured_in_idle;
   uint8_t num_invalid_tlvs_configured_in_running;
   uint8_t num_missing_tlvs;
-  // TODO: add list of invalid/unsupported TLVs (see Table 3.18)
-   nfapi_vendor_extension_tlv_t  vendor_extension;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_list;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_configured_in_idle_list;
+  nfapi_nr_generic_tlv_scf_t* invalid_tlvs_configured_in_running_list;
+  nfapi_nr_generic_tlv_scf_t* missing_tlvs_list;
+  nfapi_vendor_extension_tlv_t vendor_extension;
 } nfapi_nr_config_response_scf_t;
 
 //------------------------------//
@@ -609,13 +629,21 @@ typedef struct {
 typedef struct {
   nfapi_p4_p5_message_header_t header;
   nfapi_vendor_extension_tlv_t vendor_extension;
-} nfapi_nr_stop_request_t;
-
+} nfapi_nr_stop_request_scf_t;
 
 typedef struct {
   nfapi_p4_p5_message_header_t header;
   nfapi_vendor_extension_tlv_t vendor_extension;
-} nfapi_nr_stop_indication_t;
+} nfapi_nr_stop_indication_scf_t;
+
+typedef struct {
+  nfapi_p4_p5_message_header_t header;
+  uint16_t sfn;
+  uint16_t slot;
+  uint8_t message_id; // Which message received on the PNF has an error
+  uint8_t error_code;
+  nfapi_vendor_extension_tlv_t vendor_extension;
+} nfapi_nr_error_indication_scf_t;
 
 typedef enum {
   NFAPI_NR_STOP_MSG_INVALID_STATE

@@ -77,8 +77,8 @@ uint8_t unpackarray(uint8_t **ppReadPackedMsg,
                     uint8_t *end,
                     unpack_array_elem_fn fn);
 
-uint32_t pack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **out, uint8_t *end);
-uint32_t unpack_dci_payload(uint8_t payload[], uint16_t payloadSizeBits, uint8_t **in, uint8_t *end);
+uint32_t pack_dci_payload(uint8_t *payload, uint16_t payloadSizeBits, uint8_t **out, uint8_t *end);
+uint32_t unpack_dci_payload(uint8_t *payload, uint16_t payloadSizeBits, uint8_t **in, uint8_t *end);
 
 uint8_t pack_tl(nfapi_tl_t *tl, uint8_t **ppWritePackedMsg, uint8_t *end);
 uint8_t unpack_tl(uint8_t **ppReadPackedMsg, nfapi_tl_t *tl, uint8_t *end);
@@ -86,6 +86,7 @@ uint8_t unpack_tl(uint8_t **ppReadPackedMsg, nfapi_tl_t *tl, uint8_t *end);
 typedef uint8_t (*pack_tlv_fn)(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
 uint8_t pack_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn);
 uint8_t pack_nr_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end, pack_tlv_fn fn);
+uint8_t pack_nr_generic_tlv(uint16_t tag, void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
 
 uint32_t pack_vendor_extension_tlv(nfapi_tl_t *ve, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config);
 int unpack_vendor_extension_tlv(nfapi_tl_t *tl,
@@ -93,6 +94,8 @@ int unpack_vendor_extension_tlv(nfapi_tl_t *tl,
                                 uint8_t *end,
                                 nfapi_p4_p5_codec_config_t *config,
                                 nfapi_tl_t **ve_tlv);
+
+uint8_t unpack_nr_generic_tlv_list(void *tlv_list, uint8_t tlv_count, uint8_t **ppReadPackedMsg, uint8_t *end);
 
 uint8_t get_tlv_padding(uint16_t tlv_length);
 
@@ -135,6 +138,50 @@ int unpack_nr_p7_tlv_list(unpack_p7_tlv_t unpack_fns[],
                           uint8_t *packedMsgEnd,
                           nfapi_p7_codec_config_t *config,
                           nfapi_tl_t **ve);
+
+uint8_t pack_pnf_param_general_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_pnf_param_general_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_rf_config_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_rf_config_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_pnf_phy_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_pnf_phy_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_pnf_phy_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_pnf_phy_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_phy_rf_config_info(void *elem, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_phy_rf_config_info(void *elem, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_pnf_phy_rf_config_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_pnf_phy_rf_config_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_ipv4_address_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_ipv4_address_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_ipv6_address_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_ipv6_address_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_stop_response(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config);
+uint8_t unpack_stop_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config);
+
+uint8_t pack_measurement_request(void *msg, uint8_t **ppWritePackedMsg, uint8_t *end, nfapi_p4_p5_codec_config_t *config);
+uint8_t unpack_measurement_request(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config);
+
+uint8_t pack_uint32_tlv_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_uint32_tlv_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_uint16_tlv_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_uint16_tlv_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_int16_tlv_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_int16_tlv_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint8_t pack_uint8_tlv_value(void *tlv, uint8_t **ppWritePackedMsg, uint8_t *end);
+uint8_t unpack_uint8_tlv_value(void *tlv, uint8_t **ppReadPackedMsg, uint8_t *end);
+
+uint32_t get_packed_msg_len(uintptr_t msgHead, uintptr_t msgEnd);
 
 #if defined(__cplusplus)
 }

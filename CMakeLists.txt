@@ -723,20 +723,14 @@ target_link_libraries(SCHED_NR_UE_LIB PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs
 
 # nFAPI
 #################################
-set(NFAPI_COMMON_SRC
-  ${NFAPI_DIR}/common/src/debug.c
-  )
-add_library(NFAPI_COMMON_LIB ${NFAPI_COMMON_SRC})
-
-include_directories(${NFAPI_DIR}/common/public_inc)
-
 set(NFAPI_SRC
-  ${NFAPI_DIR}/nfapi/src/nfapi.c
   ${NFAPI_DIR}/nfapi/src/nfapi_p4.c
   ${NFAPI_DIR}/nfapi/src/nfapi_p5.c
   ${NFAPI_DIR}/nfapi/src/nfapi_p7.c
 )
 add_library(NFAPI_LIB ${NFAPI_SRC})
+target_link_libraries(NFAPI_LIB PUBLIC nfapi_common)
+target_link_libraries(NFAPI_LIB PUBLIC nr_fapi_p5)
 
 include_directories(${NFAPI_DIR}/nfapi/public_inc)
 include_directories(${NFAPI_DIR}/nfapi/inc)
@@ -761,7 +755,10 @@ set(NFAPI_VNF_SRC
 )
 add_library(NFAPI_VNF_LIB ${NFAPI_VNF_SRC})
 target_link_libraries(NFAPI_VNF_LIB PRIVATE asn1_lte_rrc_hdrs asn1_nr_rrc_hdrs)
-
+target_link_libraries(NFAPI_VNF_LIB PRIVATE nr_fapi_p5)
+if(OAI_AERIAL)
+  target_compile_definitions(NFAPI_VNF_LIB PRIVATE ENABLE_AERIAL)
+endif()
 include_directories(${NFAPI_DIR}/vnf/public_inc)
 include_directories(${NFAPI_DIR}/vnf/inc)
 
@@ -1457,6 +1454,9 @@ add_library(e1_if
 target_link_libraries(e1_if PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs asn1_f1ap SECURITY ${OPENSSL_LIBRARIES} e1ap GTPV1U)
 
 target_link_libraries(L2_NR PRIVATE f1ap x2ap s1ap ngap nr_rrc e1ap nr_rlc nr_common)
+if(OAI_AERIAL)
+    target_compile_definitions(L2_NR PRIVATE ENABLE_AERIAL)
+endif()
 if(E2_AGENT)
   target_link_libraries(L2_NR PUBLIC e2_agent e2_agent_arg e2_ran_func_du_cucp_cuup)
   target_compile_definitions(L2_NR PRIVATE ${E2AP_VERSION} ${KPM_VERSION} E2_AGENT)
@@ -1968,7 +1968,7 @@ add_dependencies(lte-softmodem oai_iqplayer)
 target_link_libraries(lte-softmodem PRIVATE
   -Wl,--start-group
   lte_rrc nr_rrc s1ap m2ap x2ap m3ap GTPV1U SECURITY UTIL HASHTABLE SCTP_CLIENT MME_APP SCHED_LIB SCHED_RU_LIB
-  PHY_COMMON PHY PHY_RU  L2 L2_LTE NFAPI_COMMON_LIB NFAPI_LIB NFAPI_VNF_LIB NFAPI_PNF_LIB NFAPI_USER_LIB MISC_NFAPI_LTE_LIB
+  PHY_COMMON PHY PHY_RU  L2 L2_LTE NFAPI_LIB NFAPI_VNF_LIB NFAPI_PNF_LIB NFAPI_USER_LIB MISC_NFAPI_LTE_LIB
   ${NAS_UE_LIB} ITTI SIMU SIMU_ETH shlib_loader
   -Wl,--end-group z dl)
 
@@ -2028,7 +2028,7 @@ target_link_libraries(lte-uesoftmodem PRIVATE
   -Wl,--start-group
   lte_rrc nr_rrc s1ap x2ap m2ap m3ap
   SECURITY UTIL HASHTABLE SCTP_CLIENT MME_APP SCHED_RU_LIB SCHED_UE_LIB PHY_COMMON
-  PHY_UE PHY_RU L2_UE L2_LTE SIMU SIMU_ETH NFAPI_COMMON_LIB NFAPI_LIB NFAPI_PNF_LIB NFAPI_USER_LIB MISC_NFAPI_LTE_LIB
+  PHY_UE PHY_RU L2_UE L2_LTE SIMU SIMU_ETH NFAPI_LIB NFAPI_PNF_LIB NFAPI_USER_LIB MISC_NFAPI_LTE_LIB
   ${NAS_UE_LIB} ITTI shlib_loader
   -Wl,--end-group z dl)
 
@@ -2061,13 +2061,11 @@ add_executable(nr-softmodem
   ${OPENAIR1_DIR}/PHY/TOOLS/phy_scope_interface.c
   )
 
-include(${OPENAIR_DIR}/nfapi/CMakeLists.txt)
-
 target_link_libraries(nr-softmodem PRIVATE
   -Wl,--start-group
   UTIL HASHTABLE SCTP_CLIENT SCHED_LIB SCHED_RU_LIB SCHED_NR_LIB PHY_NR PHY PHY_COMMON PHY_NR_COMMON PHY_RU GTPV1U SECURITY
   ITTI ${NAS_UE_LIB} lte_rrc nr_rrc
-  ngap s1ap L2_LTE_NR L2_NR MAC_NR_COMMON NFAPI_COMMON_LIB NFAPI_LIB NFAPI_VNF_LIB NFAPI_PNF_LIB NFAPI_USER_LIB SIMU SIMU_ETH
+  ngap s1ap L2_LTE_NR L2_NR MAC_NR_COMMON NFAPI_LIB NFAPI_VNF_LIB NFAPI_PNF_LIB NFAPI_USER_LIB SIMU SIMU_ETH
   x2ap f1ap m2ap m3ap e1ap shlib_loader
   -Wl,--end-group z dl)
 
@@ -2075,6 +2073,11 @@ target_link_libraries(nr-softmodem PRIVATE pthread m CONFIG_LIB rt sctp)
 target_link_libraries(nr-softmodem PRIVATE ${T_LIB})
 target_link_libraries(nr-softmodem PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs)
 target_link_libraries(nr-softmodem PRIVATE asn1_nr_rrc_hdrs asn1_lte_rrc_hdrs)
+add_boolean_option(OAI_AERIAL OFF "Activate OAI's AERIAL driver" OFF)
+if (OAI_AERIAL)
+  target_compile_definitions(nr-softmodem PUBLIC ENABLE_AERIAL)
+  target_link_libraries(nr-softmodem PUBLIC aerial_lib)
+endif()
 if(E2_AGENT)
   target_compile_definitions(nr-softmodem PRIVATE ${E2AP_VERSION} ${KPM_VERSION} E2_AGENT)
 endif()
@@ -2131,7 +2134,7 @@ add_executable(nr-uesoftmodem
 target_link_libraries(nr-uesoftmodem PRIVATE
   -Wl,--start-group
   nr_rrc SECURITY UTIL HASHTABLE SCHED_RU_LIB SCHED_NR_UE_LIB
-  PHY_COMMON PHY_NR_COMMON PHY_NR_UE NR_L2_UE L2_UE_LTE_NR MAC_NR_COMMON NFAPI_COMMON_LIB NFAPI_LIB NFAPI_PNF_LIB
+  PHY_COMMON PHY_NR_COMMON PHY_NR_UE NR_L2_UE L2_UE_LTE_NR MAC_NR_COMMON NFAPI_LIB NFAPI_PNF_LIB
   NFAPI_USER_LIB MISC_NFAPI_NR_LIB
   ITTI LIB_5GNAS_GNB LIB_NAS_SIMUE ${NAS_SIM_LIB} SIMU SIMU_ETH shlib_loader
   -Wl,--end-group z dl)
@@ -2367,7 +2370,7 @@ if (${T_TRACER})
         params_libconfig oai_usrpdevif oai_bladerfdevif oai_lmssdrdevif oai_iqplayer
         oai_eth_transpro oai_mobipass coding HASHTABLE UTIL OMG_SUMO
         SECURITY SCHED_LIB SCHED_NR_LIB SCHED_RU_LIB SCHED_UE_LIB SCHED_NR_UE_LIB default_sched remote_sched RAL
-        NFAPI_COMMON_LIB NFAPI_LIB NFAPI_PNF_LIB NFAPI_VNF_LIB NFAPI_USER_LIB
+        NFAPI_LIB NFAPI_PNF_LIB NFAPI_VNF_LIB NFAPI_USER_LIB
         MISC_NFAPI_LTE_LIB MISC_NFAPI_NR_LIB
         PHY_COMMON PHY PHY_UE PHY_NR PHY_NR_COMMON PHY_NR_UE PHY_RU PHY_MEX
         L2 L2_LTE L2_NR L2_LTE_NR L2_UE NR_L2_UE L2_UE_LTE_NR MAC_NR_COMMON MAC_UE_NR ngap
@@ -2488,6 +2491,7 @@ endif()
 
 add_subdirectory(common)
 add_subdirectory(doc)
+add_subdirectory(nfapi)
 add_subdirectory(openair1)
 add_subdirectory(openair2)
 add_subdirectory(openair3)
