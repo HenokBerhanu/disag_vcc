@@ -913,6 +913,22 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     pusch_config_pdu->pusch_data.tb_size = mac->ul_harq_info[pid].TBS;
   }
 
+  bool is_rar_tx_retx = rnti_type == TYPE_TC_RNTI_;
+
+  pusch_config_pdu->tx_power = get_pusch_tx_power_ue(mac,
+                                                     pusch_config_pdu->rb_size,
+                                                     pusch_config_pdu->rb_start,
+                                                     pusch_config_pdu->nr_of_symbols,
+                                                     nb_dmrs_re_per_rb * number_dmrs_symbols,
+                                                     0, //TODO: count PTRS per RB
+                                                     pusch_config_pdu->qam_mod_order,
+                                                     pusch_config_pdu->target_code_rate,
+                                                     pusch_config_pdu->pusch_uci.beta_offset_csi1,
+                                                     pusch_config_pdu->pusch_data.tb_size << 3,
+                                                     pusch_config_pdu->absolute_delta_PUSCH,
+                                                     is_rar_tx_retx,
+                                                     pusch_config_pdu->transform_precoding);
+
   pusch_config_pdu->ldpcBaseGraph = get_BG(pusch_config_pdu->pusch_data.tb_size << 3, pusch_config_pdu->target_code_rate);
 
   //The MAC entity shall restart retxBSR-Timer upon reception of a grant for transmission of new data on any UL-SCH

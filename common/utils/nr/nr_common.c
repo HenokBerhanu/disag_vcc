@@ -356,8 +356,8 @@ bool compare_relative_ul_channel_bw(int nr_band, int scs, int nb_ul, frame_type_
 
   int band_size_khz = get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, nb_ul) * 1000;
   float limit = frame_type == TDD ? 0.04 : 0.03;
-  float rel_bw = (float) (2 * band_size_khz) / (float) (nr_bandtable[index].ul_max + nr_bandtable[index].ul_min);
-  return rel_bw <= limit;
+  float rel_bw = (float) (band_size_khz) / (float) (nr_bandtable[index].ul_max - nr_bandtable[index].ul_min);
+  return rel_bw > limit;
 }
 
 uint16_t get_band(uint64_t downlink_frequency, int32_t delta_duplex)

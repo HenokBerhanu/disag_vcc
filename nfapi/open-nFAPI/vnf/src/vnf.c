@@ -30,6 +30,7 @@
 #ifdef ENABLE_AERIAL
 #include "nfapi/oai_integration/aerial/fapi_nvIPC.h"
 #include "nfapi/oai_integration/aerial/fapi_vnf_p5.h"
+#include "nr_fapi.h"
 #endif
 #include "nfapi/oai_integration/vendor_ext.h"
 

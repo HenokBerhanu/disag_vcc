@@ -467,7 +467,11 @@ NR_tda_info_t get_ul_tda_info(const NR_UE_UL_BWP_t *ul_bwp,
   AssertFatal(scs >= 0 &&  scs < 5, "Subcarrier spacing indicatior %d invalid value\n", scs);
   int j = scs == 0 ? 1 : scs;
   if (tdalist) {
-    AssertFatal(tda_index < tdalist->list.count, "TDA index from DCI %d exceeds TDA list array size %d\n", tda_index, tdalist->list.count);
+    tda_info.valid_tda = tda_index < tdalist->list.count;
+    if (!tda_info.valid_tda) {
+      LOG_E(NR_MAC, "TDA index from DCI %d exceeds TDA list array size %d\n", tda_index, tdalist->list.count);
+      return tda_info;
+    }
     NR_PUSCH_TimeDomainResourceAllocation_t *tda = tdalist->list.array[tda_index];
     tda_info.mapping_type = tda->mappingType;
     // As described in 38.331, when the field is absent the UE applies the value 1 when PUSCH SCS is 15/30KHz
@@ -479,6 +483,11 @@ NR_tda_info_t get_ul_tda_info(const NR_UE_UL_BWP_t *ul_bwp,
     tda_info.nrOfSymbols = L;
   } else {
     bool normal_CP = ul_bwp->cyclicprefix ? false : true;
+    tda_info.valid_tda = tda_index < 16;
+    if (!tda_info.valid_tda) {
+      LOG_E(NR_MAC, "TDA index from DCI %d exceeds default TDA list array size %d\n", tda_index, 16);
+      return tda_info;
+    }
     if (normal_CP) {
       tda_info.mapping_type = table_6_1_2_1_1_2[tda_index][0];
       tda_info.k2 = table_6_1_2_1_1_2[tda_index][1] + j;
@@ -500,6 +509,11 @@ NR_tda_info_t get_info_from_tda_tables(default_table_type_t table_type,
                                        int normal_CP)
 {
   NR_tda_info_t tda_info = {0};
+  tda_info.valid_tda = tda < 16;
+  if (!tda_info.valid_tda) {
+    LOG_E(NR_MAC, "TDA index from DCI %d exceeds default TDA list array size %d\n", tda, 16);
+    return tda_info;
+  }
   bool is_mapping_typeA;
   int k0 = 0;
   switch(table_type){
@@ -586,7 +600,11 @@ default_table_type_t get_default_table_type(int mux_pattern)
 NR_tda_info_t set_tda_info_from_list(NR_PDSCH_TimeDomainResourceAllocationList_t *tdalist, int tda_index)
 {
   NR_tda_info_t tda_info = {0};
-  AssertFatal(tda_index < tdalist->list.count, "TDA index from DCI %d exceeds TDA list array size %d\n", tda_index, tdalist->list.count);
+  tda_info.valid_tda = tda_index < tdalist->list.count;
+  if (!tda_info.valid_tda) {
+    LOG_E(NR_MAC, "TDA index from DCI %d exceeds TDA list array size %d\n", tda_index, tdalist->list.count);
+    return tda_info;
+  }
   NR_PDSCH_TimeDomainResourceAllocation_t *tda = tdalist->list.array[tda_index];
   tda_info.mapping_type = tda->mappingType;
   int S, L;

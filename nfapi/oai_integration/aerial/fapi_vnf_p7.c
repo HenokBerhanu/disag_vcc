@@ -31,7 +31,7 @@
  */
 #ifdef ENABLE_AERIAL
 #include "fapi_vnf_p7.h"
-#include "nfapi/open-nFAPI/nfapi/src/nfapi_p7.c"
+#include "nr_nfapi_p7.h"
 
 extern RAN_CONTEXT_t RC;
 extern UL_RCC_IND_t UL_RCC_INFO;
