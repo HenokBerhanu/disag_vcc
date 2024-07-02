@@ -49,26 +49,23 @@ bool pdcp_data_ind(const protocol_ctxt_t *const ctxt_pP,
 void nr_pdcp_add_drbs(eNB_flag_t enb_flag,
                       ue_id_t UEid,
                       NR_DRB_ToAddModList_t *const drb2add_list,
-                      const uint8_t security_modeP,
-                      uint8_t *const kUPenc,
-                      uint8_t *const kUPint);
+                      const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
+
+void nr_pdcp_add_srbs(eNB_flag_t enb_flag,
+                      ue_id_t UEid,
+                      NR_SRB_ToAddModList_t *const srb2add_list,
+                      const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
 
 void add_drb(int is_gnb,
              ue_id_t UEid,
              struct NR_DRB_ToAddMod *s,
-             int ciphering_algorithm,
-             int integrity_algorithm,
-             unsigned char *ciphering_key,
-             unsigned char *integrity_key);
+             const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
 
 void nr_pdcp_remove_UE(ue_id_t ue_id);
 void nr_pdcp_reestablishment(ue_id_t ue_id,
                              int rb_id,
                              bool srb_flag,
-                             int ciphering_algorithm,
-                             const uint8_t *ciphering_key,
-                             int integrity_algorithm,
-                             const uint8_t *integrity_key);
+                             const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
 
 void nr_pdcp_suspend_srb(ue_id_t ue_id, int srb_id);
 void nr_pdcp_suspend_drb(ue_id_t ue_id, int drb_id);
@@ -77,21 +74,15 @@ void nr_pdcp_reconfigure_drb(ue_id_t ue_id, int drb_id, NR_PDCP_Config_t *pdcp_c
 void nr_pdcp_release_srb(ue_id_t ue_id, int srb_id);
 void nr_pdcp_release_drb(ue_id_t ue_id, int drb_id);
 
-
 void add_srb(int is_gnb,
              ue_id_t UEid,
              struct NR_SRB_ToAddMod *s,
-             int ciphering_algorithm,
-             int integrity_algorithm,
-             unsigned char *ciphering_key,
-             unsigned char *integrity_key);
+             const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
 
 void nr_pdcp_config_set_security(ue_id_t ue_id,
-                                 const rb_id_t rb_id,
-                                 const bool is_srb,
-                                 const uint8_t security_mode,
-                                 const uint8_t *kenc,
-                                 const uint8_t *kint);
+                                 rb_id_t rb_id,
+                                 bool is_srb,
+                                 const nr_pdcp_entity_security_keys_and_algos_t *parameters);
 
 bool nr_pdcp_check_integrity_srb(ue_id_t ue_id,
                                  int srb_id,

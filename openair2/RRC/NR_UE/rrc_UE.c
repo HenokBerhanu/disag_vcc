@@ -632,7 +632,8 @@ static void nr_rrc_handle_msg3_indication(NR_UE_RRC_INST_t *rrc, rnti_t rnti)
       int srb_id = 1;
       // re-establish PDCP for SRB1
       // (and suspend integrity protection and ciphering for SRB1)
-      nr_pdcp_reestablishment(rrc->ue_id, srb_id, true, 0, NULL, 0, NULL);
+      nr_pdcp_entity_security_keys_and_algos_t null_security_parameters = {0};
+      nr_pdcp_reestablishment(rrc->ue_id, srb_id, true, &null_security_parameters);
       // re-establish RLC for SRB1
       int lc_id = nr_rlc_get_lcid_from_rb(rrc->ue_id, true, 1);
       nr_rlc_reestablish_entity(rrc->ue_id, lc_id);
@@ -1046,19 +1047,19 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
     ue_rrc->integrityProtAlgorithm = *securityConfigSMC->securityAlgorithmConfig.integrityProtAlgorithm;
   }
 
-  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-  nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kRRCenc);
-  nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kRRCint);
+  nr_pdcp_entity_security_keys_and_algos_t security_parameters;
+  nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, security_parameters.ciphering_key);
+  nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, security_parameters.integrity_key);
 
   log_dump(NR_RRC, ue_rrc->kgnb, 32, LOG_DUMP_CHAR, "deriving kRRCenc, kRRCint from KgNB=");
 
   /* for SecurityModeComplete, ciphering is not activated yet, only integrity */
-  uint8_t security_mode = ue_rrc->integrityProtAlgorithm << 4;
+  security_parameters.ciphering_algorithm = 0;
+  security_parameters.integrity_algorithm = ue_rrc->integrityProtAlgorithm;
   // configure lower layers to apply SRB integrity protection and ciphering
   for (int i = 1; i < NR_NUM_SRB; i++) {
     if (ue_rrc->Srb[i] == RB_ESTABLISHED)
-      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, kRRCenc, kRRCint);
+      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, &security_parameters);
   }
 
   NR_UL_DCCH_Message_t ul_dcch_msg = {0};
@@ -1091,10 +1092,10 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
     ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_NR_UL_DCCH_Message, &ul_dcch_msg);
 
     /* disable both ciphering and integrity */
-    security_mode = 0;
+    nr_pdcp_entity_security_keys_and_algos_t null_security_parameters = {0};
     for (int i = 1; i < NR_NUM_SRB; i++) {
       if (ue_rrc->Srb[i] == RB_ESTABLISHED)
-        nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, NULL, NULL);
+        nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, &null_security_parameters);
     }
 
     srb_id = 1; // SecurityModeFailure in SRB1
@@ -1136,12 +1137,11 @@ static void nr_rrc_ue_process_securityModeCommand(NR_UE_RRC_INST_t *ue_rrc,
   nr_pdcp_data_req_srb(ue_rrc->ue_id, srb_id, 0, (enc_rval.encoded + 7) / 8, buffer, deliver_pdu_srb_rlc, NULL);
 
   /* after encoding SecurityModeComplete we activate both ciphering and integrity */
-  security_mode = ue_rrc->cipheringAlgorithm | (ue_rrc->integrityProtAlgorithm << 4);
+  security_parameters.ciphering_algorithm = ue_rrc->cipheringAlgorithm;
   // configure lower layers to apply SRB integrity protection and ciphering
   for (int i = 1; i < NR_NUM_SRB; i++) {
     if (ue_rrc->Srb[i] == RB_ESTABLISHED)
-      /* pass NULL to keep current keys */
-      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, security_mode, NULL, NULL);
+      nr_pdcp_config_set_security(ue_rrc->ue_id, i, true, &security_parameters);
   }
 }
 
@@ -1413,10 +1413,8 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
     ue_rrc->Srb[3] = RB_NOT_PRESENT;
   }
 
-  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-  uint8_t kUPenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kUPint[NR_K_KEY_SIZE] = {0};
+  nr_pdcp_entity_security_keys_and_algos_t security_rrc_parameters = {0};
+  nr_pdcp_entity_security_keys_and_algos_t security_up_parameters = {0};
 
   if (ue_rrc->as_security_activated) {
     if (radioBearerConfig->securityConfig != NULL) {
@@ -1432,10 +1430,14 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
         ue_rrc->integrityProtAlgorithm = *radioBearerConfig->securityConfig->securityAlgorithmConfig->integrityProtAlgorithm;
       }
     }
-    nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kRRCenc);
-    nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kRRCint);
-    nr_derive_key(UP_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, kUPenc);
-    nr_derive_key(UP_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, kUPint);
+    security_rrc_parameters.ciphering_algorithm = ue_rrc->cipheringAlgorithm;
+    security_rrc_parameters.integrity_algorithm = ue_rrc->integrityProtAlgorithm;
+    nr_derive_key(RRC_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, security_rrc_parameters.ciphering_key);
+    nr_derive_key(RRC_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, security_rrc_parameters.integrity_key);
+    security_up_parameters.ciphering_algorithm = ue_rrc->cipheringAlgorithm;
+    security_up_parameters.integrity_algorithm = ue_rrc->integrityProtAlgorithm;
+    nr_derive_key(UP_ENC_ALG, ue_rrc->cipheringAlgorithm, ue_rrc->kgnb, security_up_parameters.ciphering_key);
+    nr_derive_key(UP_INT_ALG, ue_rrc->integrityProtAlgorithm, ue_rrc->kgnb, security_up_parameters.integrity_key);
   }
 
   if (radioBearerConfig->srb_ToAddModList != NULL) {
@@ -1446,10 +1448,7 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
         add_srb(false,
                 ue_rrc->ue_id,
                 radioBearerConfig->srb_ToAddModList->list.array[cnt],
-                ue_rrc->cipheringAlgorithm,
-                ue_rrc->integrityProtAlgorithm,
-                kRRCenc,
-                kRRCint);
+                &security_rrc_parameters);
       }
       else {
         AssertFatal(srb->discardOnPDCP == NULL, "discardOnPDCP not yet implemented\n");
@@ -1458,10 +1457,7 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
           nr_pdcp_reestablishment(ue_rrc->ue_id,
                                   srb->srb_Identity,
                                   true,
-                                  ue_rrc->integrityProtAlgorithm,
-                                  kRRCint,
-                                  ue_rrc->cipheringAlgorithm,
-                                  kRRCenc);
+                                  &security_rrc_parameters);
         }
         if (srb->pdcp_Config && srb->pdcp_Config->t_Reordering)
           nr_pdcp_reconfigure_srb(ue_rrc->ue_id, srb->srb_Identity, *srb->pdcp_Config->t_Reordering);
@@ -1497,14 +1493,13 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
           bool has_ciphering = !(drb->pdcp_Config != NULL
                                  && drb->pdcp_Config->ext1 != NULL
                                  && drb->pdcp_Config->ext1->cipheringDisabled != NULL);
+          security_up_parameters.ciphering_algorithm = has_ciphering ? ue_rrc->cipheringAlgorithm : 0;
+          security_up_parameters.integrity_algorithm = has_integrity ? ue_rrc->integrityProtAlgorithm : 0;
           /* re-establish */
           nr_pdcp_reestablishment(ue_rrc->ue_id,
                                   DRB_id,
                                   false,
-                                  has_integrity ? ue_rrc->integrityProtAlgorithm : 0,
-                                  kUPint,
-                                  has_ciphering ? ue_rrc->cipheringAlgorithm : 0,
-                                  kUPenc);
+                                  &security_up_parameters);
         }
         AssertFatal(drb->recoverPDCP == NULL, "recoverPDCP not yet implemented\n");
         /* sdap-Config is included (SA mode) */
@@ -1520,10 +1515,7 @@ static void nr_rrc_ue_process_RadioBearerConfig(NR_UE_RRC_INST_t *ue_rrc,
         add_drb(false,
                 ue_rrc->ue_id,
                 radioBearerConfig->drb_ToAddModList->list.array[cnt],
-                ue_rrc->cipheringAlgorithm,
-                ue_rrc->integrityProtAlgorithm,
-                kUPenc,
-                kUPint);
+                &security_up_parameters);
       }
     }
   } // drb_ToAddModList //
@@ -1565,11 +1557,11 @@ static void nr_rrc_ue_process_rrcReestablishment(NR_UE_RRC_INST_t *rrc,
 
   // derive the K RRCenc key associated with the previously configured cipheringAlgorithm
   // derive the K RRCint key associated with the previously configured integrityProtAlgorithm
-  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-
-  nr_derive_key(RRC_ENC_ALG, rrc->cipheringAlgorithm, rrc->kgnb, kRRCenc);
-  nr_derive_key(RRC_INT_ALG, rrc->integrityProtAlgorithm, rrc->kgnb, kRRCint);
+  nr_pdcp_entity_security_keys_and_algos_t security_parameters;
+  security_parameters.ciphering_algorithm = rrc->cipheringAlgorithm;
+  security_parameters.integrity_algorithm = rrc->integrityProtAlgorithm;
+  nr_derive_key(RRC_ENC_ALG, rrc->cipheringAlgorithm, rrc->kgnb, security_parameters.ciphering_key);
+  nr_derive_key(RRC_INT_ALG, rrc->integrityProtAlgorithm, rrc->kgnb, security_parameters.integrity_key);
 
   // TODO request lower layers to verify the integrity protection of the RRCReestablishment message
   // TODO if the integrity protection check of the RRCReestablishment message fails -> go to IDLE
@@ -1577,9 +1569,7 @@ static void nr_rrc_ue_process_rrcReestablishment(NR_UE_RRC_INST_t *rrc,
   // configure lower layers to resume integrity protection for SRB1
   // configure lower layers to resume ciphering for SRB1
   int srb_id = 1;
-  int security_mode = (rrc->integrityProtAlgorithm << 4)
-                      | rrc->cipheringAlgorithm;
-  nr_pdcp_config_set_security(rrc->ue_id, srb_id, true, security_mode, kRRCenc, kRRCint);
+  nr_pdcp_config_set_security(rrc->ue_id, srb_id, true, &security_parameters);
 
   // release the measurement gap configuration indicated by the measGapConfig, if configured
   rrcPerNB_t *rrcNB = rrc->perNB + gNB_index;

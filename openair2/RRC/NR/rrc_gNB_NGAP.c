@@ -135,28 +135,29 @@ nr_rrc_pdcp_config_security(
 )
 //------------------------------------------------------------------------------
 {
-  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
   //uint8_t                            *k_kdf  = NULL;
   static int                          print_keys= 1;
   gNB_RRC_UE_t *UE = &ue_context_pP->ue_context;
 
   /* Derive the keys from kgnb */
-  nr_derive_key(RRC_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, kRRCenc);
-  nr_derive_key(RRC_INT_ALG, UE->integrity_algorithm, UE->kgnb, kRRCint);
+  nr_pdcp_entity_security_keys_and_algos_t security_parameters;
+  /* set ciphering algorithm depending on 'enable_ciphering' */
+  security_parameters.ciphering_algorithm = enable_ciphering ? UE->ciphering_algorithm : 0;
+  security_parameters.integrity_algorithm = UE->integrity_algorithm;
+  /* use current ciphering algorithm, independently of 'enable_ciphering' to derive ciphering key */
+  nr_derive_key(RRC_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, security_parameters.ciphering_key);
+  nr_derive_key(RRC_INT_ALG, UE->integrity_algorithm, UE->kgnb, security_parameters.integrity_key);
 
   if ( LOG_DUMPFLAG( DEBUG_SECURITY ) ) {
     if (print_keys == 1 ) {
       print_keys =0;
       LOG_DUMPMSG(NR_RRC, DEBUG_SECURITY, UE->kgnb, 32, "\nKgNB:");
-      LOG_DUMPMSG(NR_RRC, DEBUG_SECURITY, kRRCenc, 16,"\nKRRCenc:" );
-      LOG_DUMPMSG(NR_RRC, DEBUG_SECURITY, kRRCint, 16,"\nKRRCint:" );
+      LOG_DUMPMSG(NR_RRC, DEBUG_SECURITY, security_parameters.ciphering_key, 16,"\nKRRCenc:" );
+      LOG_DUMPMSG(NR_RRC, DEBUG_SECURITY, security_parameters.integrity_key, 16,"\nKRRCint:" );
     }
   }
 
-  uint8_t security_mode =
-      enable_ciphering ? UE->ciphering_algorithm | (UE->integrity_algorithm << 4) : 0 | (UE->integrity_algorithm << 4);
-  nr_pdcp_config_set_security(ctxt_pP->rntiMaybeUEid, DCCH, true, security_mode, kRRCenc, kRRCint);
+  nr_pdcp_config_set_security(ctxt_pP->rntiMaybeUEid, DCCH, true, &security_parameters);
 }
 
 //------------------------------------------------------------------------------
