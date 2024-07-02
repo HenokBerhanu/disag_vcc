@@ -439,7 +439,17 @@ TEST(pusch_power_control, pusch_power_control_state)
   current_UL_BWP.p0_NominalWithGrant = &p0_NominalWithGrant;
   mac.frame_type = TDD;
 
-  int P_CMAX = nr_get_Pcmax(23, mac.nr_band, mac.frame_type, FR1, Qm, false, current_UL_BWP.scs, current_UL_BWP.BWPSize, transform_precoding, num_rb, start_prb);
+  int P_CMAX = nr_get_Pcmax(23,
+                            mac.nr_band,
+                            mac.frame_type,
+                            FR1,
+                            Qm,
+                            false,
+                            current_UL_BWP.scs,
+                            current_UL_BWP.BWPSize,
+                            transform_precoding,
+                            num_rb,
+                            start_prb);
 
   int power = get_pusch_tx_power_ue(&mac,
                                     num_rb,
@@ -494,6 +504,69 @@ TEST(pusch_power_control, pusch_power_control_state)
     EXPECT_LE(reduced_power, P_CMAX);
     power = reduced_power;
   }
+}
+
+TEST(pusch_power_control, pusch_power_100_rb)
+{
+  NR_UE_MAC_INST_t mac = {0};
+  NR_UE_UL_BWP_t current_UL_BWP = {0};
+  current_UL_BWP.scs = 1;
+  current_UL_BWP.BWPSize = 106;
+  mac.current_UL_BWP = &current_UL_BWP;
+  NR_RACH_ConfigCommon_t nr_rach_ConfigCommon = {0};
+  current_UL_BWP.rach_ConfigCommon = &nr_rach_ConfigCommon;
+  mac.nr_band = 78;
+  mac.f_b_f_c = 0;
+  mac.pusch_power_control_initialized = true;
+
+  bool is_rar_tx_retx = false;
+  int num_rb = 5;
+  int start_prb = 0;
+  uint16_t nb_symb_sch = 3;
+  uint16_t nb_dmrs_prb = 6;
+  uint16_t nb_ptrs_prb = 0;
+  uint16_t Qm = 2;
+  uint16_t R = 6790;
+  uint16_t beta_offset_csi1 = 0;
+  uint32_t sum_bits_in_codeblocks = 192;
+  int delta_pusch = 1;
+  bool transform_precoding = false;
+  NR_PUSCH_Config_t pusch_Config = {0};
+  current_UL_BWP.pusch_Config = &pusch_Config;
+  NR_PUSCH_PowerControl pusch_PowerControl = {0};
+  pusch_Config.pusch_PowerControl = &pusch_PowerControl;
+  long p0_NominalWithGrant = 0;
+  current_UL_BWP.p0_NominalWithGrant = &p0_NominalWithGrant;
+  int power = get_pusch_tx_power_ue(&mac,
+                                    num_rb,
+                                    start_prb,
+                                    nb_symb_sch,
+                                    nb_dmrs_prb,
+                                    nb_ptrs_prb,
+                                    Qm,
+                                    R,
+                                    beta_offset_csi1,
+                                    sum_bits_in_codeblocks,
+                                    delta_pusch,
+                                    is_rar_tx_retx,
+                                    transform_precoding);
+  num_rb = 100;
+  sum_bits_in_codeblocks = nr_compute_tbs(Qm, R, num_rb, nb_symb_sch, nb_dmrs_prb, 0, 0, 1);
+
+  int power_100_prbs = get_pusch_tx_power_ue(&mac,
+                                             num_rb,
+                                             start_prb,
+                                             nb_symb_sch,
+                                             nb_dmrs_prb,
+                                             nb_ptrs_prb,
+                                             Qm,
+                                             R,
+                                             beta_offset_csi1,
+                                             sum_bits_in_codeblocks,
+                                             delta_pusch,
+                                             is_rar_tx_retx,
+                                             transform_precoding);
+  EXPECT_GT(power_100_prbs, power);
 }
 
 int main(int argc, char** argv)

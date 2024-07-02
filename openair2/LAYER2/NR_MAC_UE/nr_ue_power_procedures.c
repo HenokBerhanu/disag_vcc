@@ -522,12 +522,12 @@ int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             mac->nr_band,
                             mac->frame_type,
                             mac->frequency_range,
-                            2,
+                            qm,
                             false,
                             mac->current_UL_BWP->scs,
                             mac->current_UL_BWP->BWPSize,
                             transform_precoding,
-                            1,
+                            num_rb,
                             start_prb);
 
   int P_O_PUSCH = P_O_NOMINAL_PUSCH + P_O_UE_PUSCH;
