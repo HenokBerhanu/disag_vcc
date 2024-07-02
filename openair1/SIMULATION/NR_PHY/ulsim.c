@@ -1119,7 +1119,6 @@ int main(int argc, char *argv[])
         pusch_config_pdu->num_dmrs_cdm_grps_no_data = num_dmrs_cdm_grps_no_data;
         pusch_config_pdu->nrOfLayers = precod_nbr_layers;
         pusch_config_pdu->dmrs_ports = ((1 << precod_nbr_layers) - 1);
-        pusch_config_pdu->absolute_delta_PUSCH = 0;
         pusch_config_pdu->target_code_rate = code_rate;
         pusch_config_pdu->tbslbrm = tbslbrm;
         pusch_config_pdu->ldpcBaseGraph = get_BG(TBS, code_rate);

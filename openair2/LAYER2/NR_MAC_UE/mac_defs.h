@@ -593,6 +593,8 @@ typedef struct NR_UE_MAC_INST_s {
   // PUCCH closed loop power control state
   int G_b_f_c;
   bool pucch_power_control_initialized;
+  int f_b_f_c;
+  bool pusch_power_control_initialized;
 } NR_UE_MAC_INST_t;
 
 /*@}*/
