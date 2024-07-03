@@ -888,7 +888,7 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
   nr_derive_key(RRC_ENC_ALG, ue_p->ciphering_algorithm, ue_p->kgnb, security_parameters.ciphering_key);
   nr_derive_key(RRC_INT_ALG, ue_p->integrity_algorithm, ue_p->kgnb, security_parameters.integrity_key);
   LOG_I(NR_RRC,
-        "Set PDCP security UE %d RNTI %04x nca %ld nia %d in RRCReestablishment\n",
+        "Set PDCP security UE %d RNTI %04x nea %ld nia %d in RRCReestablishment\n",
         ue_p->rrc_ue_id,
         ue_p->rnti,
         ue_p->ciphering_algorithm,
