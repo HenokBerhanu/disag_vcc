@@ -66,9 +66,8 @@ static int get_deltatf(uint16_t nb_of_prbs,
                        int O_UCI);
 
 // ∆MPR according to Table 6.2.2-3 38.101-1
-static float get_delta_mpr(uint16_t nr_band, int scs, int N_RB_UL, int n_prbs, int start_prb, int power_class)
+static float get_delta_mpr(uint16_t nr_band, frame_type_t frame_type, int scs, int N_RB_UL, int n_prbs, int start_prb, int power_class)
 {
-  frame_type_t frame_type = get_frame_type(nr_band, scs);
   if (compare_relative_ul_channel_bw(nr_band, scs, N_RB_UL, frame_type)) {
     if (power_class == 3) {
       if ((nr_band == 28 || nr_band == 83) && get_supported_bw_mhz(nr_band > 256 ? FR2 : FR1, scs, N_RB_UL) == 30) {
@@ -167,6 +166,7 @@ static float get_mpr(int Qm, int N_RB_UL, bool is_transform_precoding, int n_prb
 // -- no additional MPR (A_MPR_c)
 float nr_get_Pcmax(int p_Max,
                    uint16_t nr_band,
+                   frame_type_t frame_type,
                    frequency_range_t frequency_range,
                    int Qm,
                    bool powerBoostPi2BPSK,
@@ -197,7 +197,7 @@ float nr_get_Pcmax(int p_Max,
     int delta_TC = 0;
 
     float MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, power_class);
-    float delta_MPR = get_delta_mpr(nr_band, scs, N_RB_UL, n_prbs, start_prb, power_class);
+    float delta_MPR = get_delta_mpr(nr_band, frame_type, scs, N_RB_UL, n_prbs, start_prb, power_class);
     int A_MPR = 0; // TODO too complicated to implement for now (see 6.2.3 in 38.101-1)
     int delta_rx_SRS = 0; // TODO for SRS
     int P_MPR = 0; // to ensure compliance with applicable electromagnetic energy absorption requirements
@@ -339,6 +339,7 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
   // modulated CP-OFDM of equivalent RB allocation.
   int P_CMAX = nr_get_Pcmax(mac->p_Max,
                             mac->nr_band,
+                            mac->frame_type,
                             mac->frequency_range,
                             2,
                             false,
@@ -519,6 +520,7 @@ int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
   int M_pusch_component = 10 * log10((pow(2, mu)) * num_rb);
   int P_CMAX = nr_get_Pcmax(mac->p_Max,
                             mac->nr_band,
+                            mac->frame_type,
                             mac->frequency_range,
                             2,
                             false,
