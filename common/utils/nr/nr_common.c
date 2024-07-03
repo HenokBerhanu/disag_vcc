@@ -644,14 +644,8 @@ int get_dmrs_port(int nl, uint16_t dmrs_ports)
 
 frame_type_t get_frame_type(uint16_t current_band, uint8_t scs_index)
 {
-  frame_type_t current_type;
   int32_t delta_duplex = get_delta_duplex(current_band, scs_index);
-
-  if (delta_duplex == 0)
-    current_type = TDD;
-  else
-    current_type = FDD;
-
+  frame_type_t current_type = delta_duplex == 0 ? TDD : FDD;
   LOG_D(NR_MAC, "NR band %d, duplex mode %s, duplex spacing = %d KHz\n", current_band, duplex_mode[current_type], delta_duplex);
   return current_type;
 }
