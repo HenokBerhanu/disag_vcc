@@ -55,7 +55,7 @@ int aerial_send_P7_msg_with_data(void *packedBuf,
                                       uint32_t dataLength,
                                       nfapi_p7_message_header_t *header);
 void set_config(nfapi_vnf_config_t *conf);
-int nvIPC_Init();
+int nvIPC_Init(nvipc_params_t);
 
 #endif // OPENAIRINTERFACE_FAPI_NVIPC_H
 #endif

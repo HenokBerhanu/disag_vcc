@@ -47,6 +47,8 @@
 #define CONFIG_STRING_MACRLC_LOCAL_N_PORTD                 "local_n_portd"
 #define CONFIG_STRING_MACRLC_REMOTE_N_PORTD                "remote_n_portd"
 #define CONFIG_STRING_MACRLC_TRANSPORT_S_PREFERENCE        "tr_s_preference"
+#define CONFIG_STRING_MACRLC_TRANSPORT_S_SHM_PREFIX "tr_s_shm_prefix"
+#define CONFIG_STRING_MACRLC_TRANSPORT_S_POLL_CORE "tr_s_poll_core"
 #define CONFIG_STRING_MACRLC_LOCAL_S_ADDRESS               "local_s_address"
 #define CONFIG_STRING_MACRLC_REMOTE_S_ADDRESS              "remote_s_address"
 #define CONFIG_STRING_MACRLC_LOCAL_S_PORTC                 "local_s_portc"
@@ -123,6 +125,8 @@
   {CONFIG_STRING_MACRLC_MIN_GRANT_MCS,               HLP_MACRLC_MIN_GRANT_MCS, 0, .u8ptr=NULL,  .defintval=9,               TYPE_UINT8,   0}, \
   {CONFIG_STRING_MACRLC_IDENTITY_PM,                 HLP_MACRLC_IDENTITY_PM,   PARAMFLAG_BOOL, .u8ptr=NULL, .defintval=0,   TYPE_UINT8,   0}, \
   {CONFIG_STRING_MACRLC_LOCAL_N_ADDRESS_F1U,         NULL,                     0, .strptr=NULL, .defstrval=NULL,            TYPE_STRING,  0}, \
+  {CONFIG_STRING_MACRLC_TRANSPORT_S_SHM_PREFIX,      NULL,                     0, .strptr=NULL, .defstrval="nvipc",         TYPE_STRING,  0}, \
+  {CONFIG_STRING_MACRLC_TRANSPORT_S_POLL_CORE,       NULL,                     0, .i8ptr=NULL,  .defintval=-1,              TYPE_INT8,    0}, \
 }
 // clang-format off
 
@@ -159,6 +163,8 @@
 #define MACRLC_MIN_GRANT_MCS_IDX                               30
 #define MACRLC_IDENTITY_PM_IDX                                 31
 #define MACRLC_LOCAL_N_ADDRESS_F1U_IDX                         32
+#define MACRLC_TRANSPORT_S_SHM_PREFIX                          33
+#define MACRLC_TRANSPORT_S_POLL_CORE                           34
 
 #define MACRLCPARAMS_CHECK { \
   { .s5 = { NULL } }, \
@@ -194,6 +200,8 @@
   { .s5 = { NULL } }, \
   { .s2 = { NULL } }, \
   { .s5 = { NULL } }, \
+  { .s5 = { NULL } }, \
+  { .s2 = { NULL } }, \
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------*/

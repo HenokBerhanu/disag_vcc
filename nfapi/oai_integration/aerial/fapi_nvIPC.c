@@ -590,24 +590,12 @@ static int aerial_recv_msg(nv_ipc_t *ipc, nv_ipc_msg_t *recv_msg)
 }
 
 bool recv_task_running = false;
-int stick_this_thread_to_core(int core_id)
-{
-  int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
-  if (core_id < 0 || core_id >= num_cores)
-    return EINVAL;
-
-  cpu_set_t cpuset;
-  CPU_ZERO(&cpuset);
-  CPU_SET(core_id, &cpuset);
-
-  pthread_t current_thread = pthread_self();
-  return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
-}
 void *epoll_recv_task(void *arg)
 {
   struct epoll_event ev, events[MAX_EVENTS];
-  stick_this_thread_to_core(10);
+
   LOG_D(NFAPI_VNF,"Aerial recv task start \n");
+
   int epoll_fd = epoll_create1(0);
   if (epoll_fd == -1) {
     LOG_E(NFAPI_VNF, "%s epoll_create failed\n", __func__);
@@ -649,19 +637,10 @@ void *epoll_recv_task(void *arg)
   return NULL;
 }
 
-int create_recv_thread(void)
+void create_recv_thread(int8_t affinity)
 {
   pthread_t thread_id;
-
-  void *(*recv_task)(void *);
-
-  recv_task = epoll_recv_task;
-
-  int ret = pthread_create(&thread_id, NULL, recv_task, NULL);
-  if (ret != 0) {
-    LOG_E(NFAPI_VNF, "%s failed, ret = %d\n", __func__, ret);
-  }
-  return ret;
+  threadCreate(&thread_id, epoll_recv_task, NULL, "vnf_nvipc_aerial", affinity, OAI_PRIORITY_RT);
 }
 
 int load_hard_code_config(nv_ipc_config_t *config, int module_type, nv_ipc_transport_t _transport)
@@ -689,17 +668,20 @@ int load_hard_code_config(nv_ipc_config_t *config, int module_type, nv_ipc_trans
   return 0;
 }
 
-int nvIPC_Init() {
-// Want to use transport SHM, type epoll, module secondary (reads the created shm from cuphycontroller)
+int nvIPC_Init(nvipc_params_t nvipc_params_s)
+{
+  // Want to use transport SHM, type epoll, module secondary (reads the created shm from cuphycontroller)
   load_hard_code_config(&nv_ipc_config, NV_IPC_MODULE_SECONDARY, NV_IPC_TRANSPORT_SHM);
   // Create nv_ipc_t instance
+  LOG_I(NFAPI_VNF, "%s: creating IPC interface with prefix %s\n", __func__, nvipc_params_s.nvipc_shm_prefix);
+  strcpy(nv_ipc_config.transport_config.shm.prefix, nvipc_params_s.nvipc_shm_prefix);
   if ((ipc = create_nv_ipc_interface(&nv_ipc_config)) == NULL) {
     LOG_E(NFAPI_VNF, "%s: create IPC interface failed\n", __func__);
     return -1;
   }
   LOG_I(NFAPI_VNF, "%s: create IPC interface successful\n", __func__);
   sleep(1);
-  create_recv_thread();
+  create_recv_thread(nvipc_params_s.nvipc_poll_core);
   while(!recv_task_running){usleep(100000);}
   aerial_pnf_nr_connection_indication_cb(vnf_config, 1);
   return 0;

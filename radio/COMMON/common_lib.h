@@ -337,6 +337,11 @@ typedef struct {
 } eth_params_t;
 
 typedef struct {
+  char *nvipc_shm_prefix;
+  int8_t nvipc_poll_core;
+} nvipc_params_t;
+
+typedef struct {
   //! Tx buffer for if device, keep one per subframe now to allow multithreading
   void *tx[10];
   //! Tx buffer (PRACH) for if device

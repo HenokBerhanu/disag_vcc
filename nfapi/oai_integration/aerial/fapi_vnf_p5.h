@@ -64,7 +64,6 @@ int oai_fapi_send_end_request(int cell_id, uint32_t frame, uint32_t slot);
 uint8_t aerial_unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config);
 uint8_t aerial_unpack_nr_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config);
 int aerial_pnf_nr_connection_indication_cb(nfapi_vnf_config_t *config, int p5_idx);
-int aerial_nfapi_nr_vnf_p7_start(nfapi_vnf_p7_config_t *config);
 
 int oai_fapi_ul_tti_req(nfapi_nr_ul_tti_request_t *ul_tti_req);
 int oai_fapi_ul_dci_req(nfapi_nr_ul_dci_request_t *ul_dci_req);

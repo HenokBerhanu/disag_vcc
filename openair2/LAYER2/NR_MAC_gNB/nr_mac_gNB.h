@@ -760,6 +760,8 @@ typedef struct gNB_MAC_INST_s {
   char *f1u_addr;
   /// Ethernet parameters for fronthaul interface
   eth_params_t                    eth_params_s;
+  /// Nvipc parameters for FAPI interface with Aerial
+  nvipc_params_t nvipc_params_s;
   /// Module
   module_id_t                     Mod_id;
   /// timing advance group
