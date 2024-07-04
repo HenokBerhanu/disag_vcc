@@ -1399,7 +1399,7 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
   while (ulcfg_pdu->pdu_type != FAPI_NR_END) {
     uint8_t *ulsch_input_buffer = ulsch_input_buffer_array[number_of_pdus];
     if (ulcfg_pdu->pdu_type == FAPI_NR_UL_CONFIG_TYPE_PUSCH) {
-      uint16_t TBS_bytes = ulcfg_pdu->pusch_config_pdu.pusch_data.tb_size;
+      uint32_t TBS_bytes = ulcfg_pdu->pusch_config_pdu.pusch_data.tb_size;
       LOG_D(NR_MAC,
             "harq_id %d, new_data_indicator %d, TBS_bytes %d (ra_state %d)\n",
             ulcfg_pdu->pusch_config_pdu.pusch_data.harq_process_id,
@@ -2748,7 +2748,7 @@ static int nr_ue_get_sdu_mac_ce_pre(NR_UE_MAC_INST_t *mac,
                                     sub_frame_t subframe,
                                     uint8_t gNB_index,
                                     uint8_t *ulsch_buffer,
-                                    uint16_t buflen,
+                                    uint32_t buflen,
                                     NR_UE_MAC_CE_INFO *mac_ce_p)
 {
   int num_lcg_id_with_data = 0;
@@ -2811,11 +2811,11 @@ static void nr_ue_get_sdu_mac_ce_post(NR_UE_MAC_INST_t *mac,
                                       frame_t frame,
                                       slot_t slot,
                                       uint8_t *ulsch_buffer,
-                                      uint16_t buflen,
+                                      uint32_t buflen,
                                       NR_UE_MAC_CE_INFO *mac_ce_p)
 {
   // Compute BSR Values and update Nb LCGID with data after multiplexing
-  unsigned short padding_len = 0;
+  uint32_t padding_len = 0;
   int num_lcg_id_with_data = 0;
   int lcg_id_bsr_trunc = 0;
   NR_UE_SCHEDULING_INFO *sched_info = &mac->scheduling_info;
@@ -2999,8 +2999,8 @@ uint32_t get_count_lcids_same_priority(uint8_t start, uint8_t total_active_lcids
 long get_num_bytes_to_reqlc(NR_UE_MAC_INST_t *mac,
                             uint8_t same_priority_count,
                             uint8_t lc_num,
-                            uint16_t buflen_remain_ep,
-                            int16_t buflen_remain,
+                            uint32_t buflen_remain_ep,
+                            int32_t buflen_remain,
                             uint8_t round_id,
                             uint32_t *bytes_read_fromlc,
                             long *target)
@@ -3016,7 +3016,7 @@ long get_num_bytes_to_reqlc(NR_UE_MAC_INST_t *mac,
   long num_remaining_bytes = 0;
   long num_bytes_requested = 0;
   if (round_id == 0) { // initial round
-    uint16_t pdu_remain = (same_priority_count > 1) ? buflen_remain_ep : buflen_remain;
+    uint32_t pdu_remain = (same_priority_count > 1) ? buflen_remain_ep : buflen_remain;
     num_bytes_requested = (pdu_remain < pbr) ? min(pdu_remain, lcid_remain_buffer) : min(pbr, lcid_remain_buffer);
     num_remaining_bytes = *target - bytes_read_fromlc[lc_num - 1];
     num_bytes_requested = min(num_bytes_requested, num_remaining_bytes);
@@ -3068,13 +3068,13 @@ static bool fill_mac_sdu(NR_UE_MAC_INST_t *mac,
                          frame_t frame,
                          slot_t slot,
                          uint8_t gNB_index,
-                         uint16_t buflen,
-                         int16_t *buflen_remain,
+                         uint32_t buflen,
+                         int32_t *buflen_remain,
                          int lcid,
                          uint8_t **pdu,
                          uint32_t *counter,
                          uint8_t count_same_priority_lcids,
-                         uint16_t buflen_ep,
+                         uint32_t buflen_ep,
                          uint32_t *lcids_bytes_tot,
                          uint16_t *num_sdus,
                          NR_UE_MAC_CE_INFO *mac_ce_p,
@@ -3225,11 +3225,11 @@ uint8_t nr_ue_get_sdu(NR_UE_MAC_INST_t *mac,
                       slot_t slot,
                       uint8_t gNB_index,
                       uint8_t *ulsch_buffer,
-                      uint16_t buflen)
+                      uint32_t buflen)
 {
   NR_UE_MAC_CE_INFO mac_ce_info;
   NR_UE_MAC_CE_INFO *mac_ce_p=&mac_ce_info;
-  int16_t buflen_remain = 0;
+  int32_t buflen_remain = 0;
   mac_ce_p->bsr_len = 0;
   mac_ce_p->bsr_ce_len = 0;
   mac_ce_p->bsr_header_len = 0;
@@ -3260,7 +3260,7 @@ uint8_t nr_ue_get_sdu(NR_UE_MAC_INST_t *mac,
   // in the first run all the lc are allocated as per bj and prioritized bit rate but in subsequent runs, no need to consider
   uint32_t lcp_allocation_counter = 0;
   // bj and prioritized bit rate but just consider priority
-  uint16_t buflen_ep = 0; // this variable holds the length in bytes in mac pdu when multiple equal priority channels are present
+  uint32_t buflen_ep = 0; // this variable holds the length in bytes in mac pdu when multiple equal priority channels are present
   // because as per standard(TS38.321), all equal priority channels should be served equally
 
   // nr_ue_get_sdu_mac_ce_pre updates all mac_ce related header field related to length
@@ -3382,12 +3382,12 @@ uint8_t nr_ue_get_sdu(NR_UE_MAC_INST_t *mac,
   // Compute final offset for padding and fill remainder of ULSCH with 0
   if (buflen_remain > 0) {
 
-    LOG_D(NR_MAC, "In %s filling remainder %d bytes to the UL PDU \n", __FUNCTION__, buflen_remain);
+    LOG_D(NR_MAC, "Filling remainder %d bytes to the UL PDU \n", buflen_remain);
     ((NR_MAC_SUBHEADER_FIXED *) pdu)->R = 0;
     ((NR_MAC_SUBHEADER_FIXED *) pdu)->LCID = UL_SCH_LCID_PADDING;
 
 #ifdef ENABLE_MAC_PAYLOAD_DEBUG
-    LOG_I(NR_MAC, "In %s: padding MAC sub-header with length %ld bytes \n", __FUNCTION__, sizeof(NR_MAC_SUBHEADER_FIXED));
+    LOG_I(NR_MAC, "Padding MAC sub-header with length %ld bytes \n", sizeof(NR_MAC_SUBHEADER_FIXED));
     log_dump(NR_MAC, pdu, sizeof(NR_MAC_SUBHEADER_FIXED), LOG_DUMP_CHAR, "\n");
 #endif
 
@@ -3403,13 +3403,13 @@ uint8_t nr_ue_get_sdu(NR_UE_MAC_INST_t *mac,
     }
 
 #ifdef ENABLE_MAC_PAYLOAD_DEBUG
-    LOG_I(NR_MAC, "In %s: MAC padding sub-PDU with length %d bytes \n", __FUNCTION__, buflen_remain);
+    LOG_I(NR_MAC, "MAC padding sub-PDU with length %d bytes \n", buflen_remain);
     log_dump(NR_MAC, pdu, buflen_remain, LOG_DUMP_CHAR, "\n");
 #endif
   }
 
 #ifdef ENABLE_MAC_PAYLOAD_DEBUG
-  LOG_I(NR_MAC, "In %s: dumping MAC PDU with length %d: \n", __FUNCTION__, buflen);
+  LOG_I(NR_MAC, "Dumping MAC PDU with length %d: \n", buflen);
   log_dump(NR_MAC, ulsch_buffer, buflen, LOG_DUMP_CHAR, "\n");
 #endif
 
