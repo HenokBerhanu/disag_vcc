@@ -42,7 +42,6 @@ RUN apt-get update && \
         procps \
         software-properties-common \
         libblas3 \
-        libatlas3-base \
         libconfig9 \
         net-tools \
         gdb \
@@ -83,7 +82,16 @@ COPY --from=ru-base \
     /usr/lib/x86_64-linux-gnu/
 
 RUN /bin/bash -c "ln -s /usr/local/lib/liboai_usrpdevif.so /usr/local/lib/liboai_device.so" && \
-    ldconfig
+    ldconfig && \
+    echo "---- ldd on oairu ----" && \
+    ldd /opt/oai-lte-ru/bin/oairu && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd /usr/local/lib/liboai_eth_transpro.so \
+        /usr/local/lib/librfsimulator.so \
+        /usr/local/lib/liboai_usrpdevif.so \
+        /usr/local/lib/libparams_libconfig.so \
+        /usr/local/lib/libdfts.so \
+        /usr/local/lib/libuhd.so.4.4.0
 
 WORKDIR /opt/oai-lte-ru
 

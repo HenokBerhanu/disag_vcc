@@ -69,7 +69,7 @@ RUN apt-get update && \
         procps \
         libsctp1 \
         tzdata \
-        libatlas3-base \
+        libblas3 \
         libconfig9 \
         openssl \
         net-tools \
@@ -95,6 +95,14 @@ COPY --from=ran-build \
     /usr/local/lib/libnvipc.so \
     /usr/local/lib/
 
+RUN ldconfig && \
+    echo "---- ldd on nr-softmodem ----" && \
+    ldd /opt/oai-gnb/bin/nr-softmodem && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd /usr/local/lib/libparams_libconfig.so \
+        /usr/local/lib/libfmtlog-shared.so \
+        /usr/local/lib/libnvlog.so \
+        /usr/local/lib/libnvipc.so
 
 WORKDIR /opt/oai-gnb
 COPY --from=ran-build /tini /tini
