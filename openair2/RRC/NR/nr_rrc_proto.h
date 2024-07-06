@@ -145,20 +145,6 @@ void ue_cxt_mod_direct(MessageDef *msg,
 
 void prepare_and_send_ue_context_modification_f1(rrc_gNB_ue_context_t *ue_context_p,
                                                  e1ap_bearer_setup_resp_t *e1ap_resp);
-void nr_pdcp_add_srbs(eNB_flag_t enb_flag,
-                      ue_id_t UEid,
-                      NR_SRB_ToAddModList_t *const srb2add_list,
-                      const uint8_t security_modeP,
-                      uint8_t *const kRRCenc,
-                      uint8_t *const kUPint);
-
-void nr_pdcp_add_drbs(eNB_flag_t enb_flag,
-                      ue_id_t rntiMaybeUEid,
-                      NR_DRB_ToAddModList_t *const drb2add_list,
-                      const uint8_t security_modeP,
-                      uint8_t *const kUPenc,
-                      uint8_t *const kUPint);
-
 void trigger_bearer_setup(gNB_RRC_INST *rrc, gNB_RRC_UE_t *UE, int n, pdusession_t *sessions, uint64_t ueAggMaxBitRateDownlink);
 
 int rrc_gNB_generate_pcch_msg(sctp_assoc_t assoc_id, const NR_SIB1_t *sib, uint32_t tmsi, uint8_t paging_drx);

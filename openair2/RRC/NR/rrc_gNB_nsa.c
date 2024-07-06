@@ -126,8 +126,7 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   gtpv1u_enb_create_tunnel_req_t  create_tunnel_req;
   gtpv1u_enb_create_tunnel_resp_t create_tunnel_resp;
   protocol_ctxt_t ctxt={0};
-  uint8_t kUPenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kUPint[NR_K_KEY_SIZE] = {0};
+  nr_pdcp_entity_security_keys_and_algos_t security_parameters = {0};
   int i;
   gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
 
@@ -218,8 +217,10 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
     LOG_I(RRC, "selecting integrity algorithm %d\n", UE->integrity_algorithm);
 
     /* derive UP security key */
-    nr_derive_key(UP_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, kUPenc);
-    nr_derive_key(UP_INT_ALG, UE->integrity_algorithm, UE->kgnb, kUPint);
+    security_parameters.ciphering_algorithm = UE->ciphering_algorithm;
+    security_parameters.integrity_algorithm = UE->integrity_algorithm;
+    nr_derive_key(UP_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, security_parameters.ciphering_key);
+    nr_derive_key(UP_INT_ALG, UE->integrity_algorithm, UE->kgnb, security_parameters.integrity_key);
 
     e_NR_CipheringAlgorithm cipher_algo;
     switch (UE->ciphering_algorithm) {
@@ -388,9 +389,7 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   nr_pdcp_add_drbs(ctxt.enb_flag,
                    rrc_ue_id,
                    ue_context_p->ue_context.rb_config->drb_ToAddModList,
-                   (ue_context_p->ue_context.integrity_algorithm << 4) | ue_context_p->ue_context.ciphering_algorithm,
-                   kUPenc,
-                   kUPint);
+                   &security_parameters);
 
   ctxt.rntiMaybeUEid = du_ue_id;
   // assume only a single bearer

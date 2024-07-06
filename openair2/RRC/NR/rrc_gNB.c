@@ -389,19 +389,19 @@ static void activate_srb(gNB_RRC_UE_t *UE, int srb_id)
   srb->srb_Identity = srb_id;
 
   if (srb_id == 1) {
-    nr_pdcp_add_srbs(true, UE->rrc_ue_id, list, 0, NULL, NULL);
+    nr_pdcp_entity_security_keys_and_algos_t null_security_parameters = {0};
+    nr_pdcp_add_srbs(true, UE->rrc_ue_id, list, &null_security_parameters);
   } else {
-    uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-    uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-    nr_derive_key(RRC_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, kRRCenc);
-    nr_derive_key(RRC_INT_ALG, UE->integrity_algorithm, UE->kgnb, kRRCint);
+    nr_pdcp_entity_security_keys_and_algos_t security_parameters;
+    security_parameters.ciphering_algorithm = UE->ciphering_algorithm;
+    security_parameters.integrity_algorithm = UE->integrity_algorithm;
+    nr_derive_key(RRC_ENC_ALG, UE->ciphering_algorithm, UE->kgnb, security_parameters.ciphering_key);
+    nr_derive_key(RRC_INT_ALG, UE->integrity_algorithm, UE->kgnb, security_parameters.integrity_key);
 
     nr_pdcp_add_srbs(true,
                      UE->rrc_ue_id,
                      list,
-                     (UE->integrity_algorithm << 4) | UE->ciphering_algorithm,
-                     kRRCenc,
-                     kRRCint);
+                     &security_parameters);
   }
   freeSRBlist(list);
 }
@@ -850,6 +850,12 @@ static void cuup_notify_reestablishment(gNB_RRC_INST *rrc, gNB_RRC_UE_t *ue_p)
     /* increase DRB to modify counter */
     pdu_e1->numDRB2Modify += 1;
   }
+
+  req.cipheringAlgorithm = rrc->security.do_drb_ciphering ? ue_p->ciphering_algorithm : 0;
+  req.integrityProtectionAlgorithm = rrc->security.do_drb_integrity ? ue_p->integrity_algorithm : 0;
+  nr_derive_key(UP_ENC_ALG, req.cipheringAlgorithm, ue_p->kgnb, (uint8_t *)req.encryptionKey);
+  nr_derive_key(UP_INT_ALG, req.integrityProtectionAlgorithm, ue_p->kgnb, (uint8_t *)req.integrityProtectionKey);
+
   /* Send E1 Bearer Context Modification Request (3GPP TS 38.463) */
   sctp_assoc_t assoc_id = get_existing_cuup_for_ue(rrc, ue_p);
   rrc->cucp_cuup.bearer_context_mod(assoc_id, &req);
@@ -866,7 +872,6 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
 {
   module_id_t module_id = 0;
   gNB_RRC_INST *rrc = RC.nrrrc[module_id];
-  int enable_ciphering = 0;
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(module_id);
@@ -878,30 +883,33 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
   LOG_I(NR_RRC, "[RAPROC] UE %04x Logical Channel DL-DCCH, Generating NR_RRCReestablishment (bytes %d)\n", ue_p->rnti, size);
 
   /* Ciphering and Integrity according to TS 33.501 */
-  uint8_t kRRCenc[NR_K_KEY_SIZE] = {0};
-  uint8_t kRRCint[NR_K_KEY_SIZE] = {0};
-  uint8_t  kUPenc[NR_K_KEY_SIZE] = {0};
+  nr_pdcp_entity_security_keys_and_algos_t security_parameters;
   /* Derive the keys from kgnb */
-  if (ue_p->Srb[1].Active)
-    nr_derive_key(UP_ENC_ALG, ue_p->ciphering_algorithm, ue_p->kgnb, kUPenc);
-  nr_derive_key(RRC_ENC_ALG, ue_p->ciphering_algorithm, ue_p->kgnb, kRRCenc);
-  nr_derive_key(RRC_INT_ALG, ue_p->integrity_algorithm, ue_p->kgnb, kRRCint);
+  nr_derive_key(RRC_ENC_ALG, ue_p->ciphering_algorithm, ue_p->kgnb, security_parameters.ciphering_key);
+  nr_derive_key(RRC_INT_ALG, ue_p->integrity_algorithm, ue_p->kgnb, security_parameters.integrity_key);
   LOG_I(NR_RRC,
-        "Set PDCP security UE %d RNTI %04x nca %ld nia %d in RRCReestablishment\n",
+        "Set PDCP security UE %d RNTI %04x nea %ld nia %d in RRCReestablishment\n",
         ue_p->rrc_ue_id,
         ue_p->rnti,
         ue_p->ciphering_algorithm,
         ue_p->integrity_algorithm);
-  uint8_t security_mode =
-      enable_ciphering ? ue_p->ciphering_algorithm | (ue_p->integrity_algorithm << 4) : 0 | (ue_p->integrity_algorithm << 4);
+  /* RRCReestablishment is integrity protected but not ciphered,
+   * so let's configure only integrity protection right now.
+   * Ciphering is enabled below, after generating RRCReestablishment.
+   */
+  security_parameters.integrity_algorithm = ue_p->integrity_algorithm;
+  security_parameters.ciphering_algorithm = 0;
 
   /* SRBs */
   for (int srb_id = 1; srb_id < NR_NUM_SRB; srb_id++) {
     if (ue_p->Srb[srb_id].Active)
-      nr_pdcp_config_set_security(ue_p->rrc_ue_id, srb_id, security_mode, kRRCenc, kRRCint, kUPenc);
+      nr_pdcp_config_set_security(ue_p->rrc_ue_id, srb_id, true, &security_parameters);
   }
   /* Re-establish PDCP for SRB1, according to 5.3.7.4 of 3GPP TS 38.331 */
-  nr_pdcp_reestablishment(ue_p->rrc_ue_id, 1, true);
+  nr_pdcp_reestablishment(ue_p->rrc_ue_id,
+                          1,
+                          true,
+                          &security_parameters);
   /* F1AP DL RRC Message Transfer */
   f1_ue_data_t ue_data = cu_get_f1_ue_data(ue_p->rrc_ue_id);
   RETURN_IF_INVALID_ASSOC_ID(ue_data);
@@ -912,6 +920,14 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
                                   .old_gNB_DU_ue_id = &old_gNB_DU_ue_id};
   deliver_dl_rrc_message_data_t data = {.rrc = rrc, .dl_rrc = &dl_rrc, .assoc_id = ue_data.du_assoc_id};
   nr_pdcp_data_req_srb(ue_p->rrc_ue_id, DCCH, rrc_gNB_mui++, size, (unsigned char *const)buffer, rrc_deliver_dl_rrc_message, &data);
+
+  /* RRCReestablishment has been generated, let's enable ciphering now. */
+  security_parameters.ciphering_algorithm = ue_p->ciphering_algorithm;
+  /* SRBs */
+  for (int srb_id = 1; srb_id < NR_NUM_SRB; srb_id++) {
+    if (ue_p->Srb[srb_id].Active)
+      nr_pdcp_config_set_security(ue_p->rrc_ue_id, srb_id, true, &security_parameters);
+  }
 }
 
 /// @brief Function tha processes RRCReestablishmentComplete message sent by the UE, after RRCReestasblishment request.
@@ -932,9 +948,6 @@ static void rrc_gNB_process_RRCReestablishmentComplete(const protocol_ctxt_t *co
   ue_p->StatusRrc = NR_RRC_CONNECTED;
 
   ue_p->Srb[1].Active = 1;
-
-  uint8_t send_security_mode_command = false;
-  nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, send_security_mode_command);
 
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
@@ -966,7 +979,13 @@ static void rrc_gNB_process_RRCReestablishmentComplete(const protocol_ctxt_t *co
    */
   int srb_id = 2;
   if (ue_p->Srb[srb_id].Active) {
-      nr_pdcp_reestablishment(ue_p->rrc_ue_id, srb_id, true);
+    nr_pdcp_entity_security_keys_and_algos_t security_parameters;
+    security_parameters.ciphering_algorithm = ue_p->ciphering_algorithm;
+    security_parameters.integrity_algorithm = ue_p->integrity_algorithm;
+    nr_derive_key(RRC_ENC_ALG, ue_p->ciphering_algorithm, ue_p->kgnb, security_parameters.ciphering_key);
+    nr_derive_key(RRC_INT_ALG, ue_p->integrity_algorithm, ue_p->kgnb, security_parameters.integrity_key);
+
+    nr_pdcp_reestablishment(ue_p->rrc_ue_id, srb_id, true, &security_parameters);
   }
   /* PDCP Reestablishment of DRBs according to 5.3.5.6.5 of 3GPP TS 38.331 (over E1) */
   cuup_notify_reestablishment(rrc, ue_p);
@@ -1890,6 +1909,11 @@ static void e1_send_bearer_updates(gNB_RRC_INST *rrc, gNB_RRC_UE_t *UE, int n, f
   }
   DevAssert(req.numPDUSessionsMod > 0);
   DevAssert(req.numPDUSessions == 0);
+
+  req.cipheringAlgorithm = rrc->security.do_drb_ciphering ? UE->ciphering_algorithm : 0;
+  req.integrityProtectionAlgorithm = rrc->security.do_drb_integrity ? UE->integrity_algorithm : 0;
+  nr_derive_key(UP_ENC_ALG, req.cipheringAlgorithm, UE->kgnb, (uint8_t *)req.encryptionKey);
+  nr_derive_key(UP_INT_ALG, req.integrityProtectionAlgorithm, UE->kgnb, (uint8_t *)req.integrityProtectionKey);
 
   // send the E1 bearer modification request message to update F1-U tunnel info
   sctp_assoc_t assoc_id = get_existing_cuup_for_ue(rrc, UE);
