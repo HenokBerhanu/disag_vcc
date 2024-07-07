@@ -165,10 +165,6 @@ unsigned int NTN_UE_Koffset = 0;
  */
 uint8_t abstraction_flag=0;
 
-nr_bler_struct nr_bler_data[NR_NUM_MCS];
-
-static void init_bler_table(char*);
-
 /*---------------------BMC: timespec helpers -----------------------------*/
 
 struct timespec min_diff_time = { .tv_sec = 0, .tv_nsec = 0 };
@@ -421,9 +417,9 @@ static void get_channel_model_mode(configmodule_interface_t *cfg)
   int num_xp_antennas = *GNBParams[GNB_PDSCH_ANTENNAPORTS_XP_IDX].iptr;
 
   if (num_xp_antennas == 2)
-    init_bler_table("NR_MIMO2x2_AWGN_RESULTS_DIR");
+    init_nr_bler_table("NR_MIMO2x2_AWGN_RESULTS_DIR");
   else
-    init_bler_table("NR_AWGN_RESULTS_DIR");
+    init_nr_bler_table("NR_AWGN_RESULTS_DIR");
 }
 
 void start_oai_nrue_threads()
@@ -639,55 +635,3 @@ int main(int argc, char **argv)
   return 0;
 }
 
-// Read in each MCS file and build BLER-SINR-TB table
-static void init_bler_table(char *env_string) {
-  memset(nr_bler_data, 0, sizeof(nr_bler_data));
-
-  const char *awgn_results_dir = getenv(env_string);
-  if (!awgn_results_dir) {
-    LOG_W(NR_MAC, "No %s\n", env_string);
-    return;
-  }
-
-  for (unsigned int i = 0; i < NR_NUM_MCS; i++) {
-    char fName[1024];
-    snprintf(fName, sizeof(fName), "%s/mcs%u_awgn_5G.csv", awgn_results_dir, i);
-    FILE *pFile = fopen(fName, "r");
-    if (!pFile) {
-      LOG_E(NR_MAC, "%s: open %s: %s\n", __func__, fName, strerror(errno));
-      continue;
-    }
-    size_t bufSize = 1024;
-    char * line = NULL;
-    char * token;
-    char * temp = NULL;
-    int nlines = 0;
-    while (getline(&line, &bufSize, pFile) > 0) {
-      if (!strncmp(line, "SNR", 3)) {
-        continue;
-      }
-
-      if (nlines > NR_NUM_SINR) {
-        LOG_E(NR_MAC, "BLER FILE ERROR - num lines greater than expected - file: %s\n", fName);
-        abort();
-      }
-
-      token = strtok_r(line, ";", &temp);
-      int ncols = 0;
-      while (token != NULL) {
-        if (ncols > NUM_BLER_COL) {
-          LOG_E(NR_MAC, "BLER FILE ERROR - num of cols greater than expected\n");
-          abort();
-        }
-
-        nr_bler_data[i].bler_table[nlines][ncols] = strtof(token, NULL);
-        ncols++;
-
-        token = strtok_r(NULL, ";", &temp);
-      }
-      nlines++;
-    }
-    nr_bler_data[i].length = nlines;
-    fclose(pFile);
-  }
-}
