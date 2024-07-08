@@ -56,7 +56,6 @@ RUN apt-get update && \
       tzdata \
       xxd \
       # ARM64 packages
-      libatlas-base-dev:arm64 \
       libblas-dev:arm64 \
       liblapack-dev:arm64 \
       liblapacke-dev:arm64 \
