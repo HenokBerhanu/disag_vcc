@@ -199,6 +199,13 @@ rrc_gNB_send_NGAP_NAS_FIRST_REQ(
   //              NGAP_NAS_FIRST_REQ (message_p).nas_pdu.length,
   //              ue_context_pP);
 
+  /* selected_plmn_identity: IE is 1-based, convert to 0-based (C array) */
+  int selected_plmn_identity = rrcSetupComplete->selectedPLMN_Identity - 1;
+  if (selected_plmn_identity != 0)
+    LOG_E(NGAP, "UE %u: sent selected PLMN identity %ld, but only one PLMN supported\n", req->gNB_ue_ngap_id, rrcSetupComplete->selectedPLMN_Identity);
+
+  req->selected_plmn_identity = 0; /* always zero because we only support one */
+
   /* Fill UE identities with available information */
   if (UE->Initialue_identity_5g_s_TMSI.presence) {
     /* Fill s-TMSI */
@@ -219,27 +226,6 @@ rrc_gNB_send_NGAP_NAS_FIRST_REQ(
     UE->ue_guami.amf_region_id = req->ue_identity.guami.amf_region_id;
     UE->ue_guami.amf_set_id = req->ue_identity.guami.amf_set_id;
     UE->ue_guami.amf_pointer = req->ue_identity.guami.amf_pointer;
-
-    if (r_amf->plmn_Identity != NULL) {
-      AssertFatal(false, "At the moment, OAI RAN does not support multiple PLMN IDs. Therefore, this part has not been tested\n");
-      /* selected_plmn_identity: IE is 1-based, convert to 0-based (C array) */
-      int selected_plmn_identity = rrcSetupComplete->selectedPLMN_Identity - 1;
-      req->selected_plmn_identity = selected_plmn_identity;
-
-      if ((r_amf->plmn_Identity->mcc != NULL) && (r_amf->plmn_Identity->mcc->list.count > 0)) {
-        /* Use first indicated PLMN MCC if it is defined */
-        req->ue_identity.guami.mcc = *r_amf->plmn_Identity->mcc->list.array[selected_plmn_identity];
-        LOG_I(NGAP, "[gNB %d] Build NGAP_NAS_FIRST_REQ adding in s_TMSI: GUMMEI MCC %u ue %x\n", ctxt_pP->module_id, req->ue_identity.guami.mcc, UE->rnti);
-      }
-
-      if (r_amf->plmn_Identity->mnc.list.count > 0) {
-        /* Use first indicated PLMN MNC if it is defined */
-        req->ue_identity.guami.mnc = *r_amf->plmn_Identity->mnc.list.array[selected_plmn_identity];
-        LOG_I(NGAP, "[gNB %d] Build NGAP_NAS_FIRST_REQ adding in s_TMSI: GUMMEI MNC %u ue %x\n", ctxt_pP->module_id, req->ue_identity.guami.mnc, UE->rnti);
-      }
-    } else {
-        /* TODO */
-    }
 
     LOG_I(NGAP,
           "[gNB %d] Build NGAP_NAS_FIRST_REQ adding in s_TMSI: GUAMI amf_set_id %u amf_region_id %u ue %x\n",
