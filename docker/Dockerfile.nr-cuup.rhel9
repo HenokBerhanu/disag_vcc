@@ -41,7 +41,6 @@ RUN yum repolist --disablerepo=* && \
         procps-ng \
         lksctp-tools \
         tzdata \
-        atlas \
         net-tools \
         iputils && \
     echo "/usr/local/lib" > /etc/ld.so.conf.d/local-lib.conf && \
@@ -60,10 +59,6 @@ COPY --from=gnb-build \
 
 COPY --from=gnb-base \
     /lib64/libconfig.so.11 \
-    /lib64/libblas.so.3 \
-    /lib64/libcblas.so.3 \
-    /lib64/liblapack.so.3 \
-    /lib64/liblapacke.so.3 \
     /lib64/
 
 RUN ldconfig && \

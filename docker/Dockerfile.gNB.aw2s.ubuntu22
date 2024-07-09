@@ -49,7 +49,7 @@ RUN apt-get update && \
         libsctp1 \
         tzdata \
         libblas3 \
-        libatlas3-base \
+        libc6 \
         libconfig9 \
         gdb \
         openssl \
@@ -78,7 +78,18 @@ COPY --from=gnb-build \
 
 RUN /bin/bash -c "ln -s /usr/local/lib/libaw2sori_transpro.so /usr/local/lib/libthirdparty_transpro.so" && \
     /bin/bash -c "ln -s /usr/local/lib/liboai_eth_transpro.so /usr/local/lib/liboai_transpro.so" && \
-    ldconfig
+    ldconfig && \
+    echo "---- ldd on nr-softmodem ----" && \
+    ldd /opt/oai-gnb-aw2s/bin/nr-softmodem && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd /usr/local/lib/liboai_eth_transpro.so \
+        /usr/local/lib/librfsimulator.so \
+        /usr/local/lib/libaw2sori_transpro.so \
+        /usr/local/lib/libcoding.so \
+        /usr/local/lib/libparams_libconfig.so \
+        /usr/local/lib/libdfts.so \
+        /usr/local/lib/libldpc*.so \
+        /usr/local/lib/libtelnetsrv.so
 
 WORKDIR /opt/oai-gnb-aw2s
 

@@ -44,4 +44,7 @@ RUN /bin/sh oaienv && \
       --noavx512 \
       --cmake-opt -DCMAKE_C_FLAGS="-Werror" --cmake-opt -DCMAKE_CXX_FLAGS="-Werror" $BUILD_OPTION && \
     # Mainly to see if the sanitize option was perfectly executed
-    ldd ran_build/build/nr-softmodem
+    echo "---- ldd on executables ----" && \
+    ldd ran_build/build/*softmodem* ran_build/build/nr-cuup ran_build/build/oairu && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd ran_build/build/*.so

@@ -39,4 +39,8 @@ RUN /bin/sh oaienv && \
       --eNB --gNB --RU --UE --nrUE \
       --build-lib "telnetsrv enbscope uescope nrscope" \
       -w USRP -t Ethernet \
-      --noavx512
+      --noavx512 && \
+    echo "---- ldd on executables ----" && \
+    ldd ran_build/build/*softmodem* ran_build/build/nr-cuup ran_build/build/oairu && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd ran_build/build/*.so
