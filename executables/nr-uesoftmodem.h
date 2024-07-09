@@ -63,6 +63,7 @@
   {"chest-time",                   CONFIG_HLP_CHESTTIME,       0,               .iptr=&(nrUE_params.chest_time),             .defintval=0,      TYPE_INT,      0}, \
   {"ue-timing-correction-disable", CONFIG_HLP_DISABLETIMECORR, PARAMFLAG_BOOL,  .iptr=&(nrUE_params.no_timing_correction),   .defintval=0,      TYPE_INT,      0}, \
   {"SLC",                          CONFIG_HLP_SLF,             0,               .u64ptr=&(sidelink_frequency[0][0]),         .defuintval=2600000000,TYPE_UINT64,0}, \
+  {"num-ues",                      NULL,                       0,               .iptr=&(NB_UE_INST),                         .defuintval=1,         TYPE_INT,0},   \
 }
 // clang-format on
 
@@ -93,7 +94,7 @@ extern nrUE_params_t *get_nrUE_params(void);
 extern int setup_nr_ue_buffers(PHY_VARS_NR_UE **phy_vars_ue, openair0_config_t *openair0_cfg);
 extern void fill_ue_band_info(void);
 extern void init_NR_UE(int, char *, char *, char *);
-extern void init_NR_UE_threads(int);
+extern void init_NR_UE_threads(PHY_VARS_NR_UE *ue);
 extern void reset_opp_meas(void);
 extern void print_opp_meas(void);
 void start_oai_nrue_threads(void);
