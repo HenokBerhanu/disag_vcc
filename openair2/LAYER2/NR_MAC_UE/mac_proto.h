@@ -243,6 +243,7 @@ int nr_ue_configure_pucch(NR_UE_MAC_INST_t *mac,
 
 float nr_get_Pcmax(int p_Max,
                    uint16_t nr_band,
+                   frame_type_t frame_type,
                    frequency_range_t frequency_range,
                    int Qm,
                    bool powerBoostPi2BPSK,

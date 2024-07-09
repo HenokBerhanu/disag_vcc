@@ -81,6 +81,7 @@ void init_RA(NR_UE_MAC_INST_t *mac,
   // PRACH shall be as specified for QPSK modulated DFT-s-OFDM of equivalent RB allocation (38.101-1)
   prach_resources->RA_PCMAX = nr_get_Pcmax(mac->p_Max,
                                            mac->nr_band,
+                                           mac->frame_type,
                                            mac->frequency_range,
                                            2,
                                            false,
