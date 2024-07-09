@@ -2341,7 +2341,17 @@ bool get_downlink_ack(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, PUCCH_sche
                   "Value of pucch_resource_indicator %d not matching with what set before %d (Possibly due to a false DCI) \n",
                   current_harq->pucch_resource_indicator,
                   res_ind);
-          else{
+          else {
+            if (!current_harq->ack_received)
+              LOG_E(NR_MAC, "DLSCH ACK/NACK reporting initiated for harq pid %d before DLSCH decoding completed\n", dl_harq_pid);
+
+            if (get_FeedbackDisabled(mac->sc_info.downlinkHARQ_FeedbackDisabled_r17, dl_harq_pid)) {
+              LOG_D(NR_MAC, "skipping DLSCH ACK/NACK reporting for harq pid %d\n", dl_harq_pid);
+              current_harq->active = false;
+              current_harq->ack_received = false;
+              continue;
+            }
+
             if (current_harq->dai_cumul == 0) {
               LOG_E(NR_MAC,"PUCCH Downlink DAI is invalid\n");
               return false;
@@ -2356,7 +2366,6 @@ bool get_downlink_ack(NR_UE_MAC_INST_t *mac, frame_t frame, int slot, PUCCH_sche
               current_harq->active = false;
               current_harq->ack_received = false;
             } else {
-              LOG_E(NR_MAC, "DLSCH ACK/NACK reporting initiated for harq pid %d before DLSCH decoding completed\n", dl_harq_pid);
               ack_data[code_word][dai_index] = 0;
             }
             dai[code_word][dai_index] = (dai_index % 4) + 1; // value between 1 and 4
