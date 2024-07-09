@@ -5218,7 +5218,7 @@ bool supported_bw_comparison(int bw_mhz, NR_SupportedBandwidth_t *supported_BW, 
   return false;
 }
 
-uint32_t compute_PDU_length(uint32_t num_TLV, uint16_t total_length)
+uint32_t compute_PDU_length(uint32_t num_TLV, uint32_t total_length)
 {
   uint32_t pdu_length = 8; // 2 bytes PDU_Length + 2 bytes PDU_Index + 4 bytes num_TLV
   // For each TLV, add 2 bytes tag + 2 bytes length + value size without padding
