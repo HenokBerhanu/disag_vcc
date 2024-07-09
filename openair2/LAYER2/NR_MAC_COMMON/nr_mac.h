@@ -599,6 +599,7 @@ typedef struct {
   int dl_bw_tbslbrm;
   int ul_bw_tbslbrm;
   NR_NTN_Config_r17_t *ntn_Config_r17;
+  NR_DownlinkHARQ_FeedbackDisabled_r17_t *downlinkHARQ_FeedbackDisabled_r17;
 } NR_UE_ServingCell_Info_t;
 
 typedef enum {

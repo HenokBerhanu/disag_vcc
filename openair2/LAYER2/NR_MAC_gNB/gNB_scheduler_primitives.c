@@ -2345,6 +2345,9 @@ void configure_UE_BWP(gNB_MAC_INST *nr_mac,
         sc_info->nrofHARQ_ProcessesForPDSCH = pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH;
         if (pdsch_servingcellconfig->ext1)
           sc_info->maxMIMO_Layers_PDSCH = pdsch_servingcellconfig->ext1->maxMIMO_Layers;
+        if (pdsch_servingcellconfig->ext3 &&
+            pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17)
+          sc_info->downlinkHARQ_FeedbackDisabled_r17 = &pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup;
         if (pdsch_servingcellconfig->codeBlockGroupTransmission
             && pdsch_servingcellconfig->codeBlockGroupTransmission->choice.setup)
           sc_info->pdsch_CGB_Transmission = pdsch_servingcellconfig->codeBlockGroupTransmission->choice.setup;

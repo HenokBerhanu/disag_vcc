@@ -5243,3 +5243,14 @@ rnti_t nr_get_ra_rnti(uint8_t s_id, uint8_t t_id, uint8_t f_id, uint8_t ul_carri
 
   return ra_rnti;
 }
+
+int get_FeedbackDisabled(NR_DownlinkHARQ_FeedbackDisabled_r17_t *downlinkHARQ_FeedbackDisabled_r17, int harq_pid)
+{
+  if (downlinkHARQ_FeedbackDisabled_r17 == NULL)
+    return 0;
+
+  const int byte_index = harq_pid / 8;
+  const int bit_index = harq_pid % 8;
+
+  return (downlinkHARQ_FeedbackDisabled_r17->buf[byte_index] >> (7 - bit_index)) & 1;
+}
