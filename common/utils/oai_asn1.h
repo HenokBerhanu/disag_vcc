@@ -85,7 +85,7 @@
         if (eL == TARGET->list.array[iJ]->FIELD)                                   \
           break;                                                                   \
       }                                                                            \
-      if (iJ == TARGET->list.count)                                                \
+      if (iJ < TARGET->list.count)                                                 \
         asn_sequence_del(&TARGET->list, iJ, 1);                                    \
       else                                                                         \
         LOG_E(NR_MAC, "Element not present in the list, impossible to release\n"); \
