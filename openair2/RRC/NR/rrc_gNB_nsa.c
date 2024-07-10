@@ -259,10 +259,8 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
 
   UE->reconfig->criticalExtensions.choice.rrcReconfiguration = get_default_reconfig(UE->secondaryCellGroup);
   UE->rnti = UE->secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
-  NR_CG_Config_t *CG_Config = calloc(1,sizeof(*CG_Config));
-  memset((void *)CG_Config,0,sizeof(*CG_Config));
-  // int CG_Config_size = generate_CG_Config(rrc,CG_Config,UE->reconfig,UE->rb_config);
-  generate_CG_Config(rrc, CG_Config, UE->reconfig, UE->rb_config);
+
+  NR_CG_Config_t *CG_Config = generate_CG_Config(UE->reconfig, UE->rb_config);
 
   if(m!=NULL) {
     uint8_t inde_list[m->nb_e_rabs_tobeadded];

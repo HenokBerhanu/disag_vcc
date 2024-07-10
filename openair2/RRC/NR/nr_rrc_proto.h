@@ -68,10 +68,7 @@ void rrc_remove_ue(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p);
 
 NR_RRCReconfiguration_IEs_t *get_default_reconfig(const NR_CellGroupConfig_t *secondaryCellGroup);
 
-int generate_CG_Config(gNB_RRC_INST *rrc, 
-		       NR_CG_Config_t *cg_Config,
-		       NR_RRCReconfiguration_t *reconfig,
-		       NR_RadioBearerConfig_t *rbconfig);
+NR_CG_Config_t *generate_CG_Config(const NR_RRCReconfiguration_t *reconfig, const NR_RadioBearerConfig_t *rbconfig);
 
 int parse_CG_ConfigInfo(gNB_RRC_INST *rrc, NR_CG_ConfigInfo_t *CG_ConfigInfo, x2ap_ENDC_sgnb_addition_req_t *m);
 
