@@ -3057,6 +3057,20 @@ static void fix_servingcellconfigdedicated(NR_ServingCellConfig_t *scd)
   }
 }
 
+static NR_ServingCellConfigCommon_t *clone_ServingCellConfigCommon(const NR_ServingCellConfigCommon_t *scc)
+{
+  if (scc == NULL)
+    return NULL;
+
+  uint8_t buf[16384];
+  asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_ServingCellConfigCommon, NULL, scc, buf, sizeof(buf));
+  AssertFatal(enc_rval.encoded > 0 && enc_rval.encoded < sizeof(buf), "could not clone NR_ServingCellConfigCommon: problem while encoding\n");
+  NR_ServingCellConfigCommon_t *clone = NULL;
+  asn_dec_rval_t dec_rval = uper_decode(NULL, &asn_DEF_NR_ServingCellConfigCommon, (void **)&clone, buf, enc_rval.encoded, 0, 0);
+  AssertFatal(dec_rval.code == RC_OK && dec_rval.consumed == enc_rval.encoded, "could not clone NR_ServingCellConfigCommon: problem while decoding\n");
+  return clone;
+}
+
 NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigCommon_t *servingcellconfigcommon,
                                                      NR_ServingCellConfig_t *servingcellconfigdedicated,
                                                      const NR_UE_NR_Capability_t *uecap,
@@ -3097,8 +3111,7 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
       calloc(1, sizeof(*secondaryCellGroup->spCellConfig->reconfigurationWithSync));
 
   NR_ReconfigurationWithSync_t *reconfigurationWithSync = secondaryCellGroup->spCellConfig->reconfigurationWithSync;
-  reconfigurationWithSync->spCellConfigCommon =
-      (NR_ServingCellConfigCommon_t *)servingcellconfigcommon;
+  reconfigurationWithSync->spCellConfigCommon = clone_ServingCellConfigCommon(servingcellconfigcommon);
   reconfigurationWithSync->newUE_Identity =
       (get_softmodem_params()->phy_test == 1) ? 0x1234 : (taus() & 0xffff);
   reconfigurationWithSync->t304 = NR_ReconfigurationWithSync__t304_ms2000;
