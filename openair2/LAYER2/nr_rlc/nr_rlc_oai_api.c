@@ -147,7 +147,7 @@ void mac_rlc_data_ind(const module_id_t  module_idP,
                       num_tb_t num_tbP,
                       crc_t *crcs_pP)
 {
-  if (module_idP != 0 || eNB_index != 0 || /*enb_flagP != 1 ||*/ MBMS_flagP != 0) {
+  if (eNB_index != 0 || /*enb_flagP != 1 ||*/ MBMS_flagP != 0) {
     LOG_E(RLC, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
     exit(1);
   }

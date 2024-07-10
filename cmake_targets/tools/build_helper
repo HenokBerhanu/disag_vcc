@@ -614,7 +614,6 @@ check_install_oai_software() {
       gcc \
       gcc-c++ \
       git \
-      atlas-devel \
       pkgconfig \
       libconfig-devel \
       libffi-devel \

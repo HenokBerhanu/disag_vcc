@@ -38,6 +38,7 @@
   {"dlsch-parallel",           CONFIG_HLP_DLSCH_PARA,          0,               .u8ptr=NULL,                              .defintval=0,                    TYPE_UINT8,    0}, \
   {"offset-divisor",           CONFIG_HLP_OFFSET_DIV,          0,               .uptr=&nrUE_params.ofdm_offset_divisor,   .defuintval=8,                   TYPE_UINT32,   0}, \
   {"max-ldpc-iterations",      CONFIG_HLP_MAX_LDPC_ITERATIONS, 0,               .iptr=&nrUE_params.max_ldpc_iterations,   .defuintval=8,                  TYPE_UINT8,    0}, \
+  {"ldpc-offload-enable",      CONFIG_HLP_LDPC_OFFLOAD,        PARAMFLAG_BOOL,  .iptr=&(nrUE_params.ldpc_offload_flag),   .defintval=0,                   TYPE_INT,      0}, \
   {"nr-dlsch-demod-shift",     CONFIG_HLP_DLSHIFT,             0,               .iptr=(int32_t *)&nr_dlsch_demod_shift,   .defintval=0,                    TYPE_INT,      0}, \
   {"V" ,                       CONFIG_HLP_VCD,                 PARAMFLAG_BOOL,  .iptr=&vcdflag,                           .defintval=0,                    TYPE_INT,      0}, \
   {"uecap_file",               CONFIG_HLP_UECAP_FILE,          0,               .strptr=&uecap_file,                      .defstrval="./uecap_ports1.xml", TYPE_STRING,   0}, \
@@ -62,6 +63,7 @@
   {"chest-time",                   CONFIG_HLP_CHESTTIME,       0,               .iptr=&(nrUE_params.chest_time),             .defintval=0,      TYPE_INT,      0}, \
   {"ue-timing-correction-disable", CONFIG_HLP_DISABLETIMECORR, PARAMFLAG_BOOL,  .iptr=&(nrUE_params.no_timing_correction),   .defintval=0,      TYPE_INT,      0}, \
   {"SLC",                          CONFIG_HLP_SLF,             0,               .u64ptr=&(sidelink_frequency[0][0]),         .defuintval=2600000000,TYPE_UINT64,0}, \
+  {"num-ues",                      NULL,                       0,               .iptr=&(NB_UE_INST),                         .defuintval=1,         TYPE_INT,0},   \
 }
 // clang-format on
 
@@ -81,6 +83,7 @@ typedef struct {
   int nb_antennas_tx;
   int            N_RB_DL;
   int            ssb_start_subcarrier;
+  int ldpc_offload_flag;
 } nrUE_params_t;
 extern uint64_t get_nrUE_optmask(void);
 extern uint64_t set_nrUE_optmask(uint64_t bitmask);
@@ -91,7 +94,7 @@ extern nrUE_params_t *get_nrUE_params(void);
 extern int setup_nr_ue_buffers(PHY_VARS_NR_UE **phy_vars_ue, openair0_config_t *openair0_cfg);
 extern void fill_ue_band_info(void);
 extern void init_NR_UE(int, char *, char *, char *);
-extern void init_NR_UE_threads(int);
+extern void init_NR_UE_threads(PHY_VARS_NR_UE *ue);
 extern void reset_opp_meas(void);
 extern void print_opp_meas(void);
 void start_oai_nrue_threads(void);

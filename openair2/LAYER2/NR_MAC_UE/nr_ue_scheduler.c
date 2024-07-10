@@ -1197,14 +1197,15 @@ void nr_ue_dl_scheduler(NR_UE_MAC_INST_t *mac, nr_downlink_indication_t *dl_info
   if (mac->state == UE_NOT_SYNC || mac->state == UE_DETACHING)
     return;
 
-  ue_dci_configuration(mac, dl_config, rx_frame, rx_slot);
-
-  if (mac->ul_time_alignment.ta_apply != no_ta)
-    schedule_ta_command(dl_config, &mac->ul_time_alignment);
   if (mac->state == UE_CONNECTED) {
     nr_schedule_csirs_reception(mac, rx_frame, rx_slot);
     nr_schedule_csi_for_im(mac, rx_frame, rx_slot);
   }
+
+  ue_dci_configuration(mac, dl_config, rx_frame, rx_slot);
+
+  if (mac->ul_time_alignment.ta_apply != no_ta)
+    schedule_ta_command(dl_config, &mac->ul_time_alignment);
 
   nr_scheduled_response_t scheduled_response = {.dl_config = dl_config,
                                                 .module_id = mac->ue_id,
@@ -2418,6 +2419,113 @@ uint8_t set_csirs_measurement_bitmap(NR_CSI_MeasConfig_t *csi_measconfig, NR_CSI
   return meas_bitmap;
 }
 
+void configure_csi_resource_mapping(fapi_nr_dl_config_csirs_pdu_rel15_t *csirs_config_pdu,
+                                    NR_CSI_RS_ResourceMapping_t  *resourceMapping,
+                                    uint32_t bwp_size,
+                                    uint32_t bwp_start)
+{
+  // According to last paragraph of TS 38.214 5.2.2.3.1
+  if (resourceMapping->freqBand.startingRB < bwp_start)
+    csirs_config_pdu->start_rb = bwp_start;
+  else
+    csirs_config_pdu->start_rb = resourceMapping->freqBand.startingRB;
+  if (resourceMapping->freqBand.nrofRBs > (bwp_start + bwp_size - csirs_config_pdu->start_rb))
+    csirs_config_pdu->nr_of_rbs = bwp_start + bwp_size - csirs_config_pdu->start_rb;
+  else
+    csirs_config_pdu->nr_of_rbs = resourceMapping->freqBand.nrofRBs;
+  AssertFatal(csirs_config_pdu->nr_of_rbs >= 24, "CSI-RS has %d RBs, but the minimum is 24\n", csirs_config_pdu->nr_of_rbs);
+
+  csirs_config_pdu->symb_l0 = resourceMapping->firstOFDMSymbolInTimeDomain;
+  if (resourceMapping->firstOFDMSymbolInTimeDomain2)
+    csirs_config_pdu->symb_l1 = *resourceMapping->firstOFDMSymbolInTimeDomain2;
+  csirs_config_pdu->cdm_type = resourceMapping->cdm_Type;
+
+  csirs_config_pdu->freq_density = resourceMapping->density.present;
+  if ((resourceMapping->density.present == NR_CSI_RS_ResourceMapping__density_PR_dot5)
+      && (resourceMapping->density.choice.dot5 == NR_CSI_RS_ResourceMapping__density__dot5_evenPRBs))
+    csirs_config_pdu->freq_density--;
+
+  switch(resourceMapping->frequencyDomainAllocation.present){
+    case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row1:
+      csirs_config_pdu->row = 1;
+      csirs_config_pdu->freq_domain = ((resourceMapping->frequencyDomainAllocation.choice.row1.buf[0]) >> 4) & 0x0f;
+      break;
+    case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row2:
+      csirs_config_pdu->row = 2;
+      csirs_config_pdu->freq_domain = (((resourceMapping->frequencyDomainAllocation.choice.row2.buf[1] >> 4) & 0x0f)
+                                       | ((resourceMapping->frequencyDomainAllocation.choice.row2.buf[0] << 4) & 0xff0));
+      break;
+    case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row4:
+      csirs_config_pdu->row = 4;
+      csirs_config_pdu->freq_domain = ((resourceMapping->frequencyDomainAllocation.choice.row4.buf[0]) >> 5) & 0x07;
+      break;
+    case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_other:
+      csirs_config_pdu->freq_domain = ((resourceMapping->frequencyDomainAllocation.choice.other.buf[0]) >> 2) & 0x3f;
+      // determining the row of table 7.4.1.5.3-1 in 38.211
+      switch (resourceMapping->nrofPorts) {
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p1:
+          AssertFatal(1 == 0, "Resource with 1 CSI port shouldn't be within other rows\n");
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p2:
+          csirs_config_pdu->row = 3;
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p4:
+          csirs_config_pdu->row = 5;
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p8:
+          if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
+            csirs_config_pdu->row = 8;
+          else {
+            int num_k = 0;
+            for (int k = 0; k < 6; k++)
+              num_k += (((csirs_config_pdu->freq_domain) >> k) & 0x01);
+            if (num_k == 4)
+              csirs_config_pdu->row = 6;
+            else
+              csirs_config_pdu->row = 7;
+          }
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p12:
+          if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
+            csirs_config_pdu->row = 10;
+          else
+            csirs_config_pdu->row = 9;
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p16:
+          if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
+            csirs_config_pdu->row = 12;
+          else
+            csirs_config_pdu->row = 11;
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p24:
+          if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
+            csirs_config_pdu->row = 14;
+          else {
+            if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm8_FD2_TD4)
+              csirs_config_pdu->row = 15;
+            else
+              csirs_config_pdu->row = 13;
+          }
+          break;
+        case NR_CSI_RS_ResourceMapping__nrofPorts_p32:
+          if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
+            csirs_config_pdu->row = 17;
+          else {
+            if (resourceMapping->cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm8_FD2_TD4)
+              csirs_config_pdu->row = 18;
+            else
+              csirs_config_pdu->row = 16;
+          }
+          break;
+        default:
+          AssertFatal(false, "Invalid number of ports in CSI-RS resource\n");
+      }
+      break;
+    default:
+      AssertFatal(false, "Invalid freqency domain allocation in CSI-RS resource\n");
+  }
+}
+
 void nr_schedule_csirs_reception(NR_UE_MAC_INST_t *mac, int frame, int slot)
 {
   if (!mac->sc_info.csi_MeasConfig)
@@ -2449,117 +2557,20 @@ void nr_schedule_csirs_reception(NR_UE_MAC_INST_t *mac, int frame, int slot)
     LOG_D(MAC,"Scheduling reception of CSI-RS in frame %d slot %d\n", frame, slot);
     fapi_nr_dl_config_csirs_pdu_rel15_t *csirs_config_pdu = &dl_config->dl_config_list[dl_config->number_pdus].csirs_config_pdu.csirs_config_rel15;
     csirs_config_pdu->measurement_bitmap = set_csirs_measurement_bitmap(csi_measconfig, csi_res_id);
-    NR_CSI_RS_ResourceMapping_t  resourceMapping = nzpcsi->resourceMapping;
     csirs_config_pdu->subcarrier_spacing = mu;
     csirs_config_pdu->cyclic_prefix = current_DL_BWP->cyclicprefix ? *current_DL_BWP->cyclicprefix : 0;
 
-    // According to last paragraph of TS 38.214 5.2.2.3.1
-    if (resourceMapping.freqBand.startingRB < bwp_start) {
-      csirs_config_pdu->start_rb = bwp_start;
-    } else {
-      csirs_config_pdu->start_rb = resourceMapping.freqBand.startingRB;
-    }
-    if (resourceMapping.freqBand.nrofRBs > (bwp_start + bwp_size - csirs_config_pdu->start_rb)) {
-      csirs_config_pdu->nr_of_rbs = bwp_start + bwp_size - csirs_config_pdu->start_rb;
-    } else {
-      csirs_config_pdu->nr_of_rbs = resourceMapping.freqBand.nrofRBs;
-    }
-    AssertFatal(csirs_config_pdu->nr_of_rbs >= 24, "CSI-RS has %d RBs, but the minimum is 24\n", csirs_config_pdu->nr_of_rbs);
-
     csirs_config_pdu->csi_type = 1; // NZP-CSI-RS
-    csirs_config_pdu->symb_l0 = resourceMapping.firstOFDMSymbolInTimeDomain;
-    if (resourceMapping.firstOFDMSymbolInTimeDomain2)
-      csirs_config_pdu->symb_l1 = *resourceMapping.firstOFDMSymbolInTimeDomain2;
-    csirs_config_pdu->cdm_type = resourceMapping.cdm_Type;
-    csirs_config_pdu->freq_density = resourceMapping.density.present;
-    if ((resourceMapping.density.present == NR_CSI_RS_ResourceMapping__density_PR_dot5)
-        && (resourceMapping.density.choice.dot5 == NR_CSI_RS_ResourceMapping__density__dot5_evenPRBs))
-      csirs_config_pdu->freq_density--;
+
     csirs_config_pdu->scramb_id = nzpcsi->scramblingID;
     csirs_config_pdu->power_control_offset = nzpcsi->powerControlOffset + 8;
     if (nzpcsi->powerControlOffsetSS)
       csirs_config_pdu->power_control_offset_ss = *nzpcsi->powerControlOffsetSS;
     else
       csirs_config_pdu->power_control_offset_ss = 1; // 0 dB
-    switch(resourceMapping.frequencyDomainAllocation.present){
-      case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row1:
-        csirs_config_pdu->row = 1;
-        csirs_config_pdu->freq_domain = ((resourceMapping.frequencyDomainAllocation.choice.row1.buf[0]) >> 4) & 0x0f;
-        break;
-      case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row2:
-        csirs_config_pdu->row = 2;
-        csirs_config_pdu->freq_domain = (((resourceMapping.frequencyDomainAllocation.choice.row2.buf[1] >> 4) & 0x0f)
-                                         | ((resourceMapping.frequencyDomainAllocation.choice.row2.buf[0] << 4) & 0xff0));
-        break;
-      case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_row4:
-        csirs_config_pdu->row = 4;
-        csirs_config_pdu->freq_domain = ((resourceMapping.frequencyDomainAllocation.choice.row4.buf[0]) >> 5) & 0x07;
-        break;
-      case NR_CSI_RS_ResourceMapping__frequencyDomainAllocation_PR_other:
-        csirs_config_pdu->freq_domain = ((resourceMapping.frequencyDomainAllocation.choice.other.buf[0]) >> 2) & 0x3f;
-        // determining the row of table 7.4.1.5.3-1 in 38.211
-        switch (resourceMapping.nrofPorts) {
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p1:
-            AssertFatal(1 == 0, "Resource with 1 CSI port shouldn't be within other rows\n");
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p2:
-            csirs_config_pdu->row = 3;
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p4:
-            csirs_config_pdu->row = 5;
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p8:
-            if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
-              csirs_config_pdu->row = 8;
-            else {
-              int num_k = 0;
-              for (int k = 0; k < 6; k++)
-                num_k += (((csirs_config_pdu->freq_domain) >> k) & 0x01);
-              if (num_k == 4)
-                csirs_config_pdu->row = 6;
-              else
-                csirs_config_pdu->row = 7;
-            }
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p12:
-            if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
-              csirs_config_pdu->row = 10;
-            else
-              csirs_config_pdu->row = 9;
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p16:
-            if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
-              csirs_config_pdu->row = 12;
-            else
-              csirs_config_pdu->row = 11;
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p24:
-            if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
-              csirs_config_pdu->row = 14;
-            else {
-              if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm8_FD2_TD4)
-                csirs_config_pdu->row = 15;
-              else
-                csirs_config_pdu->row = 13;
-            }
-            break;
-          case NR_CSI_RS_ResourceMapping__nrofPorts_p32:
-            if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm4_FD2_TD2)
-              csirs_config_pdu->row = 17;
-            else {
-              if (resourceMapping.cdm_Type == NR_CSI_RS_ResourceMapping__cdm_Type_cdm8_FD2_TD4)
-                csirs_config_pdu->row = 18;
-              else
-                csirs_config_pdu->row = 16;
-            }
-            break;
-          default:
-            AssertFatal(1 == 0, "Invalid number of ports in CSI-RS resource\n");
-        }
-        break;
-      default:
-        AssertFatal(1 == 0, "Invalid freqency domain allocation in CSI-RS resource\n");
-    }
+
+    configure_csi_resource_mapping(csirs_config_pdu, &nzpcsi->resourceMapping, bwp_size, bwp_start);
+
     dl_config->dl_config_list[dl_config->number_pdus].pdu_type = FAPI_NR_DL_CONFIG_TYPE_CSI_RS;
     dl_config->number_pdus += 1;
   }

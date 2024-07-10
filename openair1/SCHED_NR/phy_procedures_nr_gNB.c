@@ -276,10 +276,12 @@ static void nr_postDecode(PHY_VARS_gNB *gNB, notifiedFIFO_elt_t *req)
   bool decodeSuccess = (rdata->decodeIterations <= rdata->decoderParms.numMaxIter);
   ulsch_harq->processedSegments++;
   LOG_D(PHY,
-        "processing result of segment: %d, processed %d/%d\n",
+        "processing result of segment: %d, processed %d/%d, %s\n",
         rdata->segment_r,
         ulsch_harq->processedSegments,
-        rdata->nbSegments);
+        rdata->nbSegments,
+        decodeSuccess ? "Decoded Successfully" : "Decoding Unsuccessful");
+
   if (decodeSuccess) {
     memcpy(ulsch_harq->b + rdata->offset, ulsch_harq->c[r], rdata->Kr_bytes - (ulsch_harq->F >> 3) - ((ulsch_harq->C > 1) ? 3 : 0));
 
@@ -466,11 +468,16 @@ void nr_fill_indication(PHY_VARS_gNB *gNB, int frame, int slot_rx, int ULSCH_id,
 
   // put timing advance command in 0..63 range
   timing_advance_update += 31;
+  timing_advance_update = max(timing_advance_update, 0);
+  timing_advance_update = min(timing_advance_update, 63);
 
-  if (timing_advance_update < 0)  timing_advance_update = 0;
-  if (timing_advance_update > 63) timing_advance_update = 63;
-
-  if (crc_flag == 0) LOG_D(PHY, "%d.%d : Received PUSCH : Estimated timing advance PUSCH is  = %d, timing_advance_update is %d \n", frame,slot_rx,sync_pos,timing_advance_update);
+  if (crc_flag == 0)
+    LOG_D(PHY,
+          "%d.%d : Received PUSCH : Estimated timing advance PUSCH is  = %d, timing_advance_update is %d \n",
+          frame,
+          slot_rx,
+          sync_pos,
+          timing_advance_update);
 
   // estimate UL_CQI for MAC
   int SNRtimes10 =

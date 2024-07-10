@@ -52,7 +52,6 @@ RUN apt-get update && \
         libboost-program-options1.74.0 \
         tzdata \
         libblas3 \
-        libatlas3-base \
         libconfig9 \
         openssl \
         net-tools \
@@ -103,7 +102,19 @@ COPY --from=gnb-base /usr/local/lib/uhd/utils/uhd_images_downloader.py /opt/oai-
 
 RUN /bin/bash -c "ln -s /usr/local/lib/liboai_usrpdevif.so /usr/local/lib/liboai_device.so" && \
     ldconfig && \
-    ldd /opt/oai-gnb/bin/nr-softmodem
+    echo "---- ldd on nr-softmodem ----" && \
+    ldd /opt/oai-gnb/bin/nr-softmodem && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd /usr/local/lib/liboai_eth_transpro.so \
+        /usr/local/lib/librfsimulator.so \
+        /usr/local/lib/liboai_usrpdevif.so \
+        /usr/local/lib/libcoding.so \
+        /usr/local/lib/libparams_libconfig.so \
+        /usr/local/lib/libdfts.so \
+        /usr/local/lib/libldpc*.so \
+        /usr/local/lib/libtelnetsrv.so \
+        /usr/local/lib/libtelnetsrv_ci.so \
+        /usr/local/lib/libuhd.so.4.4.0
 
 WORKDIR /opt/oai-gnb
 #EXPOSE 2152/udp  # S1U, GTP/UDP

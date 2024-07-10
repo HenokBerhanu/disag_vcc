@@ -130,7 +130,7 @@ NR_UE_MAC_INST_t *nr_l2_init_ue(int nb_inst)
   AssertFatal(nr_ue_mac_inst, "Couldn't allocate %d instances of MAC module\n", nb_inst);
 
   for (int j = 0; j < nb_inst; j++) {
-    NR_UE_MAC_INST_t *mac = get_mac_inst(j);
+    NR_UE_MAC_INST_t *mac = &nr_ue_mac_inst[j];
     mac->ue_id = j;
     nr_ue_init_mac(mac);
     nr_ue_mac_default_configs(mac);

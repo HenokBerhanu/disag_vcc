@@ -119,7 +119,7 @@ static bool nr_ue_postDecode(PHY_VARS_NR_UE *phy_vars_ue,
           LOG_D(PHY, "DLSCH received nok \n");
           return true; //stop
         }
-	const int sz=A/8;
+	const int sz=A / 8;
         if (b[sz] == 0 && b[sz + 1] == 0) { // We search only a reccuring OAI error that propagates all 0 packets with a 0 CRC, so we
                                           // do the check only if the 2 first bytes of the CRC are 0 (it can be CRC16 or CRC24)
           int i = 0;

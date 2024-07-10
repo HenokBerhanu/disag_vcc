@@ -151,16 +151,13 @@ int nr_ulsch_encoding(PHY_VARS_NR_UE *ue,
   start_meas(&ue->ulsch_ldpc_encoding_stats);
   if (ldpc_interface_offload.LDPCencoder) {
     for (int j = 0; j < impp.n_segments; j++) {
-      impp.E = nr_get_E(G, impp.n_segments, impp.Qm, ulsch->pusch_pdu.nrOfLayers, j);
-      uint8_t *f = harq_process->f + r_offset;
-      ldpc_interface_offload.LDPCencoder(&harq_process->c[j], &f, &impp);
-      r_offset += impp.E;
+      impp.perCB[j].E_cb = nr_get_E(G, impp.n_segments, impp.Qm, ulsch->pusch_pdu.nrOfLayers, j);
     }
+    ldpc_interface_offload.LDPCencoder(harq_process->c, &harq_process->f, &impp);
   } else {
     if (ulsch->pusch_pdu.pusch_data.new_data_indicator) {
       for (int j = 0; j < (impp.n_segments / 8 + 1); j++) {
         impp.macro_num = j;
-        impp.E = nr_get_E(G, impp.n_segments, impp.Qm, ulsch->pusch_pdu.nrOfLayers, j);
         impp.Kr = impp.K;
         ldpc_interface.LDPCencoder(harq_process->c, harq_process->d, &impp);
       }
@@ -191,7 +188,7 @@ int nr_ulsch_encoding(PHY_VARS_NR_UE *ue,
             ulsch->pusch_pdu.pusch_data.rv_index);
 
       ///////////////////////// d---->| Rate matching bit selection |---->e /////////////////////////
-      impp.E = nr_get_E(G, impp.n_segments, impp.Qm, ulsch->pusch_pdu.nrOfLayers, r);
+      impp.perCB[r].E_cb = nr_get_E(G, impp.n_segments, impp.Qm, ulsch->pusch_pdu.nrOfLayers, r);
 
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_NR_RATE_MATCHING_LDPC, VCD_FUNCTION_IN);
       start_meas(&ue->ulsch_rate_matching_stats);
@@ -204,7 +201,8 @@ int nr_ulsch_encoding(PHY_VARS_NR_UE *ue,
                                 impp.F,
                                 impp.Kr - impp.F - 2 * impp.Zc,
                                 impp.rv,
-                                impp.E) == -1)
+                                impp.perCB[r].E_cb)
+          == -1)
         return -1;
 
       stop_meas(&ue->ulsch_rate_matching_stats);
@@ -218,10 +216,7 @@ int nr_ulsch_encoding(PHY_VARS_NR_UE *ue,
 ///////////////////////// e---->| Rate matching bit interleaving |---->f /////////////////////////
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_NR_INTERLEAVING_LDPC, VCD_FUNCTION_IN);
       start_meas(&ue->ulsch_interleaving_stats);
-      nr_interleaving_ldpc(impp.E,
-                           impp.Qm,
-                           harq_process->e + r_offset,
-                           harq_process->f + r_offset);
+      nr_interleaving_ldpc(impp.perCB[r].E_cb, impp.Qm, harq_process->e + r_offset, harq_process->f + r_offset);
       stop_meas(&ue->ulsch_interleaving_stats);
     
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_NR_INTERLEAVING_LDPC, VCD_FUNCTION_OUT);
@@ -231,7 +226,7 @@ int nr_ulsch_encoding(PHY_VARS_NR_UE *ue,
       if (r == impp.n_segments - 1)
         write_output("enc_output.m","enc", harq_process->f, G, 1, 4);
 #endif
-      r_offset += impp.E;
+      r_offset += impp.perCB[r].E_cb;
     }
   }
   ///////////////////////////////////////////////////////////////////////////////////////////////

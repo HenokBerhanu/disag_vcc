@@ -47,7 +47,7 @@ RUN dnf update -y && \
     dnf install -y \
         lksctp-tools \
         tzdata \
-        atlas \
+        libgfortran \
         hostname \
         sudo \
         procps-ng \
@@ -94,7 +94,25 @@ COPY --from=phy-sim-build \
     /oai-ran/cmake_targets/ran_build/build/libldpc*.so \
     /usr/local/lib/
 
-RUN ldconfig
+RUN ldconfig && \
+    echo "---- ldd on physim executables ----" && \
+    ldd /opt/oai-physim/bin/dlsim \
+        /opt/oai-physim/bin/nr_dlsim \
+        /opt/oai-physim/bin/nr_prachsim \
+        /opt/oai-physim/bin/nr_ulschsim \
+        /opt/oai-physim/bin/polartest \
+        /opt/oai-physim/bin/ulsim \
+        /opt/oai-physim/bin/ldpctest \
+        /opt/oai-physim/bin/nr_dlschsim \
+        /opt/oai-physim/bin/nr_pbchsim \
+        /opt/oai-physim/bin/nr_psbchsim \
+        /opt/oai-physim/bin/nr_pucchsim \
+        /opt/oai-physim/bin/nr_ulsim \
+        /opt/oai-physim/bin/smallblocktest && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd /usr/local/lib/libcoding.so \
+        /usr/local/lib/libdfts.so \
+        /usr/local/lib/libldpc*.so
 
 # Copy some executables
 WORKDIR /usr/bin/

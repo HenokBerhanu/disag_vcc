@@ -49,6 +49,13 @@ typedef enum {
 } nr_pdcp_entity_type_t;
 
 typedef struct {
+  int integrity_algorithm;
+  int ciphering_algorithm;
+  uint8_t integrity_key[NR_K_KEY_SIZE];
+  uint8_t ciphering_key[NR_K_KEY_SIZE];
+} nr_pdcp_entity_security_keys_and_algos_t;
+
+typedef struct {
   //nr_pdcp_entity_type_t mode;
   /* PDU stats */
   /* TX */
@@ -91,19 +98,15 @@ typedef struct nr_pdcp_entity_t {
   void (*delete_entity)(struct nr_pdcp_entity_t *entity);
   void (*release_entity)(struct nr_pdcp_entity_t *entity);
   void (*suspend_entity)(struct nr_pdcp_entity_t *entity);
-  void (*reestablish_entity)(struct nr_pdcp_entity_t *entity);
+  void (*reestablish_entity)(struct nr_pdcp_entity_t *entity,
+                             const nr_pdcp_entity_security_keys_and_algos_t *parameters);
   void (*get_stats)(struct nr_pdcp_entity_t *entity, nr_pdcp_statistics_t *out);
 
-  /* set_security: pass -1 to integrity_algorithm / ciphering_algorithm
-   *               to keep the current algorithm
-   *               pass NULL to integrity_key / ciphering_key
-   *               to keep the current key
+  /* set_security: pass -1 to parameters->integrity_algorithm / parameters->ciphering_algorithm
+   *               to keep the corresponding current algorithm and key
    */
   void (*set_security)(struct nr_pdcp_entity_t *entity,
-                       int integrity_algorithm,
-                       char *integrity_key,
-                       int ciphering_algorithm,
-                       char *ciphering_key);
+                       const nr_pdcp_entity_security_keys_and_algos_t *parameters);
 
   /* check_integrity is used by RRC */
   bool (*check_integrity)(struct nr_pdcp_entity_t *entity,
@@ -148,10 +151,7 @@ typedef struct nr_pdcp_entity_t {
   /* security */
   int has_ciphering;
   int has_integrity;
-  int ciphering_algorithm;
-  int integrity_algorithm;
-  unsigned char ciphering_key[16];
-  unsigned char integrity_key[16];
+  nr_pdcp_entity_security_keys_and_algos_t security_keys_and_algos;
   stream_security_context_t *security_context;
   void (*cipher)(stream_security_context_t *security_context,
                  unsigned char *buffer, int length,
@@ -196,10 +196,7 @@ nr_pdcp_entity_t *new_nr_pdcp_entity(
     int sn_size,
     int t_reordering,
     int discard_timer,
-    int ciphering_algorithm,
-    int integrity_algorithm,
-    unsigned char *ciphering_key,
-    unsigned char *integrity_key);
+    const nr_pdcp_entity_security_keys_and_algos_t *security_parameters);
 
 /* Get maximum PDCP PDU size */
 int nr_max_pdcp_pdu_size(sdu_size_t sdu_size);

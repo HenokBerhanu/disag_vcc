@@ -242,7 +242,7 @@ bool nr_ul_preprocessor_phytest(module_id_t module_id, frame_t frame, sub_frame_
               temp_tda,
               tdaList->list.count);
   int K2 = get_K2(tdaList, temp_tda, mu, scc);
-  const int sched_frame = frame + (slot + K2) / nr_slots_per_frame[mu];
+  const int sched_frame = (frame + (slot + K2) / nr_slots_per_frame[mu]) % MAX_FRAME_NUMBER;
   const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
   const int tda = get_ul_tda(nr_mac, scc, sched_frame, sched_slot);
   if (tda < 0)
@@ -276,7 +276,7 @@ bool nr_ul_preprocessor_phytest(module_id_t module_id, frame_t frame, sub_frame_
   if (!tda_info.valid_tda)
     return false;
   sched_ctrl->sched_pusch.tda_info = tda_info;
-
+  sched_ctrl->sched_pusch.time_domain_allocation = tda;
   const int buffer_index = ul_buffer_index(sched_frame, sched_slot, mu, nr_mac->vrb_map_UL_size);
   uint16_t *vrb_map_UL = &nr_mac->common_channels[CC_id].vrb_map_UL[buffer_index * MAX_BWP_SIZE];
   for (int i = rbStart; i < rbStart + rbSize; ++i) {

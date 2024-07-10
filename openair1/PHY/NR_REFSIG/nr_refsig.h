@@ -61,6 +61,21 @@ int nr_pusch_dmrs_rx(PHY_VARS_gNB *gNB,
                      uint32_t re_offset,
                      uint8_t dmrs_type);
 
+void nr_generate_csi_rs(const NR_DL_FRAME_PARMS *frame_parms,
+                        int32_t **dataF,
+                        const int16_t amp,
+                        nr_csi_info_t *nr_csi_info,
+                        const nfapi_nr_dl_tti_csi_rs_pdu_rel15_t *csi_params,
+                        const int slot,
+                        uint8_t *N_cdm_groups,
+                        uint8_t *CDM_group_size,
+                        uint8_t *k_prime,
+                        uint8_t *l_prime,
+                        uint8_t *N_ports,
+                        uint8_t *j_cdm,
+                        uint8_t *k_overline,
+                        uint8_t *l_overline);
+
 void init_scrambling_luts(void);
 void nr_generate_modulation_table(void);
 
