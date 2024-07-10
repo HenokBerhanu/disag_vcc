@@ -872,14 +872,21 @@ void nr_rrc_mac_config_req_mib(module_id_t module_id,
   nr_ue_decode_mib(mac, cc_idP);
 }
 
-static void setup_puschpowercontrol(NR_PUSCH_PowerControl_t *source, NR_PUSCH_PowerControl_t *target)
+static void setup_puschpowercontrol(NR_UE_MAC_INST_t *mac, NR_PUSCH_PowerControl_t *source, NR_PUSCH_PowerControl_t *target)
 {
   UPDATE_IE(target->tpc_Accumulation, source->tpc_Accumulation, long);
   UPDATE_IE(target->msg3_Alpha, source->msg3_Alpha, NR_Alpha_t);
   if (source->p0_NominalWithoutGrant)
     UPDATE_IE(target->p0_NominalWithoutGrant, source->p0_NominalWithoutGrant, long);
-  if (source->p0_AlphaSets)
+  if (source->p0_AlphaSets) {
     UPDATE_IE(target->p0_AlphaSets, source->p0_AlphaSets, struct NR_PUSCH_PowerControl__p0_AlphaSets);
+    if (target->p0_AlphaSets->list.array[0]->alpha) {
+      mac->f_b_f_c = 0;
+    }
+    if (target->p0_AlphaSets->list.array[0]->p0) {
+      mac->f_b_f_c = 0;
+    }
+  }
   UPDATE_IE(target->twoPUSCH_PC_AdjustmentStates, source->twoPUSCH_PC_AdjustmentStates, long);
   UPDATE_IE(target->deltaMCS, source->deltaMCS, long);
   if (source->pathlossReferenceRSToReleaseList) {
@@ -901,6 +908,7 @@ static void setup_puschpowercontrol(NR_PUSCH_PowerControl_t *source, NR_PUSCH_Po
                         sri_PUSCH_PowerControlId);
   }
   if (source->sri_PUSCH_MappingToAddModList) {
+    LOG_E(NR_MAC, "NR_SRI_PUSCH_PowerControl not implemented, power control will not work as intended\n");
     if (!target->sri_PUSCH_MappingToAddModList)
       target->sri_PUSCH_MappingToAddModList = calloc(1, sizeof(*target->sri_PUSCH_MappingToAddModList));
     ADDMOD_IE_FROMLIST(source->sri_PUSCH_MappingToAddModList,
@@ -910,7 +918,7 @@ static void setup_puschpowercontrol(NR_PUSCH_PowerControl_t *source, NR_PUSCH_Po
   }
 }
 
-static void setup_puschconfig(NR_PUSCH_Config_t *source, NR_PUSCH_Config_t *target)
+static void setup_puschconfig(NR_UE_MAC_INST_t *mac, NR_PUSCH_Config_t *source, NR_PUSCH_Config_t *target)
 {
   UPDATE_IE(target->dataScramblingIdentityPUSCH, source->dataScramblingIdentityPUSCH, long);
   UPDATE_IE(target->txConfig, source->txConfig, long);
@@ -927,7 +935,7 @@ static void setup_puschconfig(NR_PUSCH_Config_t *source, NR_PUSCH_Config_t *targ
   if (source->pusch_PowerControl) {
     if (!target->pusch_PowerControl)
       target->pusch_PowerControl = calloc(1, sizeof(*target->pusch_PowerControl));
-    setup_puschpowercontrol(source->pusch_PowerControl, target->pusch_PowerControl);
+    setup_puschpowercontrol(mac, source->pusch_PowerControl, target->pusch_PowerControl);
   }
   UPDATE_IE(target->frequencyHopping, source->frequencyHopping, long);
   if (source->frequencyHoppingOffsetLists)
@@ -1415,7 +1423,7 @@ static void configure_dedicated_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP
       if (ul_dedicated->pusch_Config->present == NR_SetupRelease_PUSCH_Config_PR_setup) {
         if (!bwp->pusch_Config)
           bwp->pusch_Config = calloc(1, sizeof(*bwp->pusch_Config));
-        setup_puschconfig(ul_dedicated->pusch_Config->choice.setup, bwp->pusch_Config);
+        setup_puschconfig(mac, ul_dedicated->pusch_Config->choice.setup, bwp->pusch_Config);
       }
     }
     if(ul_dedicated->srs_Config) {
