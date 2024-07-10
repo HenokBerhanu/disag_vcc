@@ -3040,7 +3040,7 @@ static NR_ServingCellConfigCommon_t *clone_ServingCellConfigCommon(const NR_Serv
 }
 
 NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigCommon_t *servingcellconfigcommon,
-                                                     NR_ServingCellConfig_t *servingcellconfigdedicated,
+                                                     const NR_ServingCellConfig_t *servingcellconfigdedicated,
                                                      const NR_UE_NR_Capability_t *uecap,
                                                      int scg_id,
                                                      int servCellIndex,
@@ -3058,7 +3058,6 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
     LOG_E(RRC, "No UE Capabilities available when programming default CellGroup in NSA\n");
 
   uint64_t bitmap = get_ssb_bitmap(servingcellconfigcommon);
-  // See comment at the end of this function regarding ServingCellConfig
 
   NR_CellGroupConfig_t *secondaryCellGroup = calloc(1, sizeof(*secondaryCellGroup));
   secondaryCellGroup->cellGroupId = scg_id;
@@ -3361,11 +3360,6 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->dummy1 = NULL;
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->pathlossReferenceLinking = NULL;
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->servingCellMO = NULL;
-
-  // this is pure evil: We should only pass in a ServingCellConfig, without
-  // modifying it! TODO: make a separate function that creates a
-  // ServingCellConfig, and reuse it here
-  *servingcellconfigdedicated = *secondaryCellGroup->spCellConfig->spCellConfigDedicated;
 
   if (LOG_DEBUGFLAG(DEBUG_ASN1)) {
     xer_fprint(stdout, &asn_DEF_NR_SpCellConfig, (void *)secondaryCellGroup->spCellConfig);
