@@ -32,16 +32,14 @@ void nr_codeword_scrambling(uint8_t *in,
                             uint32_t* out)
 {
   uint32_t x1;
-  uint32_t x2 = (n_RNTI<<15) + (q<<14) + Nid;
-  uint32_t s = 0;
-
-  s=lte_gold_generic(&x1, &x2, 1);
-  for (int i=0; i<((size>>5)+((size&0x1f) > 0 ? 1 : 0)); i++) {
+  uint32_t x2 = (n_RNTI << 15) + (q << 14) + Nid;
+  uint32_t s = lte_gold_generic(&x1, &x2, 1);
+  for (int i = 0; i < ((size >> 5) + ((size & 0x1f) > 0 ? 1 : 0)); i++) {
     simde__m256i c = ((simde__m256i*)in)[i];
-    uint32_t in32 = simde_mm256_movemask_epi8(simde_mm256_slli_epi16(c,7));
-    out[i]=(in32^s);
+    uint32_t in32 = simde_mm256_movemask_epi8(simde_mm256_slli_epi16(c, 7));
+    out[i] = (in32 ^ s);
     DEBUG_SCRAMBLING(LOG_D(PHY, "in[%d] %x => %x\n", i, in32, out[i]));
-    s=lte_gold_generic(&x1, &x2, 0);
+    s = lte_gold_generic(&x1, &x2, 0);
   }
 }
 
