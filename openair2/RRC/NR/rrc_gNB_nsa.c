@@ -155,10 +155,6 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   }
 
   // NR RRCReconfiguration
-  UE->reconfig = calloc(1, sizeof(NR_RRCReconfiguration_t));
-  memset((void *)UE->reconfig, 0, sizeof(NR_RRCReconfiguration_t));
-  UE->reconfig->rrc_TransactionIdentifier = 0;
-  UE->reconfig->criticalExtensions.present = NR_RRCReconfiguration__criticalExtensions_PR_rrcReconfiguration;
   if (get_softmodem_params()->phy_test == 1 || get_softmodem_params()->do_ra == 1 || get_softmodem_params()->sa == 1){
     UE->rb_config = get_default_rbconfig(10 /* EPS bearer ID */, 1 /* drb ID */, NR_CipheringAlgorithm_nea0, NR_SecurityConfig__keyToUse_master);
   } else {
@@ -257,10 +253,13 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   AssertFatal(UE->secondaryCellGroup != NULL, "out of memory\n");
   xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, UE->secondaryCellGroup);
 
-  UE->reconfig->criticalExtensions.choice.rrcReconfiguration = get_default_reconfig(UE->secondaryCellGroup);
+  NR_RRCReconfiguration_t *reconfig = calloc(1, sizeof(NR_RRCReconfiguration_t));
+  reconfig->rrc_TransactionIdentifier = 0;
+  reconfig->criticalExtensions.present = NR_RRCReconfiguration__criticalExtensions_PR_rrcReconfiguration;
+  reconfig->criticalExtensions.choice.rrcReconfiguration = get_default_reconfig(UE->secondaryCellGroup);
   UE->rnti = UE->secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
 
-  NR_CG_Config_t *CG_Config = generate_CG_Config(UE->reconfig, UE->rb_config);
+  NR_CG_Config_t *CG_Config = generate_CG_Config(reconfig, UE->rb_config);
 
   if(m!=NULL) {
     uint8_t inde_list[m->nb_e_rabs_tobeadded];
