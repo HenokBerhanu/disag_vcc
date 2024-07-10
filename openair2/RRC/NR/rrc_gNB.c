@@ -487,10 +487,6 @@ static void rrc_gNB_process_RRCSetupComplete(const protocol_ctxt_t *const ctxt_p
   AssertFatal(ctxt_pP->rntiMaybeUEid == ue_context_pP->ue_context.rrc_ue_id, "logic bug: inconsistent IDs, must use CU UE ID!\n");
 
   rrc_gNB_send_NGAP_NAS_FIRST_REQ(ctxt_pP, ue_context_pP, rrcSetupComplete);
-
-#ifdef E2_AGENT
-  signal_rrc_state_changed_to(&ue_context_pP->ue_context, RC_SM_RRC_CONNECTED);
-#endif
 }
 
 //-----------------------------------------------------------------------------
