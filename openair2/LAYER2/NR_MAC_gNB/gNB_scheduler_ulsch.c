@@ -40,7 +40,7 @@
 
 //#define SRS_IND_DEBUG
 
-static rnti_t lcid_crnti_lookahead(uint8_t *pdu, int pdu_len)
+static rnti_t lcid_crnti_lookahead(uint8_t *pdu, uint32_t pdu_len)
 {
   uint16_t mac_len = 0;
   uint16_t mac_subheader_len = 0;
@@ -200,7 +200,7 @@ static int nr_process_mac_pdu(instance_t module_idP,
                               frame_t frameP,
                               sub_frame_t slot,
                               uint8_t *pduP,
-                              int pdu_len,
+                              uint32_t pdu_len,
                               const int8_t harq_pid)
 {
 
