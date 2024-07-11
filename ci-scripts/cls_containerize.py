@@ -58,7 +58,7 @@ import cls_oaicitest
 # Helper functions used here and in other classes
 # (e.g., cls_cluster.py)
 #-----------------------------------------------------------
-IMAGES = ['oai-enb', 'oai-lte-ru', 'oai-lte-ue', 'oai-gnb', 'oai-nr-cuup', 'oai-gnb-aw2s', 'oai-nr-ue', 'oai-gnb-asan', 'oai-nr-ue-asan', 'oai-nr-cuup-asan', 'oai-gnb-aerial']
+IMAGES = ['oai-enb', 'oai-lte-ru', 'oai-lte-ue', 'oai-gnb', 'oai-nr-cuup', 'oai-gnb-aw2s', 'oai-nr-ue', 'oai-gnb-asan', 'oai-nr-ue-asan', 'oai-nr-cuup-asan', 'oai-gnb-aerial', 'oai-gnb-fhi72']
 
 def CreateWorkspace(sshSession, sourcePath, ranRepository, ranCommitID, ranTargetBranch, ranAllowMerge):
 	if ranCommitID == '':
@@ -319,6 +319,8 @@ class Containerize():
 				imageNames.append(('oai-gnb', 'gNB', 'oai-gnb-asan', '--build-arg "BUILD_OPTION=--sanitize"'))
 				imageNames.append(('oai-nr-ue', 'nrUE', 'oai-nr-ue-asan', '--build-arg "BUILD_OPTION=--sanitize"'))
 				imageNames.append(('oai-nr-cuup', 'nr-cuup', 'oai-nr-cuup-asan', '--build-arg "BUILD_OPTION=--sanitize"'))
+				imageNames.append(('ran-build-fhi72', 'build.fhi72', 'ran-build-fhi72', ''))
+				imageNames.append(('oai-gnb', 'gNB.fhi72', 'oai-gnb-fhi72', ''))
 		result = re.search('build_cross_arm64', self.imageKind)
 		if result is not None:
 			self.dockerfileprefix = '.ubuntu22.cross-arm64'
@@ -409,6 +411,8 @@ class Containerize():
 			# target images should use the proper ran-build image
 			if image != 'ran-build' and "-asan" in name:
 				cmd.run(f'sed -i -e "s#ran-build:latest#ran-build-asan:{imageTag}#" docker/Dockerfile.{pattern}{self.dockerfileprefix}')
+			elif "fhi72" in name:
+				cmd.run(f'sed -i -e "s#ran-build-fhi72:latest#ran-build-fhi72:{imageTag}#" docker/Dockerfile.{pattern}{self.dockerfileprefix}')
 			elif image != 'ran-build':
 				cmd.run(f'sed -i -e "s#ran-build:latest#ran-build:{imageTag}#" docker/Dockerfile.{pattern}{self.dockerfileprefix}')
 			if image == 'oai-gnb-aerial':
@@ -445,7 +449,7 @@ class Containerize():
 			cmd.run(f"{self.cli} image prune --force")
 
 		# Remove all intermediate build images and clean up
-		cmd.run(f"{self.cli} image rm ran-build:{imageTag} ran-build-asan:{imageTag}")
+		cmd.run(f"{self.cli} image rm ran-build:{imageTag} ran-build-asan:{imageTag} ran-build-fhi72:{imageTag} || true")
 		cmd.run(f"{self.cli} volume prune --force")
 
 		# Remove some cached artifacts to prevent out of diskspace problem
