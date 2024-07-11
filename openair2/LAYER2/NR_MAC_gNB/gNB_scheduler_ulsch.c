@@ -725,10 +725,10 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
 #if defined(ENABLE_MAC_PAYLOAD_DEBUG)
 
     LOG_I(NR_MAC, "Printing received UL MAC payload at gNB side: %d \n");
-    for (int i = 0; i < sdu_lenP ; i++) {
-      //harq_process_ul_ue->a[i] = (unsigned char) rand();
-      //printf("a[%d]=0x%02x\n",i,harq_process_ul_ue->a[i]);
-      printf("%02x ",(unsigned char)sduP[i]);
+    for (uint32_t i = 0; i < sdu_lenP; i++) {
+      // harq_process_ul_ue->a[i] = (unsigned char) rand();
+      // printf("a[%d]=0x%02x\n",i,harq_process_ul_ue->a[i]);
+      printf("%02x ", (unsigned char)sduP[i]);
     }
     printf("\n");
 
@@ -770,8 +770,8 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
   } else if (sduP) {
 
     bool no_sig = true;
-    for (int k = 0; k < sdu_lenP; k++) {
-      if(sduP[k] != 0) {
+    for (uint32_t k = 0; k < sdu_lenP; k++) {
+      if (sduP[k] != 0) {
         no_sig = false;
         break;
       }
@@ -856,7 +856,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       } else {
         LOG_A(NR_MAC, "[RAPROC] RA-Msg3 received (sdu_lenP %d)\n", sdu_lenP);
         LOG_D(NR_MAC, "[RAPROC] Received Msg3:\n");
-        for (int k = 0; k < sdu_lenP; k++) {
+        for (uint32_t k = 0; k < sdu_lenP; k++) {
           LOG_D(NR_MAC, "(%i): 0x%x\n", k, sduP[k]);
         }
 
