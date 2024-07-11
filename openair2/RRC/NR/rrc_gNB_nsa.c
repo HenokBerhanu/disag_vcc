@@ -241,21 +241,15 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   // CU should send a UE Context Setup Request to request the creating of the
   // MAC Context
   NR_ServingCellConfigCommon_t *sccc = RC.nrmac[0]->common_channels[0].ServingCellConfigCommon;
-  UE->secondaryCellGroup = get_default_secondaryCellGroup(sccc,
-                                                          scc,
-                                                          UE->UE_Capability_nr,
-                                                          1,
-                                                          1,
-                                                          configuration,
-                                                          ue_context_p->ue_context.rrc_ue_id);
-  AssertFatal(UE->secondaryCellGroup != NULL, "out of memory\n");
-  xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, UE->secondaryCellGroup);
+  NR_CellGroupConfig_t *secondaryCellGroup =
+      get_default_secondaryCellGroup(sccc, scc, UE->UE_Capability_nr, 1, 1, configuration, ue_context_p->ue_context.rrc_ue_id);
+  AssertFatal(secondaryCellGroup != NULL, "out of memory\n");
 
   NR_RRCReconfiguration_t *reconfig = calloc(1, sizeof(NR_RRCReconfiguration_t));
   reconfig->rrc_TransactionIdentifier = 0;
   reconfig->criticalExtensions.present = NR_RRCReconfiguration__criticalExtensions_PR_rrcReconfiguration;
-  reconfig->criticalExtensions.choice.rrcReconfiguration = get_default_reconfig(UE->secondaryCellGroup);
-  UE->rnti = UE->secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
+  reconfig->criticalExtensions.choice.rrcReconfiguration = get_default_reconfig(secondaryCellGroup);
+  UE->rnti = secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
 
   NR_CG_Config_t *CG_Config = generate_CG_Config(reconfig, UE->rb_config);
 
@@ -328,7 +322,7 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
       LOG_W(RRC, "No E-RAB to be added received from SgNB Addition Request message \n");
 
     X2AP_ENDC_SGNB_ADDITION_REQ_ACK(msg).MeNB_ue_x2_id = m->ue_x2_id;
-    X2AP_ENDC_SGNB_ADDITION_REQ_ACK(msg).SgNB_ue_x2_id = UE->secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
+    X2AP_ENDC_SGNB_ADDITION_REQ_ACK(msg).SgNB_ue_x2_id = secondaryCellGroup->spCellConfig->reconfigurationWithSync->newUE_Identity;
     //X2AP_ENDC_SGNB_ADDITION_REQ_ACK(msg).rrc_buffer_size = CG_Config_size; //Need to verify correct value for the buffer_size
     // Send to X2 entity to transport to MeNB
     asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_CG_Config,
@@ -355,15 +349,14 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   bool ret = false;
   if (get_softmodem_params()->phy_test) {
     // phytest mode: we don't set up RA, etc
-    ret = nr_mac_add_test_ue(RC.nrmac[rrc->module_id], du_ue_id, ue_context_p->ue_context.secondaryCellGroup);
+    ret = nr_mac_add_test_ue(RC.nrmac[rrc->module_id], du_ue_id, secondaryCellGroup);
   } else {
-    NR_CellGroupConfig_t *secondaryCellGroup = ue_context_p->ue_context.secondaryCellGroup;
     DevAssert(secondaryCellGroup->spCellConfig
               && secondaryCellGroup->spCellConfig->reconfigurationWithSync
               && secondaryCellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated
               && secondaryCellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated->choice.uplink->cfra);
     NR_SCHED_LOCK(&RC.nrmac[rrc->module_id]->sched_lock);
-    ret = nr_mac_prepare_ra_ue(RC.nrmac[rrc->module_id], du_ue_id, ue_context_p->ue_context.secondaryCellGroup);
+    ret = nr_mac_prepare_ra_ue(RC.nrmac[rrc->module_id], du_ue_id, secondaryCellGroup);
     NR_SCHED_UNLOCK(&RC.nrmac[rrc->module_id]->sched_lock);
   }
   AssertFatal(ret, "cannot add NSA UE in MAC, aborting\n");
@@ -388,8 +381,7 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc, rrc_gNB_ue_context_t *ue_context_p, x2a
   const NR_DRB_ToAddModList_t *drb_list = ue_context_p->ue_context.rb_config->drb_ToAddModList;
   DevAssert(drb_list->list.count == 1);
   const NR_DRB_ToAddMod_t *drb = drb_list->list.array[0];
-  const struct NR_CellGroupConfig__rlc_BearerToAddModList *bearer_list =
-      ue_context_p->ue_context.secondaryCellGroup->rlc_BearerToAddModList;
+  const struct NR_CellGroupConfig__rlc_BearerToAddModList *bearer_list = secondaryCellGroup->rlc_BearerToAddModList;
   const NR_RLC_BearerConfig_t *bearer = bearer_list->list.array[0];
   DevAssert(bearer_list->list.count == 1);
   DevAssert(drb->drb_Identity == bearer->servedRadioBearer->choice.drb_Identity);

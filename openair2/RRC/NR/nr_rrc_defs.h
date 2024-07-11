@@ -269,7 +269,6 @@ typedef struct gNB_RRC_UE_s {
   NR_UE_MRDC_Capability_t*           UE_Capability_MRDC;
   int                                UE_MRDC_Capability_size;
 
-  NR_CellGroupConfig_t               *secondaryCellGroup;
   NR_CellGroupConfig_t               *masterCellGroup;
   NR_RadioBearerConfig_t             *rb_config;
 
