@@ -55,7 +55,13 @@ static rnti_t lcid_crnti_lookahead(uint8_t *pdu, uint32_t pdu_len)
       break;
     }
     pdu += mac_len + mac_subheader_len;
-    pdu_len -= mac_len + mac_subheader_len;
+    // if pdu_len can have the value subtracted without underflow, we can subtract
+    if (pdu_len >= mac_len + mac_subheader_len) {
+      pdu_len -= mac_len + mac_subheader_len;
+    } else {
+      // if not, set to 0 to prevent underflow
+      pdu_len = 0;
+    }
   }
   return 0;
 }
