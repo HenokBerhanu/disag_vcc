@@ -983,7 +983,7 @@ int device_init(openair0_device *device, openair0_config_t *openair0_cfg) {
   rfsimulator->tx_bw=openair0_cfg->tx_bw;  
   rfsimulator_readconfig(rfsimulator);
   if (rfsimulator->prop_delay_ms > 0.0)
-    rfsimulator->chan_offset = rfsimulator->sample_rate * rfsimulator->prop_delay_ms / 1000;
+    rfsimulator->chan_offset = ceil(rfsimulator->sample_rate * rfsimulator->prop_delay_ms / 1000);
   if (rfsimulator->chan_offset != 0) {
     if (CirSize < minCirSize + rfsimulator->chan_offset) {
       CirSize = minCirSize + rfsimulator->chan_offset;
