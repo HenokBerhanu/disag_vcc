@@ -708,6 +708,8 @@ int main(int argc, char **argv)
 
   NR_ServingCellConfig_t *scd = calloc(1,sizeof(*scd));
   prepare_scd(scd);
+  /* removes unnecessary BWPs, if any */
+  fix_scd(scd);
 
   gNB->ap_N1 = pdsch_AntennaPorts.N1;
   gNB->ap_N2 = pdsch_AntennaPorts.N2;
@@ -719,9 +721,6 @@ int main(int argc, char **argv)
   prepare_sim_uecap(UE_Capability_nr, scc, mu, N_RB_DL, g_mcsTableIdx, 0);
 
   NR_CellGroupConfig_t *secondaryCellGroup = get_default_secondaryCellGroup(scc, scd, UE_Capability_nr, 0, 1, &conf, 0);
-
-  /* RRC parameter validation for secondaryCellGroup */
-  fix_scd(scd);
 
   /* -U option modify DMRS */
   if(modify_dmrs) {

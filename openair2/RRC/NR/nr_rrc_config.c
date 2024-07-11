@@ -3025,38 +3025,6 @@ NR_CellGroupConfig_t *decode_cellGroupConfig(const uint8_t *buffer, int buffer_s
   return cellGroupConfig;
 }
 
-/* TODO: this should disappear */
-static void fix_servingcellconfigdedicated(NR_ServingCellConfig_t *scd)
-{
-  int b = 0;
-  while (b < scd->downlinkBWP_ToAddModList->list.count) {
-    if (scd->downlinkBWP_ToAddModList->list.array[b]->bwp_Common->genericParameters.locationAndBandwidth == 0) {
-      asn_sequence_del(&scd->downlinkBWP_ToAddModList->list, b, 1);
-    } else {
-      b++;
-    }
-  }
-
-  if (scd->downlinkBWP_ToAddModList->list.count == 0) {
-    free(scd->downlinkBWP_ToAddModList);
-    scd->downlinkBWP_ToAddModList = NULL;
-  }
-
-  b = 0;
-  while (b < scd->uplinkConfig->uplinkBWP_ToAddModList->list.count) {
-    if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.array[b]->bwp_Common->genericParameters.locationAndBandwidth == 0) {
-      asn_sequence_del(&scd->uplinkConfig->uplinkBWP_ToAddModList->list, b, 1);
-    } else {
-      b++;
-    }
-  }
-
-  if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.count == 0) {
-    free(scd->uplinkConfig->uplinkBWP_ToAddModList);
-    scd->uplinkConfig->uplinkBWP_ToAddModList = NULL;
-  }
-}
-
 static NR_ServingCellConfigCommon_t *clone_ServingCellConfigCommon(const NR_ServingCellConfigCommon_t *scc)
 {
   if (scc == NULL)
@@ -3091,7 +3059,6 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
 
   uint64_t bitmap = get_ssb_bitmap(servingcellconfigcommon);
   // See comment at the end of this function regarding ServingCellConfig
-  fix_servingcellconfigdedicated(servingcellconfigdedicated);
 
   NR_CellGroupConfig_t *secondaryCellGroup = calloc(1, sizeof(*secondaryCellGroup));
   secondaryCellGroup->cellGroupId = scg_id;
