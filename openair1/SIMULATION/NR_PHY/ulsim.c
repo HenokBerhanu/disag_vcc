@@ -775,8 +775,7 @@ int main(int argc, char *argv[])
 
   uint8_t  length_dmrs = pusch_len1;
   uint16_t l_prime_mask = get_l_prime(nb_symb_sch, mapping_type, add_pos, length_dmrs, start_symbol, NR_MIB__dmrs_TypeA_Position_pos2);
-  uint16_t number_dmrs_symbols = get_dmrs_symbols_in_slot(l_prime_mask, nb_symb_sch);
-  printf("num dmrs sym %d\n",number_dmrs_symbols);
+  uint16_t number_dmrs_symbols = get_dmrs_symbols_in_slot(l_prime_mask, nb_symb_sch, start_symbol);
   uint8_t  nb_re_dmrs = (dmrs_config_type == pusch_dmrs_type1) ? 6 : 4;
 
   uint32_t tbslbrm = 0;
@@ -804,8 +803,18 @@ int main(int argc, char *argv[])
   nb_re_dmrs = nb_re_dmrs * num_dmrs_cdm_grps_no_data;
   unsigned int TBS = nr_compute_tbs(mod_order, code_rate, nb_rb, nb_symb_sch, nb_re_dmrs * number_dmrs_symbols, 0, 0, precod_nbr_layers);
   
-  printf("[ULSIM]: length_dmrs: %u, l_prime_mask: %u	number_dmrs_symbols: %u, mapping_type: %u add_pos: %d \n", length_dmrs, l_prime_mask, number_dmrs_symbols, mapping_type, add_pos);
-  printf("[ULSIM]: CDM groups: %u, dmrs_config_type: %d, num_rbs: %u, nb_symb_sch: %u\n", num_dmrs_cdm_grps_no_data, dmrs_config_type, nb_rb, nb_symb_sch);
+  printf("[ULSIM]: length_dmrs: %u, l_prime_mask: %u	number_dmrs_symbols: %u, mapping_type: %u add_pos: %d \n",
+         length_dmrs,
+         l_prime_mask,
+         number_dmrs_symbols,
+         mapping_type,
+         add_pos);
+  printf("[ULSIM]: CDM groups: %u, dmrs_config_type: %d, num_rbs: %u, nb_symb_sch: %u, start_symbol %u\n",
+         num_dmrs_cdm_grps_no_data,
+         dmrs_config_type,
+         nb_rb,
+         nb_symb_sch,
+         start_symbol);
   printf("[ULSIM]: MCS: %d, mod order: %u, code_rate: %u\n", Imcs, mod_order, code_rate);
 
   uint8_t ulsch_input_buffer[TBS/8];

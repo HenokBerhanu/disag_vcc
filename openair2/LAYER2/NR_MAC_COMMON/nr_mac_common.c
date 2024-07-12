@@ -2473,25 +2473,26 @@ uint8_t getAntPortBitWidth(NR_SetupRelease_DMRS_DownlinkConfig_t *typeA, NR_Setu
 *
 *********************************************************************/
 
-uint8_t get_l0_ul(uint8_t mapping_type, uint8_t dmrs_typeA_position) {
-
+uint8_t get_l0_ul(uint8_t mapping_type, uint8_t dmrs_typeA_position)
+{
   return ((mapping_type==typeA)?dmrs_typeA_position:0);
-
 }
 
-int32_t get_l_prime(uint8_t duration_in_symbols, uint8_t mapping_type, pusch_dmrs_AdditionalPosition_t additional_pos, pusch_maxLength_t pusch_maxLength, uint8_t start_symbol, uint8_t dmrs_typeA_position) {
-
-  uint8_t row, colomn;
-  int32_t l_prime;
-
-  LOG_D(NR_MAC, "In %s: PUSCH NrofSymbols:%d, startSymbol:%d, mappingtype:%d, dmrs_TypeA_Position:%d additional_pos:%d, pusch_maxLength:%d\n",
-    __FUNCTION__,
-    duration_in_symbols,
-    start_symbol,
-    mapping_type,
-    dmrs_typeA_position,
-    additional_pos,
-    pusch_maxLength);
+int32_t get_l_prime(uint8_t duration_in_symbols,
+                    uint8_t mapping_type,
+                    pusch_dmrs_AdditionalPosition_t additional_pos,
+                    pusch_maxLength_t pusch_maxLength,
+                    uint8_t start_symbol,
+                    uint8_t dmrs_typeA_position)
+{
+  LOG_D(NR_MAC,
+        "PUSCH NrofSymbols:%d, startSymbol:%d, mappingtype:%d, dmrs_TypeA_Position:%d additional_pos:%d, pusch_maxLength:%d\n",
+        duration_in_symbols,
+        start_symbol,
+        mapping_type,
+        dmrs_typeA_position,
+        additional_pos,
+        pusch_maxLength);
 
   // Section 6.4.1.1.3 in Spec 38.211
   // For PDSCH Mapping TypeA, ld is duration between first OFDM of the slot and last OFDM symbol of the scheduled PUSCH resources
@@ -2499,16 +2500,18 @@ int32_t get_l_prime(uint8_t duration_in_symbols, uint8_t mapping_type, pusch_dmr
   uint8_t ld = (mapping_type == typeA) ? (duration_in_symbols + start_symbol) : duration_in_symbols;
   uint8_t l0 = (dmrs_typeA_position == NR_MIB__dmrs_TypeA_Position_pos2) ? 2 : 3 ;
 
-  colomn = additional_pos;
+  uint8_t colomn = additional_pos;
 
   if (mapping_type == typeB)
     colomn += 4;
 
+  uint8_t row;
   if (ld < 4)
     row = 0;
   else
     row = ld - 3;
 
+  uint32_t l_prime;
   if (pusch_maxLength == pusch_len1) {
     l_prime = table_6_4_1_1_3_3_pusch_dmrs_positions_l[row][colomn];
     l0 = 1 << l0;
@@ -2525,7 +2528,6 @@ int32_t get_l_prime(uint8_t duration_in_symbols, uint8_t mapping_type, pusch_dmr
   LOG_D(MAC, " PUSCH DMRS MASK in HEX:%x\n", l_prime);
 
   return l_prime;
-
 }
 
 /*******************************************************************
