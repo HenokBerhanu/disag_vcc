@@ -793,20 +793,6 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     pusch_config_pdu->pusch_data.rv_index = dci->rv;
     /* HARQ_PROCESS_NUMBER */
     pusch_config_pdu->pusch_data.harq_process_id = dci->harq_pid;
-    /* TPC_PUSCH */
-    // according to TS 38.213 Table Table 7.1.1-1
-    if (dci->tpc == 0) {
-      pusch_config_pdu->absolute_delta_PUSCH = -4;
-    }
-    if (dci->tpc == 1) {
-      pusch_config_pdu->absolute_delta_PUSCH = -1;
-    }
-    if (dci->tpc == 2) {
-      pusch_config_pdu->absolute_delta_PUSCH = 1;
-    }
-    if (dci->tpc == 3) {
-      pusch_config_pdu->absolute_delta_PUSCH = 4;
-    }
 
     if (NR_DMRS_ulconfig != NULL)
       add_pos = (NR_DMRS_ulconfig->dmrs_AdditionalPosition == NULL) ? 2 : *NR_DMRS_ulconfig->dmrs_AdditionalPosition;
@@ -913,6 +899,22 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     pusch_config_pdu->pusch_data.tb_size = mac->ul_harq_info[pid].TBS;
   }
 
+  /* TPC_PUSCH */
+  int delta_pusch = 0;
+  if (dci) {
+    bool stateless_pusch_power_control = mac->current_UL_BWP->pusch_Config != NULL
+                                        && mac->current_UL_BWP->pusch_Config->pusch_PowerControl != NULL
+                                        && mac->current_UL_BWP->pusch_Config->pusch_PowerControl->tpc_Accumulation != NULL;
+    int table_38_213_7_1_1_1[2][4] = {{-1, 0, 1, 3}, {-4, -1, 1, 4}};
+    if (stateless_pusch_power_control) {
+      delta_pusch = table_38_213_7_1_1_1[1][dci->tpc];
+    } else {
+      // TODO: This is not entirely correct. In case there is a prevously scheduled PUSCH for a future slot
+      // we should apply its TPC now.
+      delta_pusch = table_38_213_7_1_1_1[0][dci->tpc];
+    }
+  }
+
   bool is_rar_tx_retx = rnti_type == TYPE_TC_RNTI_;
 
   pusch_config_pdu->tx_power = get_pusch_tx_power_ue(mac,
@@ -925,7 +927,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
                                                      pusch_config_pdu->target_code_rate,
                                                      pusch_config_pdu->pusch_uci.beta_offset_csi1,
                                                      pusch_config_pdu->pusch_data.tb_size << 3,
-                                                     pusch_config_pdu->absolute_delta_PUSCH,
+                                                     delta_pusch,
                                                      is_rar_tx_retx,
                                                      pusch_config_pdu->transform_precoding);
 
