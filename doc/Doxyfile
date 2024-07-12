@@ -2291,7 +2291,6 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/nr_phy_scope.c \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/nr_phy_scope.h \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/lte_phy_scope.c \
-@CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/nr_phy_qt_scope.h \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/cadd_vv.c \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/phy_scope.h \
 @CMAKE_CURRENT_SOURCE_DIR@/../openair1/PHY/TOOLS/signal_energy.c \

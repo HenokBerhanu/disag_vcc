@@ -174,16 +174,14 @@ Using the help option of the build script you can get the list of available opti
 ```bash
 ./build_oai --build-lib all # build all
 ./build_oai --build-lib telnetsrv  # build only telnetsrv
-./build_oai --build-lib "telnetsrv enbscope uescope nrscope nrqtscope"
-./build_oai --build-lib telnetsrv --build-lib nrqtscope
+./build_oai --build-lib "telnetsrv enbscope uescope nrscope"
 ```
 
 The following libraries are build in CI and should always work: `telnetsrv`,
-`enbscope`, `uescope`, `nrscope`, `nrqtscope`.
+`enbscope`, `uescope`, `nrscope`.
 
 Some libraries have further dependencies and might not build on every system:
 - `enbscope`, `uescope`, `nrscope`: libforms/X
-- `nrqtscope`: Qt5
 - `ldpc_cuda`: CUDA
 - `websrv`: npm and others
 - `ldpc_t2`: DPDK with patch

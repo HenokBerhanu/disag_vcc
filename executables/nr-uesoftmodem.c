@@ -594,10 +594,6 @@ int main(int argc, char **argv)
     init_openair0();
     lock_memory_to_ram();
 
-    if(IS_SOFTMODEM_DOSCOPE_QT) {
-      load_softscope("nrqt",PHY_vars_UE_g[0][0]);
-    }
-
     if(IS_SOFTMODEM_DOSCOPE) {
       load_softscope("nr",PHY_vars_UE_g[0][0]);
     }
