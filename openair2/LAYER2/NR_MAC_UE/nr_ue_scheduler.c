@@ -662,8 +662,13 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
 
     pusch_config_pdu->pusch_uci.harq_ack_bit_length = 0;
 
-    pusch_config_pdu->bwp_start = current_UL_BWP->BWPStart;
-    pusch_config_pdu->bwp_size = current_UL_BWP->BWPSize;
+    if (dci_format == NR_UL_DCI_FORMAT_0_0 && ss_type == NR_SearchSpace__searchSpaceType_PR_common) {
+      pusch_config_pdu->bwp_start = sc_info->initial_ul_BWPStart;
+      pusch_config_pdu->bwp_size = sc_info->initial_ul_BWPSize;
+    } else {
+      pusch_config_pdu->bwp_start = current_UL_BWP->BWPStart;
+      pusch_config_pdu->bwp_size = current_UL_BWP->BWPSize;
+    }
 
     pusch_config_pdu->start_symbol_index = tda_info->startSymbolIndex;
     pusch_config_pdu->nr_of_symbols = tda_info->nrOfSymbols;
@@ -753,7 +758,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
     if (nr_ue_process_dci_freq_dom_resource_assignment(pusch_config_pdu,
                                                        NULL,
                                                        NULL,
-                                                       current_UL_BWP->BWPSize,
+                                                       pusch_config_pdu->bwp_size,
                                                        0,
                                                        0,
                                                        dci->frequency_domain_assignment) < 0) {
@@ -773,12 +778,7 @@ int nr_config_pusch_pdu(NR_UE_MAC_INST_t *mac,
 
     /* MCS TABLE */
     long *mcs_table_config = pusch_Config ? (tp_enabled ? pusch_Config->mcs_TableTransformPrecoder : pusch_Config->mcs_Table) : NULL;
-    pusch_config_pdu->mcs_table = get_pusch_mcs_table(mcs_table_config,
-                                                      tp_enabled,
-                                                      dci_format,
-                                                      rnti_type,
-                                                      ss_type,
-                                                      false);
+    pusch_config_pdu->mcs_table = get_pusch_mcs_table(mcs_table_config, tp_enabled, dci_format, rnti_type, ss_type, false);
 
     /* NDI */
     NR_UL_HARQ_INFO_t *harq = &mac->ul_harq_info[dci->harq_pid];
