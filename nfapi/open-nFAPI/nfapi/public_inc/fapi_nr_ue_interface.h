@@ -163,7 +163,7 @@ typedef struct {
 } fapi_nr_tx_config_t;
 
 typedef struct {
-  uint16_t pdu_length;
+  uint32_t pdu_length;
   uint8_t* fapiTxPdu;
 } fapi_nr_tx_request_body_t;
 
