@@ -409,6 +409,13 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac,
       // prach_fd_occasion->num_unused_root_sequences = ???
     }
   }
+
+  // NTN Config
+  if (scc->ext2) {
+    UPDATE_IE(mac->sc_info.ntn_Config_r17, scc->ext2->ntn_Config_r17, NR_NTN_Config_r17_t);
+  } else {
+    asn1cFreeStruc(asn_DEF_NR_NTN_Config_r17, mac->sc_info.ntn_Config_r17);
+  }
 }
 
 void release_common_ss_cset(NR_BWP_PDCCH_t *pdcch)
@@ -1593,6 +1600,17 @@ void nr_rrc_mac_config_req_sib1(module_id_t module_id,
   mac->phy_config_request_sent = true;
 }
 
+void nr_rrc_mac_config_req_sib19_r17(module_id_t module_id,
+                                     NR_SIB19_r17_t *sib19_r17)
+{
+  NR_UE_MAC_INST_t *mac = get_mac_inst(module_id);
+
+  // ntn-Config-r17
+  UPDATE_IE(mac->sc_info.ntn_Config_r17, sib19_r17->ntn_Config_r17, NR_NTN_Config_r17_t);
+
+  // TODO handle other SIB19 elements
+}
+
 static void handle_reconfiguration_with_sync(NR_UE_MAC_INST_t *mac,
                                              int cc_idP,
                                              const NR_ReconfigurationWithSync_t *reconfigurationWithSync)
@@ -1810,6 +1828,17 @@ static void configure_maccellgroup(NR_UE_MAC_INST_t *mac, const NR_MAC_CellGroup
         int target_ms = 0;
         if (sr->sr_ProhibitTimer)
           target_ms = 1 << *sr->sr_ProhibitTimer;
+        if (mcg->ext4 && mcg->ext4->schedulingRequestConfig_v1700) {
+          const NR_SchedulingRequestConfig_v1700_t *src_v1700 = mcg->ext4->schedulingRequestConfig_v1700;
+          if (src_v1700->schedulingRequestToAddModListExt_v1700) {
+            if (i < src_v1700->schedulingRequestToAddModListExt_v1700->list.count) {
+              const NR_SchedulingRequestToAddModExt_v1700_t *sr_v1700 = src_v1700->schedulingRequestToAddModListExt_v1700->list.array[i];
+              if (sr_v1700->sr_ProhibitTimer_v1700) {
+                target_ms = 192 + 64 * *sr_v1700->sr_ProhibitTimer_v1700;
+              }
+            }
+          }
+        }
         // length of slot is (1/2^scs)ms
         nr_timer_setup(&sr_info->prohibitTimer, target_ms << scs, 1); // 1 slot update rate
       }

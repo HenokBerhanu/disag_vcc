@@ -95,6 +95,9 @@ nfapi_ue_release_request_body_t release_rntis;
 instance_t DUuniqInstance=0;
 instance_t CUuniqInstance=0;
 
+// NTN cellSpecificKoffset-r17, but in slots for DL SCS
+unsigned int NTN_UE_Koffset = 0;
+
 void nr_derive_key_ng_ran_star(uint16_t pci, uint64_t nr_arfcn_dl, const uint8_t key[32], uint8_t *key_ng_ran_star)
 {
 }
