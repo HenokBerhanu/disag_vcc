@@ -3177,18 +3177,16 @@ uint8_t pack_nr_slot_indication(void *msg, uint8_t **ppWritePackedMsg, uint8_t *
 
 static uint8_t pack_nr_rx_data_indication_body(nfapi_nr_rx_data_pdu_t *value, uint8_t **ppWritePackedMsg, uint8_t *end)
 {
-  AssertFatal(value->pdu_length <= 0xFFFF,"RX_DATA.indication PDU_Length should be within 16 bit, according to SCF222.10.02");
-  if(!(push32(value->handle, ppWritePackedMsg, end) &&
-       push16(value->rnti, ppWritePackedMsg, end) &&
-       push8(value->harq_id, ppWritePackedMsg, end) &&
-       push16(value->pdu_length, ppWritePackedMsg, end) &&
-       push8(value->ul_cqi, ppWritePackedMsg, end) &&
-       push16(value->timing_advance, ppWritePackedMsg, end) &&
-       push16(value->rssi, ppWritePackedMsg, end)
-  ))
+  if (!(push32(value->handle, ppWritePackedMsg, end)
+        && push16(value->rnti, ppWritePackedMsg, end)
+        && push8(value->harq_id, ppWritePackedMsg, end)
+        && push32(value->pdu_length, ppWritePackedMsg, end)
+        && push8(value->ul_cqi, ppWritePackedMsg, end)
+        && push16(value->timing_advance, ppWritePackedMsg, end)
+        && push16(value->rssi, ppWritePackedMsg, end)))
     return 0;
 
-  if(pusharray8(value->pdu, value->pdu_length, value->pdu_length, ppWritePackedMsg, end) == 0)
+  if (pusharray8(value->pdu, value->pdu_length, value->pdu_length, ppWritePackedMsg, end) == 0)
     return 0;
 
   return 1;
@@ -6066,19 +6064,18 @@ static uint8_t unpack_nr_rx_data_indication_body(nfapi_nr_rx_data_pdu_t *value,
                                                  uint8_t *end,
                                                  nfapi_p7_codec_config_t *config)
 {
-if (!(pull32(ppReadPackedMsg, &value->handle, end) && pull16(ppReadPackedMsg, &value->rnti, end)
-      && pull8(ppReadPackedMsg, &value->harq_id, end) && pull16(ppReadPackedMsg, (uint16_t *)&value->pdu_length, end)
-      && pull8(ppReadPackedMsg, &value->ul_cqi, end) && pull16(ppReadPackedMsg, &value->timing_advance, end)
-      && pull16(ppReadPackedMsg, &value->rssi, end)))
-      return 0;
+  if (!(pull32(ppReadPackedMsg, &value->handle, end) && pull16(ppReadPackedMsg, &value->rnti, end)
+        && pull8(ppReadPackedMsg, &value->harq_id, end) && pull32(ppReadPackedMsg, &value->pdu_length, end)
+        && pull8(ppReadPackedMsg, &value->ul_cqi, end) && pull16(ppReadPackedMsg, &value->timing_advance, end)
+        && pull16(ppReadPackedMsg, &value->rssi, end)))
+    return 0;
 
-uint32_t length = value->pdu_length;
-value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * length, config);
-if (pullarray8(ppReadPackedMsg, value->pdu, length, length, end) == 0) {
-      NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s pullarray8 failure\n", __FUNCTION__);
-      return 0;
-}
-return 1;
+  value->pdu = nfapi_p7_allocate(sizeof(*value->pdu) * value->pdu_length, config);
+  if (pullarray8(ppReadPackedMsg, value->pdu, value->pdu_length, value->pdu_length, end) == 0) {
+    NFAPI_TRACE(NFAPI_TRACE_ERROR, "%s pullarray8 failure\n", __FUNCTION__);
+    return 0;
+  }
+  return 1;
 }
 
 static uint8_t unpack_nr_rx_data_indication(uint8_t **ppReadPackedMsg, uint8_t *end, nfapi_nr_rx_data_indication_t *msg, nfapi_p7_codec_config_t* config)
