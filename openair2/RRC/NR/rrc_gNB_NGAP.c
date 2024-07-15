@@ -491,6 +491,10 @@ int rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, instance_t
       UE->initial_pdus[i] = req->pdusession_param[i];
   }
 
+#ifdef E2_AGENT
+  signal_rrc_state_changed_to(UE, RC_SM_RRC_CONNECTED);
+#endif
+
   return 0;
 }
 

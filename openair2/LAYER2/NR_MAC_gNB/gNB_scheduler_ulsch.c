@@ -40,7 +40,7 @@
 
 //#define SRS_IND_DEBUG
 
-static rnti_t lcid_crnti_lookahead(uint8_t *pdu, int pdu_len)
+static rnti_t lcid_crnti_lookahead(uint8_t *pdu, uint32_t pdu_len)
 {
   uint16_t mac_len = 0;
   uint16_t mac_subheader_len = 0;
@@ -55,7 +55,13 @@ static rnti_t lcid_crnti_lookahead(uint8_t *pdu, int pdu_len)
       break;
     }
     pdu += mac_len + mac_subheader_len;
-    pdu_len -= mac_len + mac_subheader_len;
+    // if pdu_len can have the value subtracted without underflow, we can subtract
+    if (pdu_len >= mac_len + mac_subheader_len) {
+      pdu_len -= mac_len + mac_subheader_len;
+    } else {
+      // if not, set to 0 to prevent underflow
+      pdu_len = 0;
+    }
   }
   return 0;
 }
@@ -200,7 +206,7 @@ static int nr_process_mac_pdu(instance_t module_idP,
                               frame_t frameP,
                               sub_frame_t slot,
                               uint8_t *pduP,
-                              int pdu_len,
+                              uint32_t pdu_len,
                               const int8_t harq_pid)
 {
 
@@ -644,7 +650,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
                        const sub_frame_t slotP,
                        const rnti_t rntiP,
                        uint8_t *sduP,
-                       const uint16_t sdu_lenP,
+                       const uint32_t sdu_lenP,
                        const uint16_t timing_advance,
                        const uint8_t ul_cqi,
                        const uint16_t rssi)
@@ -725,10 +731,10 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
 #if defined(ENABLE_MAC_PAYLOAD_DEBUG)
 
     LOG_I(NR_MAC, "Printing received UL MAC payload at gNB side: %d \n");
-    for (int i = 0; i < sdu_lenP ; i++) {
-      //harq_process_ul_ue->a[i] = (unsigned char) rand();
-      //printf("a[%d]=0x%02x\n",i,harq_process_ul_ue->a[i]);
-      printf("%02x ",(unsigned char)sduP[i]);
+    for (uint32_t i = 0; i < sdu_lenP; i++) {
+      // harq_process_ul_ue->a[i] = (unsigned char) rand();
+      // printf("a[%d]=0x%02x\n",i,harq_process_ul_ue->a[i]);
+      printf("%02x ", (unsigned char)sduP[i]);
     }
     printf("\n");
 
@@ -770,8 +776,8 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
   } else if (sduP) {
 
     bool no_sig = true;
-    for (int k = 0; k < sdu_lenP; k++) {
-      if(sduP[k] != 0) {
+    for (uint32_t k = 0; k < sdu_lenP; k++) {
+      if (sduP[k] != 0) {
         no_sig = false;
         break;
       }
@@ -856,7 +862,7 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
       } else {
         LOG_A(NR_MAC, "[RAPROC] RA-Msg3 received (sdu_lenP %d)\n", sdu_lenP);
         LOG_D(NR_MAC, "[RAPROC] Received Msg3:\n");
-        for (int k = 0; k < sdu_lenP; k++) {
+        for (uint32_t k = 0; k < sdu_lenP; k++) {
           LOG_D(NR_MAC, "(%i): 0x%x\n", k, sduP[k]);
         }
 
@@ -939,7 +945,7 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
                const sub_frame_t slotP,
                const rnti_t rntiP,
                uint8_t *sduP,
-               const uint16_t sdu_lenP,
+               const uint32_t sdu_lenP,
                const uint16_t timing_advance,
                const uint8_t ul_cqi,
                const uint16_t rssi)

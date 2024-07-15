@@ -560,7 +560,7 @@ static int pss_search_time_nr(const c16_t **rxdata,
   }
 
   for (int pss_index = pss_index_start; pss_index < pss_index_end; pss_index++) {
-    for (n = 0; n < length; n += 8) { //
+    for (n = 0; n < length; n += 4) { //
 
       int64_t pss_corr_ue=0;
       /* calculate dot product of primary_synchro_time_nr and rxdata[ar][n]

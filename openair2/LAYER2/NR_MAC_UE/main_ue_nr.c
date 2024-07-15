@@ -35,7 +35,7 @@
 #include "radio/COMMON/common_lib.h"
 //#undef MALLOC
 #include "assertions.h"
-#include "executables/softmodem-common.h"
+#include "executables/nr-uesoftmodem.h"
 #include "nr_rlc/nr_rlc_oai_api.h"
 #include "RRC/NR_UE/rrc_proto.h"
 #include <pthread.h>
@@ -84,6 +84,28 @@ void nr_ue_init_mac(NR_UE_MAC_INST_t *mac)
     memset(&mac->scheduling_info.sr_info[i], 0, sizeof(mac->scheduling_info.sr_info[i]));
 
   mac->pucch_power_control_initialized = false;
+  mac->pusch_power_control_initialized = false;
+
+  // Fake SIB19 reception for NTN
+  // TODO: remove this and implement the actual SIB19 reception instead!
+  if (get_nrUE_params()->ntn_koffset || get_nrUE_params()->ntn_ta_common) {
+    NR_SIB19_r17_t *sib19_r17 = calloc(1, sizeof(*sib19_r17));
+    sib19_r17->ntn_Config_r17 = calloc(1, sizeof(*sib19_r17->ntn_Config_r17));
+
+    // NTN cellSpecificKoffset-r17
+    if (get_nrUE_params()->ntn_koffset) {
+      asn1cCallocOne(sib19_r17->ntn_Config_r17->cellSpecificKoffset_r17, get_nrUE_params()->ntn_koffset);
+    }
+
+    // NTN ta-Common-r17
+    if (get_nrUE_params()->ntn_ta_common) {
+      sib19_r17->ntn_Config_r17->ta_Info_r17 = calloc(1, sizeof(*sib19_r17->ntn_Config_r17->ta_Info_r17));
+      sib19_r17->ntn_Config_r17->ta_Info_r17->ta_Common_r17 = get_nrUE_params()->ntn_ta_common / 4.072e-6; // ta-Common-r17 is in units of 4.072e-3 µs, ntn_ta_common is in ms
+    }
+
+    nr_rrc_mac_config_req_sib19_r17(mac->ue_id, sib19_r17);
+    asn1cFreeStruc(asn_DEF_NR_SIB19_r17, sib19_r17);
+  }
 }
 
 void nr_ue_mac_default_configs(NR_UE_MAC_INST_t *mac)
@@ -246,6 +268,7 @@ void release_mac_configuration(NR_UE_MAC_INST_t *mac,
   asn1cFreeStruc(asn_DEF_NR_PUSCH_CodeBlockGroupTransmission, sc->pusch_CGB_Transmission);
   asn1cFreeStruc(asn_DEF_NR_CSI_MeasConfig, sc->csi_MeasConfig);
   asn1cFreeStruc(asn_DEF_NR_CSI_AperiodicTriggerStateList, sc->aperiodicTriggerStateList);
+  asn1cFreeStruc(asn_DEF_NR_NTN_Config_r17, sc->ntn_Config_r17);
   free(sc->xOverhead_PDSCH);
   free(sc->nrofHARQ_ProcessesForPDSCH);
   free(sc->rateMatching_PUSCH);

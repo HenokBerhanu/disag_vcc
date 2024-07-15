@@ -462,6 +462,34 @@ class Cluster:
 			self.cmd.run(f'oc logs {nrue_job} &> cmake_targets/log/oai-nr-ue.log')
 			self.cmd.run(f'oc get pods.metrics.k8s.io &>> cmake_targets/log/build-metrics.log', '\$', 10)
 
+		if status:
+			self._recreate_is_tag('ran-build-fhi72', imageTag, 'openshift/ran-build-fhi72-is.yaml')
+			self._recreate_bc('ran-build-fhi72', imageTag, 'openshift/ran-build-fhi72-bc.yaml')
+			self._retag_image_statement('ran-base', 'image-registry.openshift-image-registry.svc:5000/oaicicd-ran/ran-base', baseTag, 'docker/Dockerfile.build.fhi72.rhel9')
+			ranbuildfhi72_job = self._start_build('ran-build-fhi72')
+			attemptedImages += ['ran-build-fhi72']
+
+			wait = ranbuildfhi72_job is not None and self._wait_build_end([ranbuildfhi72_job], 1200)
+			if not wait: logging.error('error during build of ranbuildfhi72_job')
+			status = status and wait
+			self.cmd.run(f'oc logs {ranbuildfhi72_job} &> cmake_targets/log/ran-build-fhi72.log')
+			self.cmd.run(f'oc get pods.metrics.k8s.io &>> cmake_targets/log/build-metrics.log', '\$', 10)
+
+		if status:
+			self._recreate_is_tag('oai-gnb-fhi72', imageTag, 'openshift/oai-gnb-fhi72-is.yaml')
+			self._recreate_bc('oai-gnb-fhi72', imageTag, 'openshift/oai-gnb-fhi72-bc.yaml')
+			self._retag_image_statement('ran-base', 'image-registry.openshift-image-registry.svc:5000/oaicicd-ran/ran-base', baseTag, 'docker/Dockerfile.gNB.fhi72.rhel9')
+			self._retag_image_statement('ran-build-fhi72', 'image-registry.openshift-image-registry.svc:5000/oaicicd-ran/ran-build-fhi72', imageTag, 'docker/Dockerfile.gNB.fhi72.rhel9')
+			gnb_fhi72_job = self._start_build('oai-gnb-fhi72')
+			attemptedImages += ['oai-gnb-fhi72']
+
+			wait = gnb_fhi72_job is not None and self._wait_build_end([gnb_fhi72_job], 600)
+			if not wait: logging.error('error during build of gNB-fhi72')
+			status = status and wait
+			# recover logs
+			self.cmd.run(f'oc logs {gnb_fhi72_job} &> cmake_targets/log/oai-gnb-fhi72.log')
+			self.cmd.run(f'oc get pods.metrics.k8s.io &>> cmake_targets/log/build-metrics.log', '\$', 10)
+
 		# split and analyze logs
 		imageSize = {}
 		for image in attemptedImages:

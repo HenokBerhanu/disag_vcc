@@ -41,6 +41,13 @@
 #include <executables/softmodem-common.h>
 #include "openair2/LAYER2/RLC/rlc.h"
 
+static double get_ta_Common_ms(NR_NTN_Config_r17_t *ntn_Config_r17)
+{
+  if (ntn_Config_r17 && ntn_Config_r17->ta_Info_r17)
+    return ntn_Config_r17->ta_Info_r17->ta_Common_r17 * 4.072e-6; // ta_Common_r17 is in units of 4.072e-3 µs
+  return 0.0;
+}
+
 int16_t get_prach_tx_power(NR_UE_MAC_INST_t *mac)
 {
   RA_config_t *ra = &mac->ra;
@@ -74,7 +81,8 @@ void init_RA(NR_UE_MAC_INST_t *mac,
   fapi_nr_config_request_t *cfg = &mac->phy_config.config_req;
 
   prach_resources->RA_PREAMBLE_BACKOFF = 0;
-  AssertFatal(nr_rach_ConfigCommon, "Cannot handle scenario without nr_rach_ConfigCommon\n");
+  AssertFatal(nr_rach_ConfigCommon && nr_rach_ConfigCommon->msg1_SubcarrierSpacing,
+              "Cannot handle yet the scenario without msg1_SubcarrierSpacing (L839)\n");
   NR_SubcarrierSpacing_t prach_scs = *nr_rach_ConfigCommon->msg1_SubcarrierSpacing;
   int n_prbs = get_N_RA_RB(prach_scs, mac->current_UL_BWP->scs);
   int start_prb = rach_ConfigGeneric->msg1_FrequencyStart + mac->current_UL_BWP->BWPStart;
@@ -580,13 +588,17 @@ void nr_Msg3_transmitted(NR_UE_MAC_INST_t *mac, uint8_t CC_id, frame_t frameP, s
 {
   RA_config_t *ra = &mac->ra;
   NR_RACH_ConfigCommon_t *nr_rach_ConfigCommon = mac->current_UL_BWP->rach_ConfigCommon;
-  long mu = mac->current_UL_BWP->scs;
-  int subframes_per_slot = nr_slots_per_frame[mu] / 10;
+  const double ta_Common_ms = get_ta_Common_ms(mac->sc_info.ntn_Config_r17);
+  const int mu = mac->current_UL_BWP->scs;
+  const int slots_per_ms = nr_slots_per_frame[mu] / 10;
 
   // start contention resolution timer
-  int RA_contention_resolution_timer_subframes = (nr_rach_ConfigCommon->ra_ContentionResolutionTimer + 1) << 3;
-  // timer step 1 slot and timer target given by ra_ContentionResolutionTimer
-  nr_timer_setup(&ra->contention_resolution_timer, RA_contention_resolution_timer_subframes * subframes_per_slot, 1);
+  const int RA_contention_resolution_timer_ms = (nr_rach_ConfigCommon->ra_ContentionResolutionTimer + 1) << 3;
+  const int RA_contention_resolution_timer_slots = RA_contention_resolution_timer_ms * slots_per_ms;
+  const int ta_Common_slots = (int)ceil(ta_Common_ms * slots_per_ms);
+
+  // timer step 1 slot and timer target given by ra_ContentionResolutionTimer + ta-Common-r17
+  nr_timer_setup(&ra->contention_resolution_timer, RA_contention_resolution_timer_slots + ta_Common_slots, 1);
   nr_timer_start(&ra->contention_resolution_timer);
 
   ra->ra_state = nrRA_WAIT_CONTENTION_RESOLUTION;
@@ -788,11 +800,16 @@ void nr_get_RA_window(NR_UE_MAC_INST_t *mac)
   NR_RACH_ConfigCommon_t *setup = mac->current_UL_BWP->rach_ConfigCommon;
   AssertFatal(&setup->rach_ConfigGeneric != NULL, "In %s: FATAL! rach_ConfigGeneric is NULL...\n", __FUNCTION__);
   NR_RACH_ConfigGeneric_t *rach_ConfigGeneric = &setup->rach_ConfigGeneric;
+  const double ta_Common_ms = get_ta_Common_ms(mac->sc_info.ntn_Config_r17);
+  const int mu = mac->current_DL_BWP->scs;
+  const int slots_per_ms = nr_slots_per_frame[mu] / 10;
  
-  int ra_ResponseWindow = rach_ConfigGeneric->ra_ResponseWindow;
-  int mu = mac->current_DL_BWP->scs;
+  const int ra_Offset_slots = ra->RA_offset * nr_slots_per_frame[mu];
+  const int ta_Common_slots = (int)ceil(ta_Common_ms * slots_per_ms);
 
-  ra->RA_window_cnt = ra->RA_offset * nr_slots_per_frame[mu]; // taking into account the 2 frames gap introduced by OAI gNB
+  ra->RA_window_cnt = ra_Offset_slots + ta_Common_slots; // taking into account the 2 frames gap introduced by OAI gNB
+
+  int ra_ResponseWindow = rach_ConfigGeneric->ra_ResponseWindow;
 
   switch (ra_ResponseWindow) {
     case NR_RACH_ConfigGeneric__ra_ResponseWindow_sl1:

@@ -107,12 +107,13 @@ typedef struct {
   uint8_t R: 2;       // octet 1 [7:6]
 } __attribute__ ((__packed__)) NR_MAC_SUBHEADER_FIXED;
 
-static inline int get_mac_len(uint8_t* pdu, int pdu_len, uint16_t *mac_ce_len, uint16_t *mac_subheader_len) {
-  if ( pdu_len < (int)sizeof(NR_MAC_SUBHEADER_SHORT))
+static inline int get_mac_len(uint8_t *pdu, uint32_t pdu_len, uint16_t *mac_ce_len, uint16_t *mac_subheader_len)
+{
+  if (pdu_len < sizeof(NR_MAC_SUBHEADER_SHORT))
     return false;
-  NR_MAC_SUBHEADER_SHORT *s = (NR_MAC_SUBHEADER_SHORT*) pdu;
-  NR_MAC_SUBHEADER_LONG *l = (NR_MAC_SUBHEADER_LONG*) pdu;
-  if (s->F && pdu_len < (int)sizeof(NR_MAC_SUBHEADER_LONG))
+  NR_MAC_SUBHEADER_SHORT *s = (NR_MAC_SUBHEADER_SHORT *)pdu;
+  NR_MAC_SUBHEADER_LONG *l = (NR_MAC_SUBHEADER_LONG *)pdu;
+  if (s->F && pdu_len < sizeof(NR_MAC_SUBHEADER_LONG))
     return false;
   if (s->F) {
     *mac_subheader_len = sizeof(*l);
@@ -123,7 +124,7 @@ static inline int get_mac_len(uint8_t* pdu, int pdu_len, uint16_t *mac_ce_len, u
   }
   return true;
 }
-    
+
 // BSR MAC CEs
 // TS 38.321 ch. 6.1.3.1
 // Short BSR for a specific logical channel group ID
@@ -597,6 +598,7 @@ typedef struct {
   int n_ul_bwp;
   int dl_bw_tbslbrm;
   int ul_bw_tbslbrm;
+  NR_NTN_Config_r17_t *ntn_Config_r17;
 } NR_UE_ServingCell_Info_t;
 
 typedef enum {

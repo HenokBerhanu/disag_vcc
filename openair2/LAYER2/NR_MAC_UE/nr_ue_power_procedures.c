@@ -522,12 +522,12 @@ int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             mac->nr_band,
                             mac->frame_type,
                             mac->frequency_range,
-                            2,
+                            qm,
                             false,
                             mac->current_UL_BWP->scs,
                             mac->current_UL_BWP->BWPSize,
                             transform_precoding,
-                            1,
+                            num_rb,
                             start_prb);
 
   int P_O_PUSCH = P_O_NOMINAL_PUSCH + P_O_UE_PUSCH;
@@ -553,12 +553,28 @@ int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
 
   // TODO: compute pathoss using correct reference
   int16_t pathloss = compute_nr_SSB_PL(mac, mac->ssb_measurements.ssb_rsrp_dBm);
+  int P_CMIN = nr_get_Pcmin(mac->current_UL_BWP->scs, mac->nr_band,  mac->current_UL_BWP->BWPSize);
+
+  float pusch_power_without_f_b_f_c = P_O_PUSCH + M_pusch_component + alpha * pathloss + DELTA_TF;
 
   int f_b_f_c = 0;
   if (has_pusch_power_control_config && pusch_Config->pusch_PowerControl->tpc_Accumulation) {
     f_b_f_c = delta_pusch;
   } else {
-    // TODO: PUSCH power control state
+    if (!mac->pusch_power_control_initialized && is_rar_tx_retx) {
+      NR_PRACH_RESOURCES_t* prach_resources = &mac->ra.prach_resources;
+      float DELTA_P_rampup_requested = (prach_resources->RA_PREAMBLE_POWER_RAMPING_COUNTER - 1) * prach_resources->RA_PREAMBLE_POWER_RAMPING_STEP;
+      float DELTA_P_rampup = P_CMAX - (P_O_PUSCH + M_pusch_component + alpha * pathloss + DELTA_TF + delta_pusch);
+      DELTA_P_rampup = min(DELTA_P_rampup_requested, max(0, DELTA_P_rampup));
+      mac->f_b_f_c = DELTA_P_rampup + delta_pusch;
+      mac->pusch_power_control_initialized = true;
+    } else {
+      if (!((pusch_power_without_f_b_f_c + mac->f_b_f_c >= P_CMAX && delta_pusch > 0) ||
+        (pusch_power_without_f_b_f_c + mac->f_b_f_c <= P_CMIN && delta_pusch < 0))) {
+        mac->f_b_f_c += delta_pusch;
+      }
+    }
+    f_b_f_c = mac->f_b_f_c;
   }
   LOG_D(NR_MAC,
         "PUSCH tx power components P_O_PUSCH=%d, M_pusch_component=%d, alpha*pathloss=%f, delta_TF=%f, f_b_f_c=%d\n",

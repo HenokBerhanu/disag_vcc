@@ -50,8 +50,14 @@ uint32_t nr_compute_tbs(uint16_t Qm,
                         uint8_t tb_scaling,
                         uint8_t Nl)
 {
-
-  LOG_D(NR_MAC, "In %s: nb_symb_sch %d, nb_dmrs_prb %d, nb_rb %d, nb_rb_oh %d, tb_scaling %d Nl %d\n", __FUNCTION__, nb_symb_sch, nb_dmrs_prb, nb_rb, nb_rb_oh, tb_scaling, Nl);
+  LOG_D(NR_MAC,
+        "nb_symb_sch %d, nb_dmrs_prb %d, nb_rb %d, nb_rb_oh %d, tb_scaling %d Nl %d\n",
+        nb_symb_sch,
+        nb_dmrs_prb,
+        nb_rb,
+        nb_rb_oh,
+        tb_scaling,
+        Nl);
 
   const int nb_subcarrier_per_rb = 12;
   const uint32_t nbp_re =  nb_subcarrier_per_rb * nb_symb_sch - nb_dmrs_prb - nb_rb_oh;
@@ -91,10 +97,9 @@ uint32_t nr_compute_tbs(uint16_t Qm,
     }
   }
 
-  LOG_D(NR_MAC, "In %s: Ninfo %u nbp_re %d nb_re %d Qm %d, R %d, tbs %d bits\n", __FUNCTION__, Ninfo, nbp_re, nb_re, Qm, R, nr_tbs);
+  LOG_D(NR_MAC, "Ninfo %u nbp_re %d nb_re %d Qm %d, R %d, tbs %d bits\n", Ninfo, nbp_re, nb_re, Qm, R, nr_tbs);
 
   return nr_tbs;
-
 }
 
 //tbslbrm calculation according to 5.4.2.1 of 38.212
