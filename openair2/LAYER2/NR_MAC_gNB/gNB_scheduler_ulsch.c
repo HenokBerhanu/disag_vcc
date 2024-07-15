@@ -899,6 +899,22 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
           reset_dl_harq_list(&UE->UE_sched_ctrl);
           reset_ul_harq_list(&UE->UE_sched_ctrl);
 
+          // Switch to BWP where RA is configured, typically in the InitialBWP
+          // At this point, UE already switched and triggered RA in that BWP, need to do BWP switching also at gNB for C-RNTI
+          if ((ra->DL_BWP.bwp_id != UE->current_DL_BWP.bwp_id) || (ra->UL_BWP.bwp_id != UE->current_UL_BWP.bwp_id)) {
+            LOG_I(NR_MAC,
+                  "BWP switching at gNB from BWP id %ld to BWP id %ld due to RA configuration\n",
+                  UE->current_DL_BWP.bwp_id,
+                  ra->DL_BWP.bwp_id);
+            configure_UE_BWP(RC.nrmac[gnb_mod_idP],
+                             RC.nrmac[gnb_mod_idP]->common_channels[CC_idP].ServingCellConfigCommon,
+                             &UE->UE_sched_ctrl,
+                             NULL,
+                             UE,
+                             ra->DL_BWP.bwp_id,
+                             ra->UL_BWP.bwp_id);
+          }
+
           if (UE->reconfigCellGroup) {
             // Nothing to do
             // A RRCReconfiguration message should be already pending (for example, an ongoing RRCReestablishment), and it will be
