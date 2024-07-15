@@ -297,7 +297,19 @@ void process_nsa_message(NR_UE_RRC_INST_t *rrc, nsa_message_t nsa_message_type, 
   }
 }
 
-NR_UE_RRC_INST_t* nr_rrc_init_ue(char* uecap_file, int nb_inst)
+/**
+ * @brief Verify UE capabilities parameters against CL-fed params
+ *        (e.g. number of physical TX antennas)
+ */
+static bool verify_ue_cap(NR_UE_NR_Capability_t *UE_NR_Capability, int nb_antennas_tx)
+{
+  NR_FeatureSetUplink_t *ul_feature_setup = UE_NR_Capability->featureSets->featureSetsUplink->list.array[0];
+  int srs_ant_ports = 1 << ul_feature_setup->supportedSRS_Resources->maxNumberSRS_Ports_PerResource;
+  AssertFatal(srs_ant_ports <= nb_antennas_tx, "SRS antenna ports (%d) > nb_antennas_tx (%d)\n", srs_ant_ports, nb_antennas_tx);
+  return true;
+}
+
+NR_UE_RRC_INST_t* nr_rrc_init_ue(char* uecap_file, int nb_inst, int num_ant_tx)
 {
   NR_UE_rrc_inst = (NR_UE_RRC_INST_t *)calloc(nb_inst, sizeof(NR_UE_RRC_INST_t));
   AssertFatal(NR_UE_rrc_inst, "Couldn't allocate %d instances of RRC module\n", nb_inst);
@@ -328,6 +340,8 @@ NR_UE_RRC_INST_t* nr_rrc_init_ue(char* uecap_file, int nb_inst)
         assert(dec_rval.code == RC_OK);
       }
       fclose(f);
+      /* Verify consistency of num PHY antennas vs UE Capabilities */
+      verify_ue_cap(rrc->UECap.UE_NR_Capability, num_ant_tx);
     }
 
     memset(&rrc->timers_and_constants, 0, sizeof(rrc->timers_and_constants));

@@ -53,7 +53,7 @@ extern queue_t nr_tx_req_queue;
 extern queue_t nr_ul_dci_req_queue;
 extern queue_t nr_ul_tti_req_queue;
 
-NR_UE_RRC_INST_t *nr_rrc_init_ue(char* uecap_file, int nb_inst);
+NR_UE_RRC_INST_t *nr_rrc_init_ue(char* uecap_file, int nb_inst, int num_ant_tx);
 void init_nsa_message (NR_UE_RRC_INST_t *rrc, char* reconfig_file, char* rbconfig_file);
 
 void process_nsa_message(NR_UE_RRC_INST_t *rrc, nsa_message_t nsa_message_type, void *message, int msg_len);
