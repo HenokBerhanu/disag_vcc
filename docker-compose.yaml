@@ -174,8 +174,8 @@ services:
     image: docker.io/henok28/ueransim-gnb:master #gnb:masterb
     entrypoint: bash ./entrypoint.sh
     volumes:
-      - ./configran/gnbcfgsat.yaml:/gnb/gnbcfg.yaml
-      - ./configran/gnb.sh:/gnb/entrypoint.sh
+      - ./configran_ueransim/gnbcfgsat.yaml:/gnb/gnbcfg.yaml
+      - ./configran_ueransim/gnb.sh:/gnb/entrypoint.sh
     cap_add:
       - NET_ADMIN
     networks:
@@ -196,23 +196,23 @@ services:
   
   gateway:
     container_name: ${GW_CONTAINER_NAME:-gateway}
-    build: /home/henok/ntn-5g-bl/build/opensand/gateway/
+    build: /home/henok/disag_vcc/build_docker_images/opensand/gateway/
     entrypoint: ./opensand_config/entrypoint.sh
     ports:
       - "3141"
       - "5358"
       - "5926"
     volumes:
-      - /home/henok/ntn-5g-bl/build/opensand/gateway/config:/opensand_config
-      - /home/henok/ntn-5g-bl/build/opensand/src/:/root/go/src
+      - /home/henok/disag_vcc/build_docker_images/opensand/gateway/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
     networks:
       satgateway-network:
         ipv4_address: 192.168.35.4 #172.22.0.3
       emulation: #sat:
         ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.3 #172.20.0.3 192.168.40.4
         priority: 900
-      backend:
-        ipv4_address: 172.23.0.4
+      # backend:
+      #   ipv4_address: 172.23.0.4
       gwlan:
         ipv4_address: "${GW_NETWORK_HEAD:-172.22}.0.3"
         priority: 1000
@@ -231,7 +231,7 @@ services:
 
   satellite1:
     container_name: ${SAT_CONTAINER_NAME:-satellite1}
-    build: /home/henok/ntn-5g-bl/build/opensand/satellite1/
+    build: /home/henok/disag_vcc/build_docker_images/opensand/satellite1/
     entrypoint: ./opensand_config/entrypoint.sh
     ports:
       - "3141"
@@ -239,15 +239,15 @@ services:
       - "5926"
       - "${SAT_PORT_NUMBER:-5656}:5656"
     volumes:
-      - /home/henok/ntn-5g-bl/build/opensand/satellite1/config:/opensand_config
-      - /home/henok/ntn-5g-bl/build/opensand/satellite1/attenuation_scenario:/attenuation_scenario
-      - /home/henok/ntn-5g-bl/build/opensand/satellite1/delay_scenario:/delay_scenario
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/attenuation_scenario:/attenuation_scenario
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/delay_scenario:/delay_scenario
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     networks:
       emulation:
         ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.2 #192.168.40.3
-      backend:
-        ipv4_address: 172.23.0.5
+      # backend:
+      #   ipv4_address: 172.23.0.5
     privileged: true
     environment:
       DISPLAY: :1
@@ -258,15 +258,15 @@ services:
 
   terminal:
     container_name: ${ST_CONTAINER_NAME:-terminal}
-    build: /home/henok/ntn-5g-bl/build/opensand/terminal
+    build: /home/henok/disag_vcc/build_docker_images/opensand/terminal
     entrypoint: ./opensand_config/entrypoint.sh
     ports:
       - "3141"
       - "5358"
       - "5926"
     volumes:
-      - /home/henok/ntn-5g-bl/build/opensand/terminal/config:/opensand_config
-      - /home/henok/ntn-5g-bl/build/opensand/src/:/root/go/src
+      - /home/henok/disag_vcc/build_docker_images/opensand/terminal/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
     environment:
       GOPATH: /root/go
       GIN_MODE: release
@@ -276,8 +276,8 @@ services:
       emulation:
         ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.4 #192.168.40.5
         priority: 900
-      backend:
-        ipv4_address: 172.23.0.6
+      # backend:
+      #   ipv4_address: 172.23.0.6
       stlan:
         ipv4_address: "${ST_NETWORK_HEAD:-172.21}.0.4"
         priority: 1000
@@ -296,8 +296,8 @@ services:
     image: docker.io/henok28/ueransim-ue:master #ue:masterb
     entrypoint: bash ./entrypoint.sh
     volumes:
-      - ./configran/uecfgsat.yaml:/ue/uecfg.yaml
-      - ./configran/ue.sh:/ue/entrypoint.sh
+      - ./configran_ueransim/uecfgsat.yaml:/ue/uecfg.yaml
+      - ./configran_ueransim/ue.sh:/ue/entrypoint.sh
     cap_add:
       - NET_ADMIN
     devices:
@@ -391,9 +391,9 @@ networks:
       config:
         - subnet: "${GUI_NETWORK_HEAD:-172.25}.0.0/24"
           gateway: "${GUI_NETWORK_HEAD:-172.25}.0.1"
-  backend:
-    external:
-      name: backend
+  # backend:
+  #   external:
+  #     name: backend
 
 volumes:
   dbdata:
