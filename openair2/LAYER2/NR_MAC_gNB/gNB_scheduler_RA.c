@@ -1861,17 +1861,6 @@ static void nr_generate_Msg4(module_id_t module_idP,
       return;
     }
 
-    const int delta_PRI = 0;
-    int r_pucch = nr_get_pucch_resource(coreset, ra->UL_BWP.pucch_Config, CCEIndex);
-
-    LOG_D(NR_MAC, "Msg4 r_pucch %d (CCEIndex %d, delta_PRI %d)\n", r_pucch, CCEIndex, delta_PRI);
-
-    int alloc = nr_acknack_scheduling(nr_mac, UE, frameP, slotP, r_pucch, 1);
-    if (alloc < 0) {
-      LOG_D(NR_MAC,"Couldn't find a pucch allocation for ack nack (msg4) in frame %d slot %d\n",frameP,slotP);
-      return;
-    }
-
     // HARQ management
     if (current_harq_pid < 0) {
       AssertFatal(sched_ctrl->available_dl_harq.head >= 0,
@@ -1879,10 +1868,26 @@ static void nr_generate_Msg4(module_id_t module_idP,
       current_harq_pid = sched_ctrl->available_dl_harq.head;
       remove_front_nr_list(&sched_ctrl->available_dl_harq);
     }
+
+    const int delta_PRI = 0;
+
+    int alloc = -1;
+    if (!get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+      int r_pucch = nr_get_pucch_resource(coreset, ra->UL_BWP.pucch_Config, CCEIndex);
+
+      LOG_D(NR_MAC, "Msg4 r_pucch %d (CCEIndex %d, delta_PRI %d)\n", r_pucch, CCEIndex, delta_PRI);
+
+      alloc = nr_acknack_scheduling(nr_mac, UE, frameP, slotP, r_pucch, 1);
+      if (alloc < 0) {
+        LOG_D(NR_MAC,"Couldn't find a pucch allocation for ack nack (msg4) in frame %d slot %d\n",frameP,slotP);
+        return;
+      }
+    }
+
     NR_UE_harq_t *harq = &sched_ctrl->harq_processes[current_harq_pid];
-    NR_sched_pucch_t *pucch = &sched_ctrl->sched_pucch[alloc];
+    NR_sched_pucch_t *pucch = NULL;
     DevAssert(!harq->is_waiting);
-    if (get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+    if (alloc < 0) {
       add_tail_nr_list(&sched_ctrl->available_dl_harq, current_harq_pid);
       harq->feedback_frame = -1;
       harq->feedback_slot = -1;
@@ -1890,6 +1895,7 @@ static void nr_generate_Msg4(module_id_t module_idP,
       harq->ndi ^= 1;
       harq->round = 0;
     } else {
+      pucch = &sched_ctrl->sched_pucch[alloc];
       add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
       harq->feedback_slot = pucch->ul_slot;
       harq->feedback_frame = pucch->frame;
@@ -1976,9 +1982,7 @@ static void nr_generate_Msg4(module_id_t module_idP,
       vrb_map[BWPStart + rb + rbStart] |= SL_to_bitmap(msg4_tda.startSymbolIndex, msg4_tda.nrOfSymbols);
     }
 
-    if (get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
-      LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
-
+    if (pucch == NULL) {
       LOG_A(NR_MAC, "(UE RNTI 0x%04x) Skipping Ack of RA-Msg4. CBRA procedure succeeded!\n", ra->rnti);
       UE->Msg4_ACKed = true;
 

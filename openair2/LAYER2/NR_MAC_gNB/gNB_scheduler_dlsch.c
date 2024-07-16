@@ -556,14 +556,17 @@ static bool allocate_dl_retransmission(module_id_t module_id,
   /* Find PUCCH occasion: if it fails, undo CCE allocation (undoing PUCCH
    * allocation after CCE alloc fail would be more complex) */
 
-  int r_pucch = nr_get_pucch_resource(sched_ctrl->coreset, ul_bwp->pucch_Config, CCEIndex);
-  const int alloc = nr_acknack_scheduling(nr_mac, UE, frame, slot, r_pucch, 0);
-  if (alloc<0) {
-    LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not find PUCCH for DL DCI retransmission\n",
-          UE->rnti,
-          frame,
-          slot);
-    return false;
+  int alloc = -1;
+  if (!get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+    int r_pucch = nr_get_pucch_resource(sched_ctrl->coreset, ul_bwp->pucch_Config, CCEIndex);
+    alloc = nr_acknack_scheduling(nr_mac, UE, frame, slot, r_pucch, 0);
+    if (alloc<0) {
+      LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not find PUCCH for DL DCI retransmission\n",
+            UE->rnti,
+            frame,
+            slot);
+      return false;
+    }
   }
 
   sched_ctrl->cce_index = CCEIndex;
@@ -724,6 +727,8 @@ static void pf_dl(module_id_t module_id,
       iterator++;
       continue;
     }
+    NR_sched_pdsch_t *sched_pdsch = &sched_ctrl->sched_pdsch;
+    sched_pdsch->dl_harq_pid = sched_ctrl->available_dl_harq.head;
 
     int CCEIndex = get_cce_index(mac,
                                  CC_id, slot, iterator->UE->rnti,
@@ -744,16 +749,18 @@ static void pf_dl(module_id_t module_id,
     /* Find PUCCH occasion: if it fails, undo CCE allocation (undoing PUCCH
     * allocation after CCE alloc fail would be more complex) */
 
-    int r_pucch = nr_get_pucch_resource(sched_ctrl->coreset, ul_bwp->pucch_Config, CCEIndex);
-    const int alloc = nr_acknack_scheduling(mac, iterator->UE, frame, slot, r_pucch, 0);
-
-    if (alloc<0) {
-      LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not find PUCCH for DL DCI\n",
-            rnti,
-            frame,
-            slot);
-      iterator++;
-      continue;
+    int alloc = -1;
+    if (!get_FeedbackDisabled(iterator->UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, sched_pdsch->dl_harq_pid)) {
+      int r_pucch = nr_get_pucch_resource(sched_ctrl->coreset, ul_bwp->pucch_Config, CCEIndex);
+      alloc = nr_acknack_scheduling(mac, iterator->UE, frame, slot, r_pucch, 0);
+      if (alloc<0) {
+        LOG_D(NR_MAC, "[UE %04x][%4d.%2d] could not find PUCCH for DL DCI\n",
+              rnti,
+              frame,
+              slot);
+        iterator++;
+        continue;
+      }
     }
 
     sched_ctrl->cce_index = CCEIndex;
@@ -764,7 +771,6 @@ static void pf_dl(module_id_t module_id,
                        sched_ctrl->aggregation_level);
 
     /* MCS has been set above */
-    NR_sched_pdsch_t *sched_pdsch = &sched_ctrl->sched_pdsch;
     sched_pdsch->time_domain_allocation = get_dl_tda(mac, scc, slot);
     AssertFatal(sched_pdsch->time_domain_allocation>=0,"Unable to find PDSCH time domain allocation in list\n");
 
@@ -999,9 +1005,9 @@ void nr_schedule_ue_spec(module_id_t module_id,
     NR_tda_info_t *tda_info = &sched_pdsch->tda_info;
     NR_pdsch_dmrs_t *dmrs_parms = &sched_pdsch->dmrs_parms;
     NR_UE_harq_t *harq = &sched_ctrl->harq_processes[current_harq_pid];
-    NR_sched_pucch_t *pucch = &sched_ctrl->sched_pucch[sched_pdsch->pucch_allocation];
+    NR_sched_pucch_t *pucch = NULL;
     DevAssert(!harq->is_waiting);
-    if (get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+    if (sched_pdsch->pucch_allocation < 0) {
       add_tail_nr_list(&sched_ctrl->available_dl_harq, current_harq_pid);
       harq->feedback_frame = -1;
       harq->feedback_slot = -1;
@@ -1009,6 +1015,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
       harq->ndi ^= 1;
       harq->round = 0;
     } else {
+      pucch = &sched_ctrl->sched_pucch[sched_pdsch->pucch_allocation];
       add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
       harq->feedback_frame = pucch->frame;
       harq->feedback_slot = pucch->ul_slot;
@@ -1205,10 +1212,10 @@ void nr_schedule_ue_spec(module_id_t module_id,
     dci_payload.rv = pdsch_pdu->rvIndex[0];
     dci_payload.harq_pid = current_harq_pid;
     dci_payload.ndi = harq->ndi;
-    dci_payload.dai[0].val = (pucch->dai_c-1)&3;
+    dci_payload.dai[0].val = pucch ? (pucch->dai_c-1)&3 : 0;
     dci_payload.tpc = sched_ctrl->tpc1; // TPC for PUCCH: table 7.2.1-1 in 38.213
-    dci_payload.pucch_resource_indicator = pucch->resource_indicator;
-    dci_payload.pdsch_to_harq_feedback_timing_indicator.val = pucch->timing_indicator; // PDSCH to HARQ TI
+    dci_payload.pucch_resource_indicator = pucch ? pucch->resource_indicator : 0;
+    dci_payload.pdsch_to_harq_feedback_timing_indicator.val = pucch ? pucch->timing_indicator : 0; // PDSCH to HARQ TI
     dci_payload.antenna_ports.val = dmrs_parms->dmrs_ports_id;
     dci_payload.dmrs_sequence_initialization.val = pdsch_pdu->SCID;
     LOG_D(NR_MAC,

@@ -437,7 +437,7 @@ typedef struct NR_sched_pdsch {
   int8_t dl_harq_pid;
 
   // pucch format allocation
-  uint16_t pucch_allocation;
+  int16_t pucch_allocation;
 
   uint16_t pm_index;
   uint8_t nrOfLayers;
