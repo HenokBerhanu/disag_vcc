@@ -111,7 +111,6 @@ RAN_CONTEXT_t RC;
 int oai_exit = 0;
 
 
-extern int16_t  nr_dlsch_demod_shift;
 static int      tx_max_power[MAX_NUM_CCs] = {0};
 
 int                 vcdflag = 0;
