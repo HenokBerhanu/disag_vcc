@@ -141,8 +141,6 @@ int rx_input_level_dBm;
 
 int otg_enabled;
 
-uint64_t num_missed_slots=0; // counter for the number of missed slots
-
 #include <SIMULATION/ETH_TRANSPORT/proto.h>
 
 extern void reset_opp_meas(void);
