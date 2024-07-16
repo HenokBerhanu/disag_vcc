@@ -851,8 +851,8 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
         nr_mac_reset_ul_failure(UE_scheduling_control);
         reset_dl_harq_list(UE_scheduling_control);
         reset_ul_harq_list(UE_scheduling_control);
-        nr_clear_ra_proc(ra);
         process_addmod_bearers_cellGroupConfig(&UE->UE_sched_ctrl, ra->CellGroup->rlc_BearerToAddModList);
+        nr_clear_ra_proc(ra);
       } else {
         LOG_A(NR_MAC, "[RAPROC] RA-Msg3 received (sdu_lenP %d)\n", sdu_lenP);
         LOG_D(NR_MAC, "[RAPROC] Received Msg3:\n");

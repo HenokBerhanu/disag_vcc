@@ -603,7 +603,6 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
   DevAssert(nrmac != NULL);
   DevAssert(scc != NULL);
   DevAssert(config != NULL);
-  //NR_SCHED_LOCK(&nrmac->sched_lock);
 
   AssertFatal(scc->ssb_PositionsInBurst->present > 0 && scc->ssb_PositionsInBurst->present < 4,
               "SSB Bitmap type %d is not valid\n",
@@ -668,19 +667,13 @@ void nr_mac_config_scc(gNB_MAC_INST *nrmac, NR_ServingCellConfigCommon_t *scc, c
     nrmac->pre_processor_ul = nr_init_fr1_ulsch_preprocessor(0);
   }
 
-  if (get_softmodem_params()->sa > 0) {
-    NR_COMMON_channels_t *cc = &nrmac->common_channels[0];
-    for (int n = 0; n < NR_NB_RA_PROC_MAX; n++) {
-      NR_RA_t *ra = &cc->ra[n];
-      ra->cfra = false;
-      ra->rnti = 0;
-      ra->preambles.num_preambles = MAX_NUM_NR_PRACH_PREAMBLES;
-      ra->preambles.preamble_list = malloc(MAX_NUM_NR_PRACH_PREAMBLES * sizeof(*ra->preambles.preamble_list));
-      for (int i = 0; i < MAX_NUM_NR_PRACH_PREAMBLES; i++)
-        ra->preambles.preamble_list[i] = i;
-    }
+  NR_COMMON_channels_t *cc = &nrmac->common_channels[0];
+  NR_SCHED_LOCK(&nrmac->sched_lock);
+  for (int n = 0; n < NR_NB_RA_PROC_MAX; n++) {
+    NR_RA_t *ra = &cc->ra[n];
+    nr_clear_ra_proc(ra);
   }
-  //NR_SCHED_UNLOCK(&nrmac->sched_lock);
+  NR_SCHED_UNLOCK(&nrmac->sched_lock);
 }
 
 void nr_mac_configure_sib1(gNB_MAC_INST *nrmac, const f1ap_plmn_t *plmn, uint64_t cellID, int tac)
@@ -749,7 +742,6 @@ bool nr_mac_prepare_ra_ue(gNB_MAC_INST *nrmac, uint32_t rnti, NR_CellGroupConfig
   struct NR_CFRA *cfra = CellGroup->spCellConfig->reconfigurationWithSync->rach_ConfigDedicated->choice.uplink->cfra;
   uint8_t num_preamble = cfra->resources.choice.ssb->ssb_ResourceList.list.count;
   ra->preambles.num_preambles = num_preamble;
-  ra->preambles.preamble_list = calloc(ra->preambles.num_preambles, sizeof(*ra->preambles.preamble_list));
   for (int i = 0; i < cc->num_active_ssb; i++) {
     for (int j = 0; j < num_preamble; j++) {
       if (cc->ssb_index[i] == cfra->resources.choice.ssb->ssb_ResourceList.list.array[j]->ssb) {
