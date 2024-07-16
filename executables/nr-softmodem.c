@@ -106,7 +106,6 @@ int NB_UE_INST = 0;
 static int wait_for_sync = 0;
 
 unsigned int mmapped_dma=0;
-int single_thread_flag=1;
 
 uint64_t downlink_frequency[MAX_NUM_CCs][4];
 int32_t uplink_frequency_offset[MAX_NUM_CCs][4];
@@ -697,8 +696,8 @@ int main( int argc, char **argv ) {
   printf("RC.nb_nr_L1_inst:%d\n", RC.nb_nr_L1_inst);
 
   if (RC.nb_nr_L1_inst > 0) {
-    printf("Initializing gNB threads single_thread_flag:%d wait_for_sync:%d\n", single_thread_flag,wait_for_sync);
-    init_gNB(single_thread_flag,wait_for_sync);
+    printf("Initializing gNB threads wait_for_sync:%d\n", wait_for_sync);
+    init_gNB(wait_for_sync);
   }
 
   printf("wait_gNBs()\n");

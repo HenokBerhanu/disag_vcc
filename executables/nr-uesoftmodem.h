@@ -36,7 +36,6 @@
   {"usrp-args",                CONFIG_HLP_USRP_ARGS,           0,               .strptr=&usrp_args,                       .defstrval="type=b200",          TYPE_STRING,   0}, \
   {"tx_subdev",                CONFIG_HLP_TX_SUBDEV,           0,               .strptr=&tx_subdev,                       .defstrval=NULL,                 TYPE_STRING,   0}, \
   {"rx_subdev",                CONFIG_HLP_RX_SUBDEV,           0,               .strptr=&rx_subdev,                       .defstrval=NULL,                 TYPE_STRING,   0}, \
-  {"single-thread-disable",    CONFIG_HLP_NOSNGLT,             PARAMFLAG_BOOL,  .iptr=&single_thread_flag,                .defintval=1,                    TYPE_INT,      0}, \
   {"dlsch-parallel",           CONFIG_HLP_DLSCH_PARA,          0,               .u8ptr=NULL,                              .defintval=0,                    TYPE_UINT8,    0}, \
   {"offset-divisor",           CONFIG_HLP_OFFSET_DIV,          0,               .uptr=&nrUE_params.ofdm_offset_divisor,   .defuintval=8,                   TYPE_UINT32,   0}, \
   {"max-ldpc-iterations",      CONFIG_HLP_MAX_LDPC_ITERATIONS, 0,               .iptr=&nrUE_params.max_ldpc_iterations,   .defuintval=8,                  TYPE_UINT8,    0}, \

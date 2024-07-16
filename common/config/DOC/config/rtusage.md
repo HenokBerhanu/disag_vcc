@@ -58,7 +58,6 @@ To get help on supported parameters you can use specific options:
     --emulate-rf: Emulated RF enabled(disable by defult)
     --clock: tells hardware to use a clock reference (0:internal, 1:external, 2:gpsdo)
     --wait-for-sync: Help string not specified
-    --single-thread-enable: Disables single-thread mode in lte-softmodem
     -C: Set the downlink frequency for all component carriers
     -a: Channel id offset
     -d: Enable soft scope and L1 and L2 stats (Xforms)

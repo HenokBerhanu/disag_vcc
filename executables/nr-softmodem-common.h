@@ -55,7 +55,6 @@
 #define CONFIG_HLP_DMAMAP        "use DMA memory mapping\n"
 #define CONFIG_HLP_EXCCLK        "tells hardware to use a clock reference (0:internal(default), 1:external, 2:gpsdo)\n"
 #define CONFIG_HLP_USIM          "use XOR autentication algo in case of test usim mode\n"
-#define CONFIG_HLP_NOSNGLT "Disables single-thread mode in lte-softmodem\n"
 #define CONFIG_HLP_DLF           "Set the downlink frequency for all component carriers\n"
 #define CONFIG_HLP_ULOFF         "Set the uplink frequnecy offset for all component carriers\n"
 #define CONFIG_HLP_CHOFF         "Channel id offset\n"

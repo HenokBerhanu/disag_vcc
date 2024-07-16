@@ -114,7 +114,6 @@ int oai_exit = 0;
 extern int16_t  nr_dlsch_demod_shift;
 static int      tx_max_power[MAX_NUM_CCs] = {0};
 
-int      single_thread_flag = 1;
 int                 vcdflag = 0;
 
 double          rx_gain_off = 0.0;
