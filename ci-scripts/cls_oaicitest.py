@@ -202,8 +202,6 @@ def Iperf_analyzeV2UDP(server_filename, iperf_bitrate_threshold, iperf_packetlos
 		with open(server_filename, 'r') as server_file:
 			for line in server_file.readlines():
 				result = re.search(statusTemplate, str(line))
-				if result is not None:
-					break
 		if result is None:
 			return (False, 'Could not parse server report!')
 		bitrate = float(result.group('bitrate'))
