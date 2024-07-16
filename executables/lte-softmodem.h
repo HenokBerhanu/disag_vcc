@@ -123,7 +123,6 @@ extern int32_t  uplink_frequency_offset[MAX_NUM_CCs][4];
 
 extern int rx_input_level_dBm;
 
-extern int oaisim_flag;
 extern int oai_exit;
 
 extern openair0_config_t openair0_cfg[MAX_CARDS];

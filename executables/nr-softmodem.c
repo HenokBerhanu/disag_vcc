@@ -137,8 +137,6 @@ uint8_t dci_Format = 0;
 uint8_t nb_antenna_tx = 1;
 uint8_t nb_antenna_rx = 1;
 
-int rx_input_level_dBm;
-
 int otg_enabled;
 
 #include <SIMULATION/ETH_TRANSPORT/proto.h>

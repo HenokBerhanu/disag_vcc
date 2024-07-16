@@ -124,12 +124,10 @@ char       *rrc_config_path = NULL;
 char *reconfig_file = NULL;
 char *rbconfig_file = NULL;
 char            *uecap_file = NULL;
-int               dumpframe = 0;
 
 uint64_t        downlink_frequency[MAX_NUM_CCs][4];
 int32_t         uplink_frequency_offset[MAX_NUM_CCs][4];
 uint64_t        sidelink_frequency[MAX_NUM_CCs][4];
-int             rx_input_level_dBm;
 
 #if MAX_NUM_CCs == 1
 rx_gain_t                rx_gain_mode[MAX_NUM_CCs][4] = {{max_gain,max_gain,max_gain,max_gain}};
@@ -147,13 +145,6 @@ openair0_config_t openair0_cfg[MAX_CARDS];
 int16_t           node_synch_ref[MAX_NUM_CCs];
 int               otg_enabled;
 double            cpuf;
-
-
-int          chain_offset = 0;
-int           card_offset = 0;
-int            numerology = 0;
-int           oaisim_flag = 0;
-int            emulate_rf = 0;
 uint32_t       N_RB_DL    = 106;
 
 // NTN cellSpecificKoffset-r17, but in slots for DL SCS
@@ -251,8 +242,8 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
   UE->rx_total_gain_dB     = (int)rx_gain[CC_id][0] + rx_gain_off;
   UE->tx_total_gain_dB     = (int)tx_gain[CC_id][0];
   UE->tx_power_max_dBm     = tx_max_power[CC_id];
-  UE->rf_map.card          = card_offset;
-  UE->rf_map.chain         = CC_id + chain_offset;
+  UE->rf_map.card          = 0;
+  UE->rf_map.chain         = CC_id + 0;
   UE->max_ldpc_iterations  = nrUE_params.max_ldpc_iterations;
   UE->ldpc_offload_enable  = nrUE_params.ldpc_offload_flag;
   UE->UE_scan_carrier      = nrUE_params.UE_scan_carrier;

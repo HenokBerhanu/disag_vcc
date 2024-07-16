@@ -157,7 +157,6 @@ eth_params_t *eth_params;
 
 double cpuf;
 
-int oaisim_flag=0;
 
 /* hardcoded into gtp_itf.cpp */
 bool sdap_data_req(protocol_ctxt_t *ctxt_p,

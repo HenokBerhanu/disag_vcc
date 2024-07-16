@@ -107,8 +107,6 @@ extern int oai_exit;
 
 extern int transmission_mode;
 
-extern int oaisim_flag;
-
 #include "executables/thread-common.h"
 //extern PARALLEL_CONF_t get_thread_parallel_conf(void);
 //extern WORKER_CONF_t   get_thread_worker_conf(void);
