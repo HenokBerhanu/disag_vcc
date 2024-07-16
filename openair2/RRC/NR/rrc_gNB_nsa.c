@@ -412,8 +412,7 @@ void rrc_remove_nsa_user(gNB_RRC_INST *rrc, int rnti) {
     return;
   }
 
-  nr_pdcp_remove_UE(ctxt.rntiMaybeUEid);
-
+  nr_pdcp_remove_UE(ue_context->ue_context.rrc_ue_id);
   rrc_rlc_remove_ue(&ctxt);
 
   // lock the scheduler before removing the UE. Note: mac_remove_nr_ue() checks
