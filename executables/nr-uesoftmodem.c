@@ -160,11 +160,6 @@ uint32_t       N_RB_DL    = 106;
 // NTN cellSpecificKoffset-r17, but in slots for DL SCS
 unsigned int NTN_UE_Koffset = 0;
 
-/* see file openair2/LAYER2/MAC/main.c for why abstraction_flag is needed
- * this is very hackish - find a proper solution
- */
-uint8_t abstraction_flag=0;
-
 /*---------------------BMC: timespec helpers -----------------------------*/
 
 struct timespec min_diff_time = { .tv_sec = 0, .tv_nsec = 0 };
@@ -563,7 +558,7 @@ int main(int argc, char **argv)
         }
 
         UE[CC_id]->sl_mode = get_softmodem_params()->sl_mode;
-        init_nr_ue_vars(UE[CC_id], inst, abstraction_flag);
+        init_nr_ue_vars(UE[CC_id], inst);
 
         if (UE[CC_id]->sl_mode) {
           AssertFatal(UE[CC_id]->sl_mode == 2, "Only Sidelink mode 2 supported. Mode 1 not yet supported\n");
