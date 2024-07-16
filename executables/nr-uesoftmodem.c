@@ -115,7 +115,6 @@ extern int16_t  nr_dlsch_demod_shift;
 static int      tx_max_power[MAX_NUM_CCs] = {0};
 
 int      single_thread_flag = 1;
-int                 tddflag = 0;
 int                 vcdflag = 0;
 
 double          rx_gain_off = 0.0;
@@ -302,11 +301,6 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
         UE->UE_fo_compensation, UE->UE_scan_carrier, UE->no_timing_correction, UE->chest_freq, UE->chest_time);
 
   // Set FP variables
-
-  if (tddflag){
-    fp->frame_type = TDD;
-    LOG_I(PHY, "Set UE frame_type %d\n", fp->frame_type);
-  }
 
   fp->nb_antennas_rx       = nrUE_params.nb_antennas_rx;
   fp->nb_antennas_tx       = nrUE_params.nb_antennas_tx;
