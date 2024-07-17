@@ -178,12 +178,25 @@ services:
             USE_ADDITIONAL_OPTIONS: --sa -E --rfsim --log_config.global_log_options level,nocolor,time
             ASAN_OPTIONS: detect_leaks=0
         depends_on:
-            - oai-ext-dn
+            #- oai-ext-dn
+            - nrf
+            - amf
+            - upf
+            - smf
+            - pcf
+            - ausf
+            - gateway
+            - satellite1
+            - terminal
         networks:
-            public_net:
-                ipv4_address: 192.168.71.140
+            # public_net:
+            #     ipv4_address: 192.168.71.140
+            n123-terrestrial:
+                ipv4_address: 192.168.15.7
+            satgateway-network:
+                ipv4_address: 192.168.35.3
         volumes:
-            - ../../conf_files/gnb.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
+            - ./oai-ngran_conf/gnb/gnb.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
         healthcheck:
             test: /bin/bash -c "pgrep nr-softmodem"
             interval: 10s
@@ -311,25 +324,53 @@ services:
       - /dev/net/tun
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
+
+  oai-nr-ue:
+        image: oaisoftwarealliance/oai-nr-ue:develop
+        container_name: rfsim5g-oai-nr-ue
+        cap_drop:
+            - ALL
+        cap_add:
+            - NET_ADMIN  # for interface bringup
+            - NET_RAW    # for ping
+        environment:
+            USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1 --uicc0.imsi 208990100001100 -C 3319680000 --rfsimulator.serveraddr 192.168.15.7 --log_config.global_log_options level,nocolor,time
+        depends_on:
+            #- oai-gnb
+            - terminal
+        networks:
+            # public_net:
+            #     ipv4_address: 192.168.71.150
+            satterminal-network:
+                ipv4_address: 192.168.30.5 #172.21.0.5
+        devices:
+             - /dev/net/tun:/dev/net/tun
+        volumes:
+            - ./oai-ngran_conf/nr-ue/nrue.uicc.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+        healthcheck:
+            test: /bin/bash -c "pgrep nr-uesoftmodem"
+            interval: 10s
+            timeout: 5s
+            retries: 5
   
-  ue:
-    container_name: ue
-    image: docker.io/henok28/ueransim-ue:master #ue:masterb
-    entrypoint: bash ./entrypoint.sh
-    volumes:
-      - ./configran_ueransim/uecfgsat.yaml:/ue/uecfg.yaml
-      - ./configran_ueransim/ue.sh:/ue/entrypoint.sh
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun
-    networks:
-      satterminal-network:
-        ipv4_address: 192.168.30.5 #172.21.0.5
-      # n123-terrestrial:
-      #   ipv4_address: 192.168.15.8
-    depends_on:
-      - terminal
+  # ue:
+  #   container_name: ue
+  #   image: docker.io/henok28/ueransim-ue:master #ue:masterb
+  #   entrypoint: bash ./entrypoint.sh
+  #   volumes:
+  #     - ./configran_ueransim/uecfgsat.yaml:/ue/uecfg.yaml
+  #     - ./configran_ueransim/ue.sh:/ue/entrypoint.sh
+  #   cap_add:
+  #     - NET_ADMIN
+  #   devices:
+  #     - /dev/net/tun
+  #   networks:
+  #     satterminal-network:
+  #       ipv4_address: 192.168.30.5 #172.21.0.5
+  #     # n123-terrestrial:
+  #     #   ipv4_address: 192.168.15.8
+  #   depends_on:
+  #     - terminal
 
 networks:
   pfcp:
