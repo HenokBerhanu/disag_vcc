@@ -2017,11 +2017,12 @@ void nr_clear_ra_proc(NR_RA_t *ra)
 {
   /* we assume that this function is mutex-protected from outside */
   NR_SCHED_ENSURE_LOCKED(&RC.nrmac[0]->sched_lock);
+  memset(ra, 0, sizeof(*ra));
   ra->ra_state = nrRA_gNB_IDLE;
-  ra->timing_offset = 0;
-  ra->msg3_round = 0;
-  if(ra->cfra == false) {
-    ra->rnti = 0;
+  if (get_softmodem_params()->sa) { // in SA, prefill with allowed preambles
+    ra->preambles.num_preambles = MAX_NUM_NR_PRACH_PREAMBLES;
+    for (int i = 0; i < MAX_NUM_NR_PRACH_PREAMBLES; i++)
+      ra->preambles.preamble_list[i] = i;
   }
 }
 

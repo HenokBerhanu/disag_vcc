@@ -159,7 +159,7 @@ typedef struct nr_mac_config_t {
 
 typedef struct NR_preamble_ue {
   uint8_t num_preambles;
-  uint8_t *preamble_list;
+  uint8_t preamble_list[MAX_NUM_NR_PRACH_PREAMBLES];
 } NR_preamble_ue_t;
 
 typedef struct NR_sched_pdcch {

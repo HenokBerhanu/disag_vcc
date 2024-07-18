@@ -91,7 +91,7 @@ NR_CellGroupConfig_t *decode_cellGroupConfig(const uint8_t *buffer, int max_buff
  * configuration, but it will also overwrite the ServingCellConfig passed in
  * parameter servingcellconfigdedicated! */
 NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigCommon_t *servingcellconfigcommon,
-                                                     NR_ServingCellConfig_t *servingcellconfigdedicated,
+                                                     const NR_ServingCellConfig_t *servingcellconfigdedicated,
                                                      const NR_UE_NR_Capability_t *uecap,
                                                      int scg_id,
                                                      int servCellIndex,

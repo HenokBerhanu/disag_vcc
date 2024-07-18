@@ -621,6 +621,16 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
     }
 
   }
+
+  if (scd->downlinkBWP_ToAddModList->list.count == 0) {
+    free(scd->downlinkBWP_ToAddModList);
+    scd->downlinkBWP_ToAddModList = NULL;
+  }
+
+  if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.count == 0) {
+    free(scd->uplinkConfig->uplinkBWP_ToAddModList);
+    scd->uplinkConfig->uplinkBWP_ToAddModList = NULL;
+  }
 }
 
 static void verify_gnb_param_notset(paramdef_t *params, int paramidx, const char *paramname)

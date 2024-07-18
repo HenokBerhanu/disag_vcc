@@ -36,13 +36,24 @@ The following features are valid for the gNB and the 5G-NR UE.
 *  Encoder and decoder for short blocks
 *  Support for UL transform precoding (SC-FDMA)
 
-Furthermore, the gNB and UE support
+These modes of operation are supported:
 
-* "noS1" mode (DL and UL):
+* "phy-test" mode (gNB, nrUE):
+  - gNB and nrUE have hardcoded RNTI and radio configuration
+  - gNB schedules the nrUE all the time, even if no UE connected
+  - can be used for performance evaluation
+* "noS1" mode (DL and UL, gNB, nrUE):
+  - Connection setup stops after RA; RRC configuration is exchanged through
+    files
   - Creates TUN interface to PDCP to inject and receive user-place traffic
   - No connection to the core network
-* Standalone (SA) mode:
-  - UE can register with the 5G Core Network through the gNB, establish a PDU Session and exchange user-plane traffic
+* Standalone (SA) mode (gNB, nrUE):
+  - UE can register with the 5G Core Network through the gNB, establish a PDU
+    Session and exchange user-plane traffic
+  - Reestablishment supported
+* Non-standalone (NSA) mode (gNB):
+  - UE can use the gNB for user plane traffic while connected to the 4G eNB
+  - is unstable (only one UE connection)
 
 
 ## gNB PHY
