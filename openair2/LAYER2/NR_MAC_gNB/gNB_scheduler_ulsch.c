@@ -901,18 +901,10 @@ static void _nr_rx_sdu(const module_id_t gnb_mod_idP,
 
           // Switch to BWP where RA is configured, typically in the InitialBWP
           // At this point, UE already switched and triggered RA in that BWP, need to do BWP switching also at gNB for C-RNTI
-          if ((ra->DL_BWP.bwp_id != UE->current_DL_BWP.bwp_id) || (ra->UL_BWP.bwp_id != UE->current_UL_BWP.bwp_id)) {
-            LOG_I(NR_MAC,
-                  "BWP switching at gNB from BWP id %ld to BWP id %ld due to RA configuration\n",
-                  UE->current_DL_BWP.bwp_id,
-                  ra->DL_BWP.bwp_id);
-            configure_UE_BWP(RC.nrmac[gnb_mod_idP],
-                             RC.nrmac[gnb_mod_idP]->common_channels[CC_idP].ServingCellConfigCommon,
-                             &UE->UE_sched_ctrl,
-                             NULL,
-                             UE,
-                             ra->DL_BWP.bwp_id,
-                             ra->UL_BWP.bwp_id);
+          if (ra->DL_BWP.bwp_id != UE->current_DL_BWP.bwp_id || ra->UL_BWP.bwp_id != UE->current_UL_BWP.bwp_id) {
+            LOG_D(NR_MAC, "UE %04x Switch BWP from %ld to BWP id %ld\n", UE->rnti, UE->current_DL_BWP.bwp_id, ra->DL_BWP.bwp_id);
+            NR_ServingCellConfigCommon_t *scc = gNB_mac->common_channels[CC_idP].ServingCellConfigCommon;
+            configure_UE_BWP(gNB_mac, scc, &UE->UE_sched_ctrl, NULL, UE, ra->DL_BWP.bwp_id, ra->UL_BWP.bwp_id);
           }
 
           if (UE->reconfigCellGroup) {
