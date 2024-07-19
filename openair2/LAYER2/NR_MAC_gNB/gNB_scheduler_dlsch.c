@@ -371,17 +371,23 @@ static void nr_store_dlsch_buffer(module_id_t module_id, frame_t frame, sub_fram
   }
 }
 
-void abort_nr_dl_harq(NR_UE_info_t* UE, int8_t harq_pid)
+void finish_nr_dl_harq(NR_UE_sched_ctrl_t *sched_ctrl, int harq_pid)
 {
-  /* already mutex protected through handle_dl_harq() */
-  NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   NR_UE_harq_t *harq = &sched_ctrl->harq_processes[harq_pid];
 
   harq->ndi ^= 1;
   harq->round = 0;
-  UE->mac_stats.dl.errors++;
-  add_tail_nr_list(&sched_ctrl->available_dl_harq, harq_pid);
 
+  add_tail_nr_list(&sched_ctrl->available_dl_harq, harq_pid);
+}
+
+void abort_nr_dl_harq(NR_UE_info_t* UE, int8_t harq_pid)
+{
+  /* already mutex protected through handle_dl_harq() */
+  NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+
+  finish_nr_dl_harq(sched_ctrl, harq_pid);
+  UE->mac_stats.dl.errors++;
 }
 
 static void get_start_stop_allocation(gNB_MAC_INST *mac,
@@ -1008,12 +1014,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
     NR_sched_pucch_t *pucch = NULL;
     DevAssert(!harq->is_waiting);
     if (sched_pdsch->pucch_allocation < 0) {
-      add_tail_nr_list(&sched_ctrl->available_dl_harq, current_harq_pid);
-      harq->feedback_frame = -1;
-      harq->feedback_slot = -1;
-      harq->is_waiting = false;
-      harq->ndi ^= 1;
-      harq->round = 0;
+      finish_nr_dl_harq(sched_ctrl, current_harq_pid);
     } else {
       pucch = &sched_ctrl->sched_pucch[sched_pdsch->pucch_allocation];
       add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);

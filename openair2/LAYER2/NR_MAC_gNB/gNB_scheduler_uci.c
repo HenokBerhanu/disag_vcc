@@ -385,19 +385,18 @@ static void handle_dl_harq(NR_UE_info_t * UE,
                            bool success,
                            int harq_round_max)
 {
-  NR_UE_harq_t *harq = &UE->UE_sched_ctrl.harq_processes[harq_pid];
+  NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+  NR_UE_harq_t *harq = &sched_ctrl->harq_processes[harq_pid];
   harq->feedback_slot = -1;
   harq->is_waiting = false;
   if (success) {
-    add_tail_nr_list(&UE->UE_sched_ctrl.available_dl_harq, harq_pid);
-    harq->round = 0;
-    harq->ndi ^= 1;
+    finish_nr_dl_harq(sched_ctrl, harq_pid);
   } else if (harq->round >= harq_round_max - 1) {
     abort_nr_dl_harq(UE, harq_pid);
     LOG_D(NR_MAC, "retransmission error for UE %04x (total %"PRIu64")\n", UE->rnti, UE->mac_stats.dl.errors);
   } else {
     LOG_D(PHY,"NACK for: pid %d, ue %04x\n",harq_pid, UE->rnti);
-    add_tail_nr_list(&UE->UE_sched_ctrl.retrans_dl_harq, harq_pid);
+    add_tail_nr_list(&sched_ctrl->retrans_dl_harq, harq_pid);
     harq->round++;
   }
 }

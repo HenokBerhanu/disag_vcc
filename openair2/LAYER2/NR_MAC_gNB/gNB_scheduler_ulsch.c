@@ -511,15 +511,23 @@ static int nr_process_mac_pdu(instance_t module_idP,
   return 0;
 }
 
+static void finish_nr_ul_harq(NR_UE_sched_ctrl_t *sched_ctrl, int harq_pid)
+{
+  NR_UE_ul_harq_t *harq = &sched_ctrl->ul_harq_processes[harq_pid];
+
+  harq->ndi ^= 1;
+  harq->round = 0;
+
+  add_tail_nr_list(&sched_ctrl->available_ul_harq, harq_pid);
+}
+
 static void abort_nr_ul_harq(NR_UE_info_t *UE, int8_t harq_pid)
 {
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
   NR_UE_ul_harq_t *harq = &sched_ctrl->ul_harq_processes[harq_pid];
 
-  harq->ndi ^= 1;
-  harq->round = 0;
+  finish_nr_ul_harq(sched_ctrl, harq_pid);
   UE->mac_stats.ul.errors++;
-  add_tail_nr_list(&sched_ctrl->available_ul_harq, harq_pid);
 
   /* the transmission failed: the UE won't send the data we expected initially,
    * so retrieve to correctly schedule after next BSR */
@@ -602,13 +610,11 @@ void handle_nr_ul_harq(const int CC_idP,
   harq->feedback_slot = -1;
   harq->is_waiting = false;
   if (!crc_pdu->tb_crc_status) {
-    harq->ndi ^= 1;
-    harq->round = 0;
+    finish_nr_ul_harq(sched_ctrl, harq_pid);
     LOG_D(NR_MAC,
           "Ulharq id %d crc passed for RNTI %04x\n",
           harq_pid,
           crc_pdu->rnti);
-    add_tail_nr_list(&sched_ctrl->available_ul_harq, harq_pid);
   } else if (harq->round >= RC.nrmac[mod_id]->ul_bler.harq_round_max  - 1) {
     abort_nr_ul_harq(UE, harq_pid);
     LOG_D(NR_MAC,
@@ -2268,11 +2274,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot, n
     NR_UE_ul_harq_t *cur_harq = &sched_ctrl->ul_harq_processes[harq_id];
     DevAssert(!cur_harq->is_waiting);
     if (nr_mac->radio_config.disable_harq) {
-      add_tail_nr_list(&sched_ctrl->available_ul_harq, harq_id);
-      cur_harq->feedback_slot = -1;
-      cur_harq->is_waiting = false;
-      cur_harq->ndi ^= 1;
-      cur_harq->round = 0;
+      finish_nr_ul_harq(sched_ctrl, harq_id);
     } else {
       add_tail_nr_list(&sched_ctrl->feedback_ul_harq, harq_id);
       cur_harq->feedback_slot = sched_pusch->slot;

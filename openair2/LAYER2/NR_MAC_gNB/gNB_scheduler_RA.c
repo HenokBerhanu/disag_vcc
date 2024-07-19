@@ -1888,12 +1888,7 @@ static void nr_generate_Msg4(module_id_t module_idP,
     NR_sched_pucch_t *pucch = NULL;
     DevAssert(!harq->is_waiting);
     if (alloc < 0) {
-      add_tail_nr_list(&sched_ctrl->available_dl_harq, current_harq_pid);
-      harq->feedback_frame = -1;
-      harq->feedback_slot = -1;
-      harq->is_waiting = false;
-      harq->ndi ^= 1;
-      harq->round = 0;
+      finish_nr_dl_harq(sched_ctrl, current_harq_pid);
     } else {
       pucch = &sched_ctrl->sched_pucch[alloc];
       add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
