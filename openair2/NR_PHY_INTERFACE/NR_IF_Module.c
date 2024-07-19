@@ -80,7 +80,9 @@ void handle_nr_rach(NR_UL_IND_t *UL_info)
     LOG_D(MAC,"UL_info[Frame %d, Slot %d] Calling initiate_ra_proc RACH:SFN/SLOT:%d/%d\n",
           UL_info->frame, UL_info->slot, UL_info->rach_ind.sfn, UL_info->rach_ind.slot);
     for (int i = 0; i < UL_info->rach_ind.number_of_pdus; i++) {
-      AssertFatal(UL_info->rach_ind.pdu_list[i].num_preamble == 1, "More than 1 preamble not supported\n");
+      if (UL_info->rach_ind.pdu_list[i].num_preamble > 1) {
+	LOG_E(MAC, "Not more than 1 preamble per RACH PDU supported, ignoring the rest\n");
+      }
       nr_initiate_ra_proc(UL_info->module_id,
                           UL_info->CC_id,
                           UL_info->rach_ind.sfn,
