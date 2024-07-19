@@ -169,15 +169,16 @@ services:
     depends_on:
       - nrf
 
-  oai-gnb:
+  oai-cu:
         image: oaisoftwarealliance/oai-gnb:develop
-        container_name: rfsim5g-oai-gnb
+        container_name: rfsim5g-oai-cu
         cap_drop:
             - ALL
-        environment:
-            USE_ADDITIONAL_OPTIONS: --sa -E --rfsim --log_config.global_log_options level,nocolor,time
+        environment: 
+            USE_ADDITIONAL_OPTIONS: --sa --log_config.global_log_options level,nocolor,time
             ASAN_OPTIONS: detect_leaks=0
         depends_on:
+            #- oai-ext-dn
             - nrf
             - amf
             - upf
@@ -188,19 +189,20 @@ services:
             - satellite1
             - terminal
         networks:
+            # public_net:
+            #     ipv4_address: 192.168.71.150
             n123-terrestrial:
                 ipv4_address: 192.168.15.7
             satgateway-network:
                 ipv4_address: 192.168.35.3
         volumes:
-            - /home/henok/disag_vcc/oai-ngran_conf/gnb/gnb.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
-            #- /home/henok/disag_vcc/scripts:/scripts
-            - /home/henok/disag_vcc/logs/gnb:/var/log/gnb
+          - /home/henok/disag_vcc/oai-ngran_conf/gnb-cu/gnb-cu.sa.band78.106prb.conf:/opt/oai-gnb/etc/gnb.conf
         healthcheck:
             test: /bin/bash -c "pgrep nr-softmodem"
             interval: 10s
             timeout: 5s
             retries: 5
+
   
   gateway:
     container_name: ${GW_CONTAINER_NAME:-gateway}
@@ -293,6 +295,36 @@ services:
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
 
+  oai-du:
+        image: oaisoftwarealliance/oai-gnb:develop
+        container_name: rfsim5g-oai-du
+        cap_drop:
+            - ALL
+        environment:
+            USE_ADDITIONAL_OPTIONS: --sa --rfsim
+                                    --log_config.global_log_options level,nocolor,time
+                                    --rfsimulator.options chanmod
+                                    --telnetsrv --telnetsrv.listenaddr 192.168.15.8 #192.168.71.171
+            ASAN_OPTIONS: detect_leaks=0:detect_odr_violation=0
+        depends_on:
+            - oai-cu
+            - terminal
+        networks:
+            # public_net:
+            #     ipv4_address: 192.168.71.171
+            satterminal-network:
+                ipv4_address: 192.168.30.5
+            n123-terrestrial:
+                ipv4_address: 192.168.15.8
+        volumes:
+            - /home/henok/disag_vcc/oai-ngran_conf/gnb-du/gnb-du.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
+            - /home/henok/disag_vcc/oai-ngran_conf/gnb-du/rfsim_channel_ci.conf:/opt/oai-gnb/etc/rfsim_channel_ci.conf
+        healthcheck:
+            test: /bin/bash -c "pgrep nr-softmodem"
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
   oai-nr-ue:
         image: oaisoftwarealliance/oai-nr-ue:develop
         container_name: rfsim5g-oai-nr-ue
@@ -302,20 +334,28 @@ services:
             - NET_ADMIN  # for interface bringup
             - NET_RAW    # for ping
         environment:
-            USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1 --uicc0.imsi 208990100001100 -C 3319680000 --rfsimulator.serveraddr 192.168.15.7 --log_config.global_log_options level,nocolor,time
+            USE_ADDITIONAL_OPTIONS: --sa --rfsim --log_config.global_log_options level,nocolor,time
+                                    -r 106 --numerology 1 -C 3619200000
+                                    --uicc0.imsi 208990100001100
+                                    --rfsimulator.serveraddr 192.168.15.8
+                                    --rfsimulator.options chanmod
+                                    --telnetsrv --telnetsrv.shrmod ciUE --telnetsrv.listenaddr 192.168.15.9 --telnetsrv.listenport 8091
+            ASAN_OPTIONS: detect_odr_violation=0
         depends_on:
+            - oai-du
             - terminal
         networks:
+            # public_net:
+            #     ipv4_address: 192.168.71.181
             satterminal-network:
-                ipv4_address: 192.168.30.5
+                ipv4_address: 192.168.30.6
             n123-terrestrial:
-                ipv4_address: 192.168.15.8
+                ipv4_address: 192.168.15.9
         devices:
              - /dev/net/tun:/dev/net/tun
         volumes:
             - /home/henok/disag_vcc/oai-ngran_conf/nr-ue/nrue.uicc.conf:/opt/oai-nr-ue/etc/nr-ue.conf
-            #- /home/henok/disag_vcc/scripts:/scripts
-            - /home/henok/disag_vcc/logs/ue:/var/log/ue
+            - /home/henok/disag_vcc/oai-ngran_conf/nr-ue/rfsim_channel_ci.conf:/opt/oai-nr-ue/etc/rfsim_channel_ci.conf
         healthcheck:
             test: /bin/bash -c "pgrep nr-uesoftmodem"
             interval: 10s
