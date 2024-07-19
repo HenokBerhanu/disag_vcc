@@ -1,0 +1,36 @@
+[ENB_APP]   nfapi (0) running mode: MONOLITHIC
+[0m[UTIL]   threadCreate() for Tpool0_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool1_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool2_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool3_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool4_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool5_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool6_-1: creating thread (no affinity, default priority)
+[0m[UTIL]   threadCreate() for Tpool7_-1: creating thread (no affinity, default priority)
+[0m[93m[UTIL]   no SYS_NICE capability: cannot set thread priority and affinity, consider running with sudo for optimum performance
+[0m[OPT]   OPT disabled
+[0m[HW]   Version: Branch: HEAD Abrev. Hash: e8a083767a Date: Mon Jul 15 06:00:37 2024 +0000
+[0m[PDCP]   pdcp init,usegtp usenetlink
+[0m[PDCP]   TUN: Opened socket oaitun_ue1 with fd nas_sock_fd[0]=97
+[0m[PDCP]   UE pdcp will use tun interface
+[0m[NR_MAC]   [UE0] Initializing MAC
+[0m[RLC]   Activated srb0 for UE 0
+[0m[93m[RLC]   SRB0 already exists for UE 0, do nothing
+[0m[PHY]   Set UE_fo_compensation 0, UE_scan_carrier 0, UE_no_timing_correction 0 
+, chest-freq 0, chest-time 0
+[0m[PHY]   Set UE nb_rx_antenna 1, nb_tx_antenna 1, threequarter_fs 0, ssb_start_subcarrier 516
+[0m[PHY]   Initializing frame parms: set nb_antenna_ports_gNB 1, tdd_config, 3, Nid_cell 0
+[0m
+Assertion (i >= 0 && i < (sizeof(nr_bandtable)/sizeof(*(nr_bandtable)))) failed!
+In get_nr_table_idx() /oai-ran/common/utils/nr/nr_common.c:689
+band is not existing: 0
+
+Exiting execution
+CMDLINE: "/opt/oai-nr-ue/bin/nr-uesoftmodem" "-O" "/opt/oai-nr-ue/etc/nr-ue.conf" 
+[LIBCONFIG] Path for include directive set to: /opt/oai-nr-ue/etc
+[CONFIG] function config_libconfig_init returned 0
+[CONFIG] config module libconfig loaded
+[CONFIG] debug flags: 0x00000000
+log init done
+shlib_path libldpc.so
+[LOADER] library libldpc.so successfully loaded
