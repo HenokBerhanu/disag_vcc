@@ -266,6 +266,7 @@ static void rx_func(processingData_L1_t *info)
     gNB->if_inst->NR_UL_indication(&gNB->UL_INFO);
     stop_meas(&gNB->ul_indication_stats);
 
+#ifndef OAI_FHI72
     notifiedFIFO_elt_t *res = newNotifiedFIFO_elt(sizeof(processingData_L1_t), 0, &gNB->L1_rx_out, NULL);
     processingData_L1_t *syncMsg = NotifiedFifoData(res);
     syncMsg->gNB = gNB;
@@ -274,6 +275,7 @@ static void rx_func(processingData_L1_t *info)
     res->key = slot_rx;
     LOG_D(NR_PHY, "Signaling completion for %d.%d (mod_slot %d) on L1_rx_out\n", frame_rx, slot_rx, slot_rx % RU_RX_SLOT_DEPTH);
     pushNotifiedFIFO(&gNB->L1_rx_out, res);
+#endif
   }
 
   stop_meas(&softmodem_stats_rxtx_sf);
