@@ -143,8 +143,6 @@ char channels[128] = "0";
 int rx_input_level_dBm;
 int otg_enabled;
 
-uint64_t num_missed_slots=0; // counter for the number of missed slots
-
 RU_t **RCconfig_RU(int nb_RU,int nb_L1_inst,PHY_VARS_eNB ***eNB,uint64_t *ru_mask,pthread_mutex_t *ru_mutex,pthread_cond_t *ru_cond);
 
 RU_t **RCconfig_RU(int nb_RU,int nb_L1_inst,PHY_VARS_eNB ***eNB,uint64_t *ru_mask,pthread_mutex_t *ru_mutex,pthread_cond_t *ru_cond);
@@ -159,7 +157,6 @@ eth_params_t *eth_params;
 
 double cpuf;
 
-int oaisim_flag=0;
 
 /* hardcoded into gtp_itf.cpp */
 bool sdap_data_req(protocol_ctxt_t *ctxt_p,
@@ -542,8 +539,8 @@ int main ( int argc, char **argv )
   printf("RC.nb_L1_inst:%d\n", RC.nb_L1_inst);
 
   if (RC.nb_L1_inst > 0) {
-    printf("Initializing eNB threads single_thread_flag:%d wait_for_sync:%d\n", get_softmodem_params()->single_thread_flag,get_softmodem_params()->wait_for_sync);
-    init_eNB(get_softmodem_params()->single_thread_flag,get_softmodem_params()->wait_for_sync);
+    printf("Initializing eNB threads wait_for_sync:%d\n", get_softmodem_params()->wait_for_sync);
+    init_eNB(get_softmodem_params()->wait_for_sync);
   }
   for (int x=0; x < RC.nb_L1_inst; x++)
     for (int CC_id=0; CC_id<RC.nb_L1_CC[x]; CC_id++) {

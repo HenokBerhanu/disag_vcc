@@ -35,7 +35,6 @@
 
 extern RAN_CONTEXT_t RC;
 extern UL_RCC_IND_t UL_RCC_INFO;
-extern int single_thread_flag;
 extern uint16_t sf_ahead;
 
 int aerial_wake_gNB_rxtx(PHY_VARS_gNB *gNB, uint16_t sfn, uint16_t slot)

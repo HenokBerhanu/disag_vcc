@@ -42,13 +42,6 @@
 #include "openair1/PHY/TOOLS/phy_scope_interface.h"
 #include "nfapi/open-nFAPI/nfapi/public_inc/nfapi_nr_interface.h"
 
-/* dynamic shift for LLR computation for TM3/4
- * set as command line argument, see lte-softmodem.c
- * default value: 0
- */
-int32_t nr_dlsch_demod_shift = 0;
-//int16_t interf_unaw_shift = 13;
-
 // #define DEBUG_HARQ(a...) printf(a)
 #define DEBUG_HARQ(...)
 //#define DEBUG_DLSCH_DEMOD

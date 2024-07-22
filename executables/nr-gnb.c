@@ -482,7 +482,7 @@ void init_eNB_afterRU(void) {
 
 }
 
-void init_gNB(int single_thread_flag,int wait_for_sync) {
+void init_gNB(int wait_for_sync) {
 
   int inst;
   PHY_VARS_gNB *gNB;
@@ -500,12 +500,11 @@ void init_gNB(int single_thread_flag,int wait_for_sync) {
     }
     gNB                     = RC.gNB[inst];
     gNB->abstraction_flag   = 0;
-    gNB->single_thread_flag = single_thread_flag;
     /*nr_polar_init(&gNB->nrPolar_params,
       NR_POLAR_PBCH_MESSAGE_TYPE,
       NR_POLAR_PBCH_PAYLOAD_BITS,
       NR_POLAR_PBCH_AGGREGATION_LEVEL);*/
-    LOG_I(PHY,"Initializing gNB %d single_thread_flag:%d\n",inst,gNB->single_thread_flag);
+    LOG_I(PHY,"Initializing gNB %d\n",inst);
     LOG_I(PHY,"Initializing gNB %d\n",inst);
 
     LOG_I(PHY,"Registering with MAC interface module (before %p)\n",gNB->if_inst);

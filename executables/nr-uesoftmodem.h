@@ -36,12 +36,10 @@
   {"usrp-args",                CONFIG_HLP_USRP_ARGS,           0,               .strptr=&usrp_args,                       .defstrval="type=b200",          TYPE_STRING,   0}, \
   {"tx_subdev",                CONFIG_HLP_TX_SUBDEV,           0,               .strptr=&tx_subdev,                       .defstrval=NULL,                 TYPE_STRING,   0}, \
   {"rx_subdev",                CONFIG_HLP_RX_SUBDEV,           0,               .strptr=&rx_subdev,                       .defstrval=NULL,                 TYPE_STRING,   0}, \
-  {"single-thread-disable",    CONFIG_HLP_NOSNGLT,             PARAMFLAG_BOOL,  .iptr=&single_thread_flag,                .defintval=1,                    TYPE_INT,      0}, \
   {"dlsch-parallel",           CONFIG_HLP_DLSCH_PARA,          0,               .u8ptr=NULL,                              .defintval=0,                    TYPE_UINT8,    0}, \
   {"offset-divisor",           CONFIG_HLP_OFFSET_DIV,          0,               .uptr=&nrUE_params.ofdm_offset_divisor,   .defuintval=8,                   TYPE_UINT32,   0}, \
   {"max-ldpc-iterations",      CONFIG_HLP_MAX_LDPC_ITERATIONS, 0,               .iptr=&nrUE_params.max_ldpc_iterations,   .defuintval=8,                  TYPE_UINT8,    0}, \
   {"ldpc-offload-enable",      CONFIG_HLP_LDPC_OFFLOAD,        PARAMFLAG_BOOL,  .iptr=&(nrUE_params.ldpc_offload_flag),   .defintval=0,                   TYPE_INT,      0}, \
-  {"nr-dlsch-demod-shift",     CONFIG_HLP_DLSHIFT,             0,               .iptr=(int32_t *)&nr_dlsch_demod_shift,   .defintval=0,                    TYPE_INT,      0}, \
   {"V" ,                       CONFIG_HLP_VCD,                 PARAMFLAG_BOOL,  .iptr=&vcdflag,                           .defintval=0,                    TYPE_INT,      0}, \
   {"uecap_file",               CONFIG_HLP_UECAP_FILE,          0,               .strptr=&uecap_file,                      .defstrval="./uecap_ports1.xml", TYPE_STRING,   0}, \
   {"rrc_config_path",          CONFIG_HLP_RRC_CFG_PATH,        0,               .strptr=&rrc_config_path,                 .defstrval=NULL,                 TYPE_STRING,   0}, \
@@ -58,7 +56,6 @@
   {"ue-max-power",                 NULL,                       0,               .iptr=&(tx_max_power[0]),            .defintval=90,     TYPE_INT,      0}, \
   {"r"  ,                          CONFIG_HLP_PRB_SA,          0,               .iptr=&(nrUE_params.N_RB_DL),                .defintval=106,    TYPE_UINT,     0}, \
   {"ssb",                          CONFIG_HLP_SSC,             0,               .iptr=&(nrUE_params.ssb_start_subcarrier), .defintval=516,    TYPE_UINT16,   0}, \
-  {"T" ,                           CONFIG_HLP_TDD,             PARAMFLAG_BOOL,  .iptr=&tddflag,                      .defintval=0,      TYPE_INT,      0}, \
   {"if_freq" ,                     CONFIG_HLP_IF_FREQ,         0,               .u64ptr=&(nrUE_params.if_freq),              .defuintval=0,     TYPE_UINT64,   0}, \
   {"if_freq_off" ,                 CONFIG_HLP_IF_FREQ_OFF,     0,               .iptr=&(nrUE_params.if_freq_off),            .defuintval=0,     TYPE_INT,      0}, \
   {"chest-freq",                   CONFIG_HLP_CHESTFREQ,       0,               .iptr=&(nrUE_params.chest_freq),             .defintval=0,      TYPE_INT,      0}, \
@@ -105,6 +102,6 @@ extern void reset_opp_meas(void);
 extern void print_opp_meas(void);
 void start_oai_nrue_threads(void);
 void *UE_thread(void *arg);
-void init_nr_ue_vars(PHY_VARS_NR_UE *ue, uint8_t UE_id, uint8_t abstraction_flag);
+void init_nr_ue_vars(PHY_VARS_NR_UE *ue, uint8_t UE_id);
 void init_nrUE_standalone_thread(int ue_idx);
 #endif

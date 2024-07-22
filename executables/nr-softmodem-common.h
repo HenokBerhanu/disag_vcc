@@ -49,13 +49,11 @@
 #define CONFIG_HLP_UESCAN "set UE to scan all possible GSCN in current bandwidth\n"
 #define CONFIG_HLP_UEFO          "set UE to enable estimation and compensation of frequency offset\n"
 #define CONFIG_HLP_DUMPFRAME     "dump UE received frame to rxsig_frame0.dat and exit\n"
-#define CONFIG_HLP_DLSHIFT       "dynamic shift for LLR compuation for TM3/4 (default 0)\n"
 #define CONFIG_HLP_PHYTST        "test UE phy layer, mac disabled\n"
 #define CONFIG_HLP_DORA          "test gNB  and UE with RA procedures\n"
 #define CONFIG_HLP_DMAMAP        "use DMA memory mapping\n"
 #define CONFIG_HLP_EXCCLK        "tells hardware to use a clock reference (0:internal(default), 1:external, 2:gpsdo)\n"
 #define CONFIG_HLP_USIM          "use XOR autentication algo in case of test usim mode\n"
-#define CONFIG_HLP_NOSNGLT "Disables single-thread mode in lte-softmodem\n"
 #define CONFIG_HLP_DLF           "Set the downlink frequency for all component carriers\n"
 #define CONFIG_HLP_ULOFF         "Set the uplink frequnecy offset for all component carriers\n"
 #define CONFIG_HLP_CHOFF         "Channel id offset\n"
@@ -134,10 +132,6 @@ extern int sync_var;
 extern uint64_t downlink_frequency[MAX_NUM_CCs][4];
 extern int32_t uplink_frequency_offset[MAX_NUM_CCs][4];
 
-extern int rx_input_level_dBm;
-extern uint64_t num_missed_slots; // counter for the number of missed slots
-
-extern int oaisim_flag;
 extern int oai_exit;
 
 extern openair0_config_t openair0_cfg[MAX_CARDS];
