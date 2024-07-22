@@ -1,13 +1,12 @@
 [ENB_APP]   nfapi (0) running mode: MONOLITHIC
-[0m[UTIL]   threadCreate() for Tpool0_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool1_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool2_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool3_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool4_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool5_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool6_-1: creating thread (no affinity, default priority)
-[0m[UTIL]   threadCreate() for Tpool7_-1: creating thread (no affinity, default priority)
-[0m[93m[UTIL]   no SYS_NICE capability: cannot set thread priority and affinity, consider running with sudo for optimum performance
+[0m[UTIL]   threadCreate() for Tpool0_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool1_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool2_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool3_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool4_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool5_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool6_-1: creating thread with affinity ffffffff, priority 97
+[0m[UTIL]   threadCreate() for Tpool7_-1: creating thread with affinity ffffffff, priority 97
 [0m[OPT]   OPT disabled
 [0m[HW]   Version: Branch: HEAD Abrev. Hash: e8a083767a Date: Mon Jul 15 06:00:37 2024 +0000
 [0m[PDCP]   pdcp init,usegtp usenetlink
