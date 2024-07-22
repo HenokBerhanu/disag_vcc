@@ -987,7 +987,7 @@ void *UE_thread(void *arg)
 
 void init_NR_UE(int nb_inst, char *uecap_file, char *reconfig_file, char *rbconfig_file)
 {
-  NR_UE_RRC_INST_t *rrc_inst = nr_rrc_init_ue(uecap_file, nb_inst);
+  NR_UE_RRC_INST_t *rrc_inst = nr_rrc_init_ue(uecap_file, nb_inst, get_nrUE_params()->nb_antennas_tx);
   NR_UE_MAC_INST_t *mac_inst = nr_l2_init_ue(nb_inst);
   AssertFatal(mac_inst, "Couldn't allocate MAC module\n");
 
