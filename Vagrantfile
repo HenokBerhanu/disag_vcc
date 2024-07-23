@@ -8,7 +8,7 @@
 
 CPUS = 8
 RAM = 16384
-BOX = "ubuntu/focal64"
+BOX = "ubuntu/jammy64"
 VM_NAME = "ntn"
 
 ####################
