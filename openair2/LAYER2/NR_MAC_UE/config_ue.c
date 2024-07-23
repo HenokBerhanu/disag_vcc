@@ -2064,6 +2064,8 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
           free(sc_info->maxMIMO_Layers_PDSCH);
           sc_info->maxMIMO_Layers_PDSCH = NULL;
         }
+        if (sc_info->downlinkHARQ_FeedbackDisabled_r17)
+          asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
         break;
       case NR_SetupRelease_PDSCH_ServingCellConfig_PR_setup: {
         NR_PDSCH_ServingCellConfig_t *pdsch_servingcellconfig = scd->pdsch_ServingCellConfig->choice.setup;
@@ -2075,6 +2077,28 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
         UPDATE_IE(sc_info->xOverhead_PDSCH, pdsch_servingcellconfig->xOverhead, long);
         if (pdsch_servingcellconfig->ext1 && pdsch_servingcellconfig->ext1->maxMIMO_Layers)
           UPDATE_IE(sc_info->maxMIMO_Layers_PDSCH, pdsch_servingcellconfig->ext1->maxMIMO_Layers, long);
+        if (pdsch_servingcellconfig->ext3 && pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17) {
+          switch (pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->present) {
+            case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_NOTHING:
+              break;
+            case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_release:
+              if (sc_info->downlinkHARQ_FeedbackDisabled_r17)
+                asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
+              break;
+            case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_setup:
+              if (sc_info->downlinkHARQ_FeedbackDisabled_r17 == NULL) {
+                sc_info->downlinkHARQ_FeedbackDisabled_r17 = calloc(1, sizeof(*sc_info->downlinkHARQ_FeedbackDisabled_r17));
+                sc_info->downlinkHARQ_FeedbackDisabled_r17->buf = calloc(4, sizeof(*sc_info->downlinkHARQ_FeedbackDisabled_r17->buf));
+              }
+              sc_info->downlinkHARQ_FeedbackDisabled_r17->size = pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.size;
+              sc_info->downlinkHARQ_FeedbackDisabled_r17->bits_unused = pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.bits_unused;
+              for (int i = 0; i < sc_info->downlinkHARQ_FeedbackDisabled_r17->size; i++)
+                sc_info->downlinkHARQ_FeedbackDisabled_r17->buf[i] = pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[i];
+              break;
+            default:
+              AssertFatal(false, "Invalid case\n");
+          }
+        }
         break;
       }
       default:

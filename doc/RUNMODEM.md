@@ -182,6 +182,20 @@ Besides this, some timers, e.g. `sr_ProhibitTimer_v1700`, `t300`, `t301` and `t3
 ...
 ```
 
+To improve the achievable UL and DL throughput in conditions with large RTT, there is a feature defined in REL17 to disable HARQ feedback.
+This allows to reuse HARQ processes immediately, but it breaks compatibility with UEs not supporting this REL17 feature.
+To enable this feature, the `disable_harq` flag has to be added to the gNB conf file in the section `gNBs.[0]`
+```
+...
+    sib1_tda     = 5;
+    min_rxtxtime = 6;
+    disable_harq = 1; // <--
+
+    servingCellConfigCommon = (
+    {
+...
+```
+
 So with these modifications to the file `targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band66.fr1.25PRB.usrpx300.conf` an example gNB command for FDD, 5 MHz BW, 15 kHz SCS, GEO satellite 5G NR NTN is this:
 ```
 cd cmake_targets

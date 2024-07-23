@@ -34,7 +34,7 @@
     TYPE *tmp = ORIGIN;                          \
     ORIGIN = DESTINATION;                        \
     DESTINATION = tmp;                           \
-  } while(0);                                    \
+  } while (0)                                    \
 
 // Same as above but swapping ASN1 elements that are not pointers
 #define UPDATE_NP_IE(DESTINATION, ORIGIN, TYPE)     \
@@ -42,7 +42,7 @@
     TYPE tmp = ORIGIN;                              \
     ORIGIN = DESTINATION;                           \
     DESTINATION = tmp;                              \
-  } while(0);                                       \
+  } while (0)                                       \
 
 // Macro handles reception of SetupRelease element ORIGIN (see NR_SetupRelease.h)
 // If release (NR_SetupRelease_xxx_PR_release equivalent to 1), removing structure from DESTINATION
@@ -55,7 +55,7 @@
     }                                                                  \
     if (ORIGIN->present == 2)                                          \
       UPDATE_IE(DESTINATION, ORIGIN->choice.setup, TYPE);              \
-  } while(0);                                                          \
+  } while (0)                                                          \
 
 // Macro handles reception of SetupRelease element ORIGIN (see NR_SetupRelease.h)
 // If release (NR_SetupRelease_xxx_PR_release equivalent to 1), removing structure from DESTINATION
@@ -72,7 +72,7 @@
       DESTINATION->present = ORIGIN->present;                               \
       UPDATE_IE(DESTINATION->choice.setup, ORIGIN->choice.setup, TYPE);     \
     }                                                                       \
-  } while(0);                                                               \
+  } while (0)                                                               \
 
 // Macro releases entries in list TARGET if the corresponding ID is found in list SOURCE.
 // Prints an error if ID not found in list.

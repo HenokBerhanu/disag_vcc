@@ -269,6 +269,7 @@ void release_mac_configuration(NR_UE_MAC_INST_t *mac,
   asn1cFreeStruc(asn_DEF_NR_CSI_MeasConfig, sc->csi_MeasConfig);
   asn1cFreeStruc(asn_DEF_NR_CSI_AperiodicTriggerStateList, sc->aperiodicTriggerStateList);
   asn1cFreeStruc(asn_DEF_NR_NTN_Config_r17, sc->ntn_Config_r17);
+  asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc->downlinkHARQ_FeedbackDisabled_r17);
   free(sc->xOverhead_PDSCH);
   free(sc->nrofHARQ_ProcessesForPDSCH);
   free(sc->rateMatching_PUSCH);
