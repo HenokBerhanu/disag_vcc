@@ -621,6 +621,16 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
     }
 
   }
+
+  if (scd->downlinkBWP_ToAddModList->list.count == 0) {
+    free(scd->downlinkBWP_ToAddModList);
+    scd->downlinkBWP_ToAddModList = NULL;
+  }
+
+  if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.count == 0) {
+    free(scd->uplinkConfig->uplinkBWP_ToAddModList);
+    scd->uplinkConfig->uplinkBWP_ToAddModList = NULL;
+  }
 }
 
 static void verify_gnb_param_notset(paramdef_t *params, int paramidx, const char *paramname)
@@ -1250,13 +1260,17 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
   config.force_UL256qam_off = *GNBParamList.paramarray[0][GNB_FORCEUL256QAMOFF_IDX].iptr;
   config.use_deltaMCS = *GNBParamList.paramarray[0][GNB_USE_DELTA_MCS_IDX].iptr != 0;
   config.maxMIMO_layers = *GNBParamList.paramarray[0][GNB_MAXMIMOLAYERS_IDX].iptr;
+  config.disable_harq = *GNBParamList.paramarray[0][GNB_DISABLE_HARQ_IDX].iptr;
+  if (config.disable_harq)
+    LOG_W(GNB_APP, "\"disable_harq\" is a REL17 feature and is incompatible with REL15 and REL16 UEs!\n");
   LOG_I(GNB_APP,
-        "CSI-RS %d, SRS %d, 256 QAM %s, delta_MCS %s, maxMIMO_Layers %d\n",
+        "CSI-RS %d, SRS %d, 256 QAM %s, delta_MCS %s, maxMIMO_Layers %d, HARQ feedback %s\n",
         config.do_CSIRS,
         config.do_SRS,
         config.force_256qam_off ? "force off" : "may be on",
         config.use_deltaMCS ? "on" : "off",
-        config.maxMIMO_layers);
+        config.maxMIMO_layers,
+        config.disable_harq ? "disabled" : "enabled");
   int tot_ant = config.pdsch_AntennaPorts.N1 * config.pdsch_AntennaPorts.N2 * config.pdsch_AntennaPorts.XP;
   AssertFatal(config.maxMIMO_layers != 0 && config.maxMIMO_layers <= tot_ant, "Invalid maxMIMO_layers %d\n", config.maxMIMO_layers);
 
@@ -1349,7 +1363,10 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
         printf("**************** RETURNED FROM configure_nfapi_vnf() vnf_port:%d\n", RC.nrmac[j]->eth_params_s.my_portc);
       } else if(strcmp(*(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_S_PREFERENCE_IDX].strptr), "aerial") == 0){
 #ifdef ENABLE_AERIAL
-        printf("Configuring VNF for Aerial connection\n");
+        RC.nrmac[j]->nvipc_params_s.nvipc_shm_prefix =
+            strdup(*(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_S_SHM_PREFIX].strptr));
+        RC.nrmac[j]->nvipc_params_s.nvipc_poll_core = *(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_S_POLL_CORE].i8ptr);
+        printf("Configuring VNF for Aerial connection with prefix %s\n", RC.nrmac[j]->eth_params_s.local_if_name);
         aerial_configure_nr_fapi_vnf();
 #endif
       } else { // other midhaul
@@ -1360,12 +1377,18 @@ void RCconfig_nr_macrlc(configmodule_interface_t *cfg)
       dl_bler_options->upper = *(MacRLC_ParamList.paramarray[j][MACRLC_DL_BLER_TARGET_UPPER_IDX].dblptr);
       dl_bler_options->lower = *(MacRLC_ParamList.paramarray[j][MACRLC_DL_BLER_TARGET_LOWER_IDX].dblptr);
       dl_bler_options->max_mcs = *(MacRLC_ParamList.paramarray[j][MACRLC_DL_MAX_MCS_IDX].u8ptr);
-      dl_bler_options->harq_round_max = *(MacRLC_ParamList.paramarray[j][MACRLC_DL_HARQ_ROUND_MAX_IDX].u8ptr);
+      if (config.disable_harq)
+        dl_bler_options->harq_round_max = 1;
+      else
+        dl_bler_options->harq_round_max = *(MacRLC_ParamList.paramarray[j][MACRLC_DL_HARQ_ROUND_MAX_IDX].u8ptr);
       NR_bler_options_t *ul_bler_options = &RC.nrmac[j]->ul_bler;
       ul_bler_options->upper = *(MacRLC_ParamList.paramarray[j][MACRLC_UL_BLER_TARGET_UPPER_IDX].dblptr);
       ul_bler_options->lower = *(MacRLC_ParamList.paramarray[j][MACRLC_UL_BLER_TARGET_LOWER_IDX].dblptr);
       ul_bler_options->max_mcs = *(MacRLC_ParamList.paramarray[j][MACRLC_UL_MAX_MCS_IDX].u8ptr);
-      ul_bler_options->harq_round_max = *(MacRLC_ParamList.paramarray[j][MACRLC_UL_HARQ_ROUND_MAX_IDX].u8ptr);
+      if (config.disable_harq)
+        ul_bler_options->harq_round_max = 1;
+      else
+        ul_bler_options->harq_round_max = *(MacRLC_ParamList.paramarray[j][MACRLC_UL_HARQ_ROUND_MAX_IDX].u8ptr);
       RC.nrmac[j]->min_grant_prb = *(MacRLC_ParamList.paramarray[j][MACRLC_MIN_GRANT_PRB_IDX].u8ptr);
       RC.nrmac[j]->min_grant_mcs = *(MacRLC_ParamList.paramarray[j][MACRLC_MIN_GRANT_MCS_IDX].u8ptr);
       RC.nrmac[j]->identity_pm = *(MacRLC_ParamList.paramarray[j][MACRLC_IDENTITY_PM_IDX].u8ptr);

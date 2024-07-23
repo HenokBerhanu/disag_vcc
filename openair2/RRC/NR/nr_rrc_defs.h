@@ -269,9 +269,7 @@ typedef struct gNB_RRC_UE_s {
   NR_UE_MRDC_Capability_t*           UE_Capability_MRDC;
   int                                UE_MRDC_Capability_size;
 
-  NR_CellGroupConfig_t               *secondaryCellGroup;
   NR_CellGroupConfig_t               *masterCellGroup;
-  NR_RRCReconfiguration_t            *reconfig;
   NR_RadioBearerConfig_t             *rb_config;
 
   ImsiMobileIdentity_t               imsi;
@@ -318,7 +316,6 @@ typedef struct gNB_RRC_UE_s {
   uint32_t ue_rrc_inactivity_timer;
   uint32_t                           ue_reestablishment_counter;
   uint32_t                           ue_reconfiguration_counter;
-  struct NR_SpCellConfig                                *spCellConfig;
 
   /* NGUEContextSetup might come with PDU sessions, but setup needs to be
    * delayed after security (and capability); PDU sessions are stored here */

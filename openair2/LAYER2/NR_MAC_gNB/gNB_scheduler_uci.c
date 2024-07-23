@@ -385,19 +385,18 @@ static void handle_dl_harq(NR_UE_info_t * UE,
                            bool success,
                            int harq_round_max)
 {
-  NR_UE_harq_t *harq = &UE->UE_sched_ctrl.harq_processes[harq_pid];
+  NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+  NR_UE_harq_t *harq = &sched_ctrl->harq_processes[harq_pid];
   harq->feedback_slot = -1;
   harq->is_waiting = false;
   if (success) {
-    add_tail_nr_list(&UE->UE_sched_ctrl.available_dl_harq, harq_pid);
-    harq->round = 0;
-    harq->ndi ^= 1;
+    finish_nr_dl_harq(sched_ctrl, harq_pid);
   } else if (harq->round >= harq_round_max - 1) {
     abort_nr_dl_harq(UE, harq_pid);
     LOG_D(NR_MAC, "retransmission error for UE %04x (total %"PRIu64")\n", UE->rnti, UE->mac_stats.dl.errors);
   } else {
     LOG_D(PHY,"NACK for: pid %d, ue %04x\n",harq_pid, UE->rnti);
-    add_tail_nr_list(&UE->UE_sched_ctrl.retrans_dl_harq, harq_pid);
+    add_tail_nr_list(&sched_ctrl->retrans_dl_harq, harq_pid);
     harq->round++;
   }
 }
@@ -1105,11 +1104,14 @@ void handle_nr_uci_pucch_2_3_4(module_id_t mod_id,
     for (int harq_bit = 0; harq_bit < uci_234->harq.harq_bit_len; harq_bit++) {
       const int acknack = ((uci_234->harq.harq_payload[harq_bit >> 3]) >> harq_bit) & 0x01;
       NR_UE_harq_t *harq = find_harq(frame, slot, UE, RC.nrmac[mod_id]->dl_bler.harq_round_max);
-      if (!harq)
+      if (!harq) {
+        LOG_E(NR_MAC, "UE %04x: Could not find a HARQ process at %4d.%2d!\n", UE->rnti, frame, slot);
         break;
+      }
       DevAssert(harq->is_waiting);
       const int8_t pid = sched_ctrl->feedback_dl_harq.head;
       remove_front_nr_list(&sched_ctrl->feedback_dl_harq);
+      LOG_D(NR_MAC,"%4d.%2d bit %d pid %d ack/nack %d\n",frame, slot, harq_bit, pid, acknack);
       handle_dl_harq(UE, pid, uci_234->harq.harq_crc != 1 && acknack, nrmac->dl_bler.harq_round_max);
     }
     free(uci_234->harq.harq_payload);

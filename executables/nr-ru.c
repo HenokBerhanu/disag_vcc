@@ -1146,8 +1146,9 @@ void *ru_thread( void *param ) {
   int                initial_wait=0;
   int                opp_enabled0 = opp_enabled;
 
+#ifndef OAI_FHI72
   bool rx_tti_busy[RU_RX_SLOT_DEPTH] = {false};
-  nfapi_nr_config_request_scf_t *cfg = &ru->config;
+#endif
   // set default return value
   ru_thread_status = 0;
   // set default return value
@@ -1319,8 +1320,9 @@ void *ru_thread( void *param ) {
     if (ru->idx != 0)
       proc->frame_tx = (proc->frame_tx + proc->frame_offset) & 1023;
 
+#ifndef OAI_FHI72
     // do RX front-end processing (frequency-shift, dft) if needed
-    int slot_type = nr_slot_select(cfg, proc->frame_rx, proc->tti_rx);
+    int slot_type = nr_slot_select(&ru->config, proc->frame_rx, proc->tti_rx);
     if (slot_type == NR_UPLINK_SLOT || slot_type == NR_MIXED_SLOT) {
       if (ru->feprx) {
         if (rx_tti_busy[proc->tti_rx % RU_RX_SLOT_DEPTH]) {
@@ -1393,6 +1395,7 @@ void *ru_thread( void *param ) {
          memset(&ru->rt_ru_profiling.return_RU_prachrx[rt_prof_idx],0,sizeof(struct timespec));
       }
     } // end if (slot_type == NR_UPLINK_SLOT || slot_type == NR_MIXED_SLOT) {
+#endif
 
     notifiedFIFO_elt_t *resTx = newNotifiedFIFO_elt(sizeof(processingData_L1tx_t), 0, &gNB->L1_tx_out, NULL);
     processingData_L1tx_t *syncMsgTx = NotifiedFifoData(resTx);

@@ -152,6 +152,7 @@ typedef struct nr_mac_config_t {
   bool force_UL256qam_off;
   bool use_deltaMCS;
   int maxMIMO_layers;
+  bool disable_harq;
   //int pusch_TargetSNRx10;
   //int pucch_TargetSNRx10;
   nr_mac_timers_t timer_config;
@@ -159,7 +160,7 @@ typedef struct nr_mac_config_t {
 
 typedef struct NR_preamble_ue {
   uint8_t num_preambles;
-  uint8_t *preamble_list;
+  uint8_t preamble_list[MAX_NUM_NR_PRACH_PREAMBLES];
 } NR_preamble_ue_t;
 
 typedef struct NR_sched_pdcch {
@@ -436,7 +437,7 @@ typedef struct NR_sched_pdsch {
   int8_t dl_harq_pid;
 
   // pucch format allocation
-  uint16_t pucch_allocation;
+  int16_t pucch_allocation;
 
   uint16_t pm_index;
   uint8_t nrOfLayers;
@@ -760,6 +761,8 @@ typedef struct gNB_MAC_INST_s {
   char *f1u_addr;
   /// Ethernet parameters for fronthaul interface
   eth_params_t                    eth_params_s;
+  /// Nvipc parameters for FAPI interface with Aerial
+  nvipc_params_t nvipc_params_s;
   /// Module
   module_id_t                     Mod_id;
   /// timing advance group

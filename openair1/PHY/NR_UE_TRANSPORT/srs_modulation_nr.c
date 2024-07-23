@@ -205,7 +205,9 @@ int generate_srs_nr(nfapi_nr_srs_pdu_t *srs_config_pdu,
   uint16_t T_SRS = srs_config_pdu->t_srs;
   uint16_t T_offset = srs_config_pdu->t_offset;
   uint8_t R = 1<<srs_config_pdu->num_repetitions;
-  uint8_t N_ap = 1<<srs_config_pdu->num_ant_ports;            // Number of antenna port for transmission
+  /* Number of antenna ports (M) can't be higher than number of physical antennas (N): M <= N */
+  uint8_t num_ant_ports = 1 << srs_config_pdu->num_ant_ports; // Number of antenna port for transmission
+  int N_ap = num_ant_ports > frame_parms->nb_antennas_tx ? frame_parms->nb_antennas_tx : num_ant_ports;
   uint8_t N_symb_SRS = 1<<srs_config_pdu->num_symbols;        // Number of consecutive OFDM symbols
   uint8_t l0 = frame_parms->symbols_per_slot - 1 - l_offset;  // Starting symbol position in the time domain
   uint8_t n_SRS_cs_max = srs_max_number_cs[srs_config_pdu->comb_size];

@@ -121,8 +121,6 @@ int DU_send_INITIAL_UL_RRC_MESSAGE_TRANSFER(module_id_t     module_idP,
   return 0;
 }
 
-nr_bler_struct nr_bler_data[NR_NUM_MCS];
-
 void nr_derive_key(int alg_type, uint8_t alg_id, const uint8_t key[32], uint8_t out[16])
 {
   (void)alg_type;
@@ -630,15 +628,14 @@ int main(int argc, char *argv[])
 
   NR_ServingCellConfig_t *scd = calloc(1,sizeof(NR_ServingCellConfig_t));
   prepare_scd(scd);
+  /* removes unnecessary BWPs, if any */
+  fix_scd(scd);
 
   NR_UE_NR_Capability_t* UE_Capability_nr = CALLOC(1,sizeof(NR_UE_NR_Capability_t));
   prepare_sim_uecap(UE_Capability_nr,scc,mu,
                     N_RB_UL,0,mcs_table);
 
   NR_CellGroupConfig_t *secondaryCellGroup = get_default_secondaryCellGroup(scc, scd, UE_Capability_nr, 0, 1, &conf, 0);
-
-  /* RRC parameter validation for secondaryCellGroup */
-  fix_scd(scd);
 
   NR_BCCH_BCH_Message_t *mib = get_new_MIB_NR(scc);
 

@@ -111,11 +111,8 @@ RAN_CONTEXT_t RC;
 int oai_exit = 0;
 
 
-extern int16_t  nr_dlsch_demod_shift;
 static int      tx_max_power[MAX_NUM_CCs] = {0};
 
-int      single_thread_flag = 1;
-int                 tddflag = 0;
 int                 vcdflag = 0;
 
 double          rx_gain_off = 0.0;
@@ -126,12 +123,10 @@ char       *rrc_config_path = NULL;
 char *reconfig_file = NULL;
 char *rbconfig_file = NULL;
 char            *uecap_file = NULL;
-int               dumpframe = 0;
 
 uint64_t        downlink_frequency[MAX_NUM_CCs][4];
 int32_t         uplink_frequency_offset[MAX_NUM_CCs][4];
 uint64_t        sidelink_frequency[MAX_NUM_CCs][4];
-int             rx_input_level_dBm;
 
 #if MAX_NUM_CCs == 1
 rx_gain_t                rx_gain_mode[MAX_NUM_CCs][4] = {{max_gain,max_gain,max_gain,max_gain}};
@@ -149,50 +144,10 @@ openair0_config_t openair0_cfg[MAX_CARDS];
 int16_t           node_synch_ref[MAX_NUM_CCs];
 int               otg_enabled;
 double            cpuf;
-
-
-int          chain_offset = 0;
-int           card_offset = 0;
-uint64_t num_missed_slots = 0; // counter for the number of missed slots
-int            numerology = 0;
-int           oaisim_flag = 0;
-int            emulate_rf = 0;
 uint32_t       N_RB_DL    = 106;
 
 // NTN cellSpecificKoffset-r17, but in slots for DL SCS
 unsigned int NTN_UE_Koffset = 0;
-
-/* see file openair2/LAYER2/MAC/main.c for why abstraction_flag is needed
- * this is very hackish - find a proper solution
- */
-uint8_t abstraction_flag=0;
-
-nr_bler_struct nr_bler_data[NR_NUM_MCS];
-
-static void init_bler_table(char*);
-
-/*---------------------BMC: timespec helpers -----------------------------*/
-
-struct timespec min_diff_time = { .tv_sec = 0, .tv_nsec = 0 };
-struct timespec max_diff_time = { .tv_sec = 0, .tv_nsec = 0 };
-
-struct timespec clock_difftime(struct timespec start, struct timespec end) {
-  struct timespec temp;
-
-  if ((end.tv_nsec-start.tv_nsec)<0) {
-    temp.tv_sec = end.tv_sec-start.tv_sec-1;
-    temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-  } else {
-    temp.tv_sec = end.tv_sec-start.tv_sec;
-    temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-  }
-
-  return temp;
-}
-
-void print_difftimes(void) {
-  LOG_I(HW,"difftimes min = %lu ns ; max = %lu ns\n", min_diff_time.tv_nsec, max_diff_time.tv_nsec);
-}
 
 int create_tasks_nrue(uint32_t ue_nb) {
   LOG_D(NR_RRC, "%s(ue_nb:%d)\n", __FUNCTION__, ue_nb);
@@ -286,8 +241,8 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
   UE->rx_total_gain_dB     = (int)rx_gain[CC_id][0] + rx_gain_off;
   UE->tx_total_gain_dB     = (int)tx_gain[CC_id][0];
   UE->tx_power_max_dBm     = tx_max_power[CC_id];
-  UE->rf_map.card          = card_offset;
-  UE->rf_map.chain         = CC_id + chain_offset;
+  UE->rf_map.card          = 0;
+  UE->rf_map.chain         = CC_id + 0;
   UE->max_ldpc_iterations  = nrUE_params.max_ldpc_iterations;
   UE->ldpc_offload_enable  = nrUE_params.ldpc_offload_flag;
   UE->UE_scan_carrier      = nrUE_params.UE_scan_carrier;
@@ -302,11 +257,6 @@ void set_options(int CC_id, PHY_VARS_NR_UE *UE){
         UE->UE_fo_compensation, UE->UE_scan_carrier, UE->no_timing_correction, UE->chest_freq, UE->chest_time);
 
   // Set FP variables
-
-  if (tddflag){
-    fp->frame_type = TDD;
-    LOG_I(PHY, "Set UE frame_type %d\n", fp->frame_type);
-  }
 
   fp->nb_antennas_rx       = nrUE_params.nb_antennas_rx;
   fp->nb_antennas_tx       = nrUE_params.nb_antennas_tx;
@@ -428,9 +378,9 @@ static void get_channel_model_mode(configmodule_interface_t *cfg)
   int num_xp_antennas = *GNBParams[GNB_PDSCH_ANTENNAPORTS_XP_IDX].iptr;
 
   if (num_xp_antennas == 2)
-    init_bler_table("NR_MIMO2x2_AWGN_RESULTS_DIR");
+    init_nr_bler_table("NR_MIMO2x2_AWGN_RESULTS_DIR");
   else
-    init_bler_table("NR_AWGN_RESULTS_DIR");
+    init_nr_bler_table("NR_AWGN_RESULTS_DIR");
 }
 
 void start_oai_nrue_threads()
@@ -574,7 +524,7 @@ int main(int argc, char **argv)
         }
 
         UE[CC_id]->sl_mode = get_softmodem_params()->sl_mode;
-        init_nr_ue_vars(UE[CC_id], inst, abstraction_flag);
+        init_nr_ue_vars(UE[CC_id], inst);
 
         if (UE[CC_id]->sl_mode) {
           AssertFatal(UE[CC_id]->sl_mode == 2, "Only Sidelink mode 2 supported. Mode 1 not yet supported\n");
@@ -646,55 +596,3 @@ int main(int argc, char **argv)
   return 0;
 }
 
-// Read in each MCS file and build BLER-SINR-TB table
-static void init_bler_table(char *env_string) {
-  memset(nr_bler_data, 0, sizeof(nr_bler_data));
-
-  const char *awgn_results_dir = getenv(env_string);
-  if (!awgn_results_dir) {
-    LOG_W(NR_MAC, "No %s\n", env_string);
-    return;
-  }
-
-  for (unsigned int i = 0; i < NR_NUM_MCS; i++) {
-    char fName[1024];
-    snprintf(fName, sizeof(fName), "%s/mcs%u_awgn_5G.csv", awgn_results_dir, i);
-    FILE *pFile = fopen(fName, "r");
-    if (!pFile) {
-      LOG_E(NR_MAC, "%s: open %s: %s\n", __func__, fName, strerror(errno));
-      continue;
-    }
-    size_t bufSize = 1024;
-    char * line = NULL;
-    char * token;
-    char * temp = NULL;
-    int nlines = 0;
-    while (getline(&line, &bufSize, pFile) > 0) {
-      if (!strncmp(line, "SNR", 3)) {
-        continue;
-      }
-
-      if (nlines > NR_NUM_SINR) {
-        LOG_E(NR_MAC, "BLER FILE ERROR - num lines greater than expected - file: %s\n", fName);
-        abort();
-      }
-
-      token = strtok_r(line, ";", &temp);
-      int ncols = 0;
-      while (token != NULL) {
-        if (ncols > NUM_BLER_COL) {
-          LOG_E(NR_MAC, "BLER FILE ERROR - num of cols greater than expected\n");
-          abort();
-        }
-
-        nr_bler_data[i].bler_table[nlines][ncols] = strtof(token, NULL);
-        ncols++;
-
-        token = strtok_r(NULL, ";", &temp);
-      }
-      nlines++;
-    }
-    nr_bler_data[i].length = nlines;
-    fclose(pFile);
-  }
-}

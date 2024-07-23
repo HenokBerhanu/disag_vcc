@@ -80,7 +80,9 @@ void handle_nr_rach(NR_UL_IND_t *UL_info)
     LOG_D(MAC,"UL_info[Frame %d, Slot %d] Calling initiate_ra_proc RACH:SFN/SLOT:%d/%d\n",
           UL_info->frame, UL_info->slot, UL_info->rach_ind.sfn, UL_info->rach_ind.slot);
     for (int i = 0; i < UL_info->rach_ind.number_of_pdus; i++) {
-      AssertFatal(UL_info->rach_ind.pdu_list[i].num_preamble == 1, "More than 1 preamble not supported\n");
+      if (UL_info->rach_ind.pdu_list[i].num_preamble > 1) {
+	LOG_E(MAC, "Not more than 1 preamble per RACH PDU supported, ignoring the rest\n");
+      }
       nr_initiate_ra_proc(UL_info->module_id,
                           UL_info->CC_id,
                           UL_info->rach_ind.sfn,
@@ -192,6 +194,9 @@ void handle_nr_ulsch(NR_UL_IND_t *UL_info)
       AssertFatal(crc->rnti == rx->rnti, "mis-match between CRC RNTI %04x and RX RNTI %04x\n",
                   crc->rnti, rx->rnti);
 
+      AssertFatal(crc->harq_id == rx->harq_id, "mis-match between CRC HARQ ID %04x and RX HARQ ID %04x\n",
+                  crc->harq_id, rx->harq_id);
+
       LOG_D(NR_MAC,
             "%4d.%2d Calling rx_sdu (CRC %s/tb_crc_status %d)\n",
             UL_info->frame,
@@ -207,6 +212,7 @@ void handle_nr_ulsch(NR_UL_IND_t *UL_info)
                 crc->rnti,
                 crc->tb_crc_status ? NULL : rx->pdu,
                 rx->pdu_length,
+                crc->harq_id,
                 crc->timing_advance,
                 crc->ul_cqi,
                 crc->rssi);

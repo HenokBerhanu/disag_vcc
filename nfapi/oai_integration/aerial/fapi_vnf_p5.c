@@ -38,43 +38,13 @@
 
 extern RAN_CONTEXT_t RC;
 extern UL_RCC_IND_t UL_RCC_INFO;
-extern int single_thread_flag;
 extern uint16_t sf_ahead;
 extern uint16_t slot_ahead;
 
 
-static pthread_t vnf_aerial_p7_start_pthread;
-void *aerial_vnf_nr_aerial_p7_start_thread(void *ptr)
+void *aerial_vnf_nr_p7_config_init(void *ptr)
 {
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "%s()\n", __FUNCTION__);
-  pthread_setname_np(pthread_self(), "VNF_P7_AERIAL");
-  nfapi_vnf_p7_config_t *config = (nfapi_vnf_p7_config_t *)ptr;
-  aerial_nfapi_nr_vnf_p7_start(config);
-  return config;
-}
-
-void *aerial_vnf_nr_p7_thread_start(void *ptr)
-{
-  int s;
-  cpu_set_t cpuset;
-
-//  CPU_SET(8, &cpuset);
-//  s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-//  if (s != 0)
-//    printf("failed to set afinity\n");
-
-  pthread_attr_t ptAttr;
-  if (pthread_attr_setschedpolicy(&ptAttr, SCHED_RR) != 0) {
-    printf("Failed to set pthread sched policy SCHED_RR\n");
-  }
-
-  pthread_attr_setinheritsched(&ptAttr, PTHREAD_EXPLICIT_SCHED);
-  struct sched_param thread_params;
-  thread_params.sched_priority = 20;
-
-  if (pthread_attr_setschedparam(&ptAttr, &thread_params) != 0) {
-    printf("failed to set sched param\n");
-  }
+  vnf_p7_info *p7_vnf = (vnf_p7_info *)ptr;
 
   init_queue(&gnb_rach_ind_queue);
   init_queue(&gnb_rx_ind_queue);
@@ -82,7 +52,6 @@ void *aerial_vnf_nr_p7_thread_start(void *ptr)
   init_queue(&gnb_uci_ind_queue);
   init_queue(&gnb_slot_ind_queue);
 
-  vnf_p7_info *p7_vnf = (vnf_p7_info *)ptr;
   p7_vnf->config->port = p7_vnf->local_port;
   p7_vnf->config->sync_indication = &aerial_phy_sync_indication;
   p7_vnf->config->slot_indication = &aerial_phy_slot_indication;
@@ -112,8 +81,7 @@ void *aerial_vnf_nr_p7_thread_start(void *ptr)
   p7_vnf->config->codec_config.deallocate = &aerial_vnf_deallocate;
   p7_vnf->config->allocate_p7_vendor_ext = &aerial_phy_allocate_p7_vendor_ext;
   p7_vnf->config->deallocate_p7_vendor_ext = &aerial_phy_deallocate_p7_vendor_ext;
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "[VNF] Creating VNF NFAPI P7 start thread %s\n", __FUNCTION__);
-  threadCreate(&vnf_aerial_p7_start_pthread, &aerial_vnf_nr_aerial_p7_start_thread, p7_vnf->config, "aerial_p7_start", -1, OAI_PRIORITY_RT);
+
   return 0;
 }
 
@@ -223,13 +191,7 @@ int aerial_pnf_nr_start_resp_cb(nfapi_vnf_config_t *config, int p5_idx, nfapi_nr
               vnf->p7_vnfs[0].config,
               vnf->p7_vnfs[0].thread_started);
 
-  if (p7_vnf->thread_started == 0) {
-    pthread_t vnf_p7_thread;
-    threadCreate(&vnf_p7_thread, &aerial_vnf_nr_p7_thread_start, p7_vnf, "aerial_p7_thread", -1, OAI_PRIORITY_RT);
-    p7_vnf->thread_started = 1;
-  } else {
-    // P7 thread already running.
-  }
+  aerial_vnf_nr_p7_config_init(p7_vnf);
 
   // start all the phys in the pnf.
   NFAPI_TRACE(NFAPI_TRACE_INFO, "[VNF] Sending NFAPI_VNF_PARAM_REQUEST phy_id:%d\n", pnf->phys[0].id);
@@ -566,13 +528,7 @@ void aerial_configure_nr_fapi_vnf()
               vnf->p7_vnfs[0].config,
               vnf->p7_vnfs[0].thread_started);
 
-  if (p7_vnf->thread_started == 0) {
-    pthread_t vnf_p7_thread;
-    threadCreate(&vnf_p7_thread, &aerial_vnf_nr_p7_thread_start, p7_vnf, "aerial_p7_thread", -1, OAI_PRIORITY_RT);
-    p7_vnf->thread_started = 1;
-  } else {
-    // P7 thread already running.
-  }
+  aerial_vnf_nr_p7_config_init(p7_vnf);
 }
 uint8_t aerial_unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
@@ -581,45 +537,6 @@ uint8_t aerial_unpack_nr_param_response(uint8_t **ppReadPackedMsg, uint8_t *end,
 uint8_t aerial_unpack_nr_config_response(uint8_t **ppReadPackedMsg, uint8_t *end, void *msg, nfapi_p4_p5_codec_config_t *config)
 {
   return unpack_nr_config_response(ppReadPackedMsg, end, msg, config);
-}
-
-// monitor the p7 endpoints and the timing loop and
-// send indications to mac
-int aerial_nfapi_nr_vnf_p7_start(nfapi_vnf_p7_config_t *config)
-{
-  if (config == 0)
-    return -1;
-
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "%s()\n", __FUNCTION__);
-
-  vnf_p7_t *vnf_p7 = (vnf_p7_t *)config;
-
-  // Create p7 receive udp port
-  // todo : this needs updating for Ipv6
-
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "Initialising VNF P7 port:%u\n", config->port);
-
-
-  struct timespec ref_time;
-  clock_gettime(CLOCK_MONOTONIC, &ref_time);
-  uint8_t setup_done = 0;
-  while (vnf_p7->terminate == 0) {
-    if (setup_done == 0) {
-      struct timespec curr_time;
-      clock_gettime(CLOCK_MONOTONIC, &curr_time);
-      uint8_t setup_time = curr_time.tv_sec - ref_time.tv_sec;
-      if (setup_time > 3) {
-        setup_done = 1;
-      }
-    }
-
-  }
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "Closing p7 socket\n");
-  close(vnf_p7->socket);
-
-  NFAPI_TRACE(NFAPI_TRACE_INFO, "%s() returning\n", __FUNCTION__);
-
-  return 0;
 }
 
 int oai_fapi_ul_tti_req(nfapi_nr_ul_tti_request_t *ul_tti_req)

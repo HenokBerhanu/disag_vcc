@@ -126,6 +126,7 @@ typedef enum {
 #define GNB_CONFIG_STRING_UMONDEFAULTDRB                "um_on_default_drb"
 #define GNB_CONFIG_STRING_FORCE256QAMOFF                "force_256qam_off"
 #define GNB_CONFIG_STRING_MAXMIMOLAYERS                 "maxMIMO_layers"
+#define GNB_CONFIG_STRING_DISABLE_HARQ                  "disable_harq"
 #define GNB_CONFIG_STRING_ENABLE_SDAP                   "enable_sdap"
 #define GNB_CONFIG_STRING_DRBS                          "drbs"
 #define GNB_CONFIG_STRING_USE_DELTA_MCS                 "use_deltaMCS"
@@ -138,6 +139,7 @@ typedef enum {
 #define GNB_CONFIG_HLP_STRING_ENABLE_SDAP               "enable the SDAP layer\n"
 #define GNB_CONFIG_HLP_FORCE256QAMOFF                   "suppress activation of 256 QAM despite UE support"
 #define GNB_CONFIG_HLP_MAXMIMOLAYERS                    "limit on maxMIMO-layers for DL"
+#define GNB_CONFIG_HLP_DISABLE_HARQ                     "disable feedback for all HARQ processes (REL17 feature)"
 #define GNB_CONFIG_HLP_STRING_DRBS                      "Number of total DRBs to establish, including the mandatory for PDU SEssion (default=1)\n"
 #define GNB_CONFIG_HLP_GNB_DU_ID "defines the gNB-DU ID (only applicable for DU)"
 #define GNB_CONFIG_HLP_GNB_CU_UP_ID "defines the gNB-CU-UP ID (only applicable for CU-UP)"
@@ -172,14 +174,15 @@ typedef enum {
 {GNB_CONFIG_STRING_MINRXTXTIME,                  NULL,   0,            .iptr=NULL,  .defintval=2,                 TYPE_INT,       0},  \
 {GNB_CONFIG_STRING_ULPRBBLACKLIST,               NULL,   0,            .strptr=NULL,.defstrval="",                TYPE_STRING,    0},  \
 {GNB_CONFIG_STRING_UMONDEFAULTDRB,               NULL, PARAMFLAG_BOOL, .uptr=NULL,  .defuintval=0,                TYPE_UINT,      0},  \
-{GNB_CONFIG_STRING_FORCE256QAMOFF, GNB_CONFIG_HLP_FORCE256QAMOFF, PARAMFLAG_BOOL, .iptr=NULL, .defintval=0,        TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_FORCE256QAMOFF, GNB_CONFIG_HLP_FORCE256QAMOFF, PARAMFLAG_BOOL, .iptr=NULL, .defintval=0,       TYPE_INT,       0},  \
 {GNB_CONFIG_STRING_ENABLE_SDAP, GNB_CONFIG_HLP_STRING_ENABLE_SDAP, PARAMFLAG_BOOL,.iptr=NULL, .defintval=0,       TYPE_INT,       0},  \
-{GNB_CONFIG_STRING_DRBS, GNB_CONFIG_HLP_STRING_DRBS,     0,            .iptr=NULL,  .defintval=1,                 TYPE_INT,       0},  \
-{GNB_CONFIG_STRING_GNB_DU_ID, GNB_CONFIG_HLP_GNB_DU_ID,   0,          .u64ptr=NULL, .defint64val=1,               TYPE_UINT64,    0},  \
+{GNB_CONFIG_STRING_DRBS, GNB_CONFIG_HLP_STRING_DRBS,     0,           .iptr=NULL,   .defintval=1,                 TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_GNB_DU_ID, GNB_CONFIG_HLP_GNB_DU_ID,  0,           .u64ptr=NULL, .defint64val=1,               TYPE_UINT64,    0},  \
 {GNB_CONFIG_STRING_GNB_CU_UP_ID, GNB_CONFIG_HLP_GNB_CU_UP_ID, 0,      .u64ptr=NULL, .defint64val=1,               TYPE_UINT64,    0},  \
-{GNB_CONFIG_STRING_USE_DELTA_MCS, GNB_CONFIG_HLP_USE_DELTA_MCS,     0,            .iptr=NULL,  .defintval=0,                 TYPE_INT,       0},  \
-{GNB_CONFIG_STRING_FORCEUL256QAMOFF, GNB_CONFIG_HLP_FORCEUL256QAMOFF,     0,            .iptr=NULL,  .defintval=0,                 TYPE_INT,       0},  \
-{GNB_CONFIG_STRING_MAXMIMOLAYERS, GNB_CONFIG_HLP_MAXMIMOLAYERS, 0,      .iptr=NULL, .defintval=-1,               TYPE_INT,    0},  \
+{GNB_CONFIG_STRING_USE_DELTA_MCS, GNB_CONFIG_HLP_USE_DELTA_MCS, 0,    .iptr=NULL,   .defintval=0,                 TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_FORCEUL256QAMOFF, GNB_CONFIG_HLP_FORCEUL256QAMOFF, 0,.iptr=NULL, .defintval=0,                 TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_MAXMIMOLAYERS, GNB_CONFIG_HLP_MAXMIMOLAYERS, 0,     .iptr=NULL,  .defintval=-1,                TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_DISABLE_HARQ, GNB_CONFIG_HLP_DISABLE_HARQ, PARAMFLAG_BOOL, .iptr=NULL, .defintval=0,           TYPE_INT,       0},  \
 }
 // clang-format on
 
@@ -216,6 +219,7 @@ typedef enum {
 #define GNB_USE_DELTA_MCS_IDX           29
 #define GNB_FORCEUL256QAMOFF_IDX        30
 #define GNB_MAXMIMOLAYERS_IDX           31
+#define GNB_DISABLE_HARQ_IDX            32
 
 #define TRACKING_AREA_CODE_OKRANGE {0x0001,0xFFFD}
 #define GNBPARAMS_CHECK {                                         \
@@ -223,6 +227,7 @@ typedef enum {
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s2 = { config_check_intrange, TRACKING_AREA_CODE_OKRANGE } },\
+  { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
   { .s5 = { NULL } },                                             \
@@ -559,6 +564,8 @@ typedef enum {
 #define CONFIG_STRING_MACRLC_LOCAL_N_PORTD                 "local_n_portd"
 #define CONFIG_STRING_MACRLC_REMOTE_N_PORTD                "remote_n_portd"
 #define CONFIG_STRING_MACRLC_TRANSPORT_S_PREFERENCE        "tr_s_preference"
+#define CONFIG_STRING_MACRLC_TRANSPORT_S_SHM_PREFIX        "tr_s_shm_prefix"
+#define CONFIG_STRING_MACRLC_TRANSPORT_S_POLL_CORE         "tr_s_poll_core"
 #define CONFIG_STRING_MACRLC_LOCAL_S_ADDRESS               "local_s_address"
 #define CONFIG_STRING_MACRLC_REMOTE_S_ADDRESS              "remote_s_address"
 #define CONFIG_STRING_MACRLC_LOCAL_S_PORTC                 "local_s_portc"

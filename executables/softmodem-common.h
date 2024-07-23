@@ -125,7 +125,6 @@ extern "C"
 #define SA                  softmodem_params.sa
 #define SL_MODE             softmodem_params.sl_mode
 #define WAIT_FOR_SYNC       softmodem_params.wait_for_sync
-#define SINGLE_THREAD_FLAG  softmodem_params.single_thread_flag
 #define CHAIN_OFFSET        softmodem_params.chain_offset
 #define NUMEROLOGY          softmodem_params.numerology
 #define BAND                softmodem_params.band
@@ -162,7 +161,6 @@ extern int usrp_tx_thread;
   {"time-source",           CONFIG_HLP_TME,           0,              .uptr=&TIMING_SOURCE,                   .defintval=0,             TYPE_UINT,   0},  \
   {"tune-offset",           CONFIG_HLP_TUNE_OFFSET,   0,              .dblptr=&TUNE_OFFSET,                   .defintval=0,             TYPE_DOUBLE, 0},  \
   {"wait-for-sync",         NULL,                     PARAMFLAG_BOOL, .iptr=&WAIT_FOR_SYNC,                   .defintval=0,             TYPE_INT,    0},  \
-  {"single-thread-enable",  CONFIG_HLP_NOSNGLT,       PARAMFLAG_BOOL, .iptr=&SINGLE_THREAD_FLAG,              .defintval=0,             TYPE_INT,    0},  \
   {"C" ,                    CONFIG_HLP_DLF,           0,              .u64ptr=&(downlink_frequency[0][0]),    .defuintval=0,            TYPE_UINT64, 0},  \
   {"CO" ,                   CONFIG_HLP_ULF,           0,              .iptr=&(uplink_frequency_offset[0][0]), .defintval=0,             TYPE_INT,    0},  \
   {"a" ,                    CONFIG_HLP_CHOFF,         0,              .iptr=&CHAIN_OFFSET,                    .defintval=0,             TYPE_INT,    0},  \
@@ -197,7 +195,6 @@ extern int usrp_tx_thread;
 
 // clang-format off
 #define CMDLINE_PARAMS_CHECK_DESC {         \
-    { .s5 = { NULL } },                     \
     { .s5 = { NULL } },                     \
     { .s5 = { NULL } },                     \
     { .s5 = { NULL } },                     \
@@ -328,7 +325,6 @@ typedef struct {
   uint8_t        usim_test;
   int            emulate_rf;
   int            wait_for_sync; //eNodeB only
-  int            single_thread_flag; //eNodeB only
   int            chain_offset;
   int            numerology;
   int            band;

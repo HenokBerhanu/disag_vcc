@@ -1861,17 +1861,6 @@ static void nr_generate_Msg4(module_id_t module_idP,
       return;
     }
 
-    const int delta_PRI = 0;
-    int r_pucch = nr_get_pucch_resource(coreset, ra->UL_BWP.pucch_Config, CCEIndex);
-
-    LOG_D(NR_MAC, "Msg4 r_pucch %d (CCEIndex %d, delta_PRI %d)\n", r_pucch, CCEIndex, delta_PRI);
-
-    int alloc = nr_acknack_scheduling(nr_mac, UE, frameP, slotP, r_pucch, 1);
-    if (alloc < 0) {
-      LOG_D(NR_MAC,"Couldn't find a pucch allocation for ack nack (msg4) in frame %d slot %d\n",frameP,slotP);
-      return;
-    }
-
     // HARQ management
     if (current_harq_pid < 0) {
       AssertFatal(sched_ctrl->available_dl_harq.head >= 0,
@@ -1879,16 +1868,37 @@ static void nr_generate_Msg4(module_id_t module_idP,
       current_harq_pid = sched_ctrl->available_dl_harq.head;
       remove_front_nr_list(&sched_ctrl->available_dl_harq);
     }
+
+    const int delta_PRI = 0;
+
+    int alloc = -1;
+    if (!get_FeedbackDisabled(UE->sc_info.downlinkHARQ_FeedbackDisabled_r17, current_harq_pid)) {
+      int r_pucch = nr_get_pucch_resource(coreset, ra->UL_BWP.pucch_Config, CCEIndex);
+
+      LOG_D(NR_MAC, "Msg4 r_pucch %d (CCEIndex %d, delta_PRI %d)\n", r_pucch, CCEIndex, delta_PRI);
+
+      alloc = nr_acknack_scheduling(nr_mac, UE, frameP, slotP, r_pucch, 1);
+      if (alloc < 0) {
+        LOG_D(NR_MAC,"Couldn't find a pucch allocation for ack nack (msg4) in frame %d slot %d\n",frameP,slotP);
+        return;
+      }
+    }
+
     NR_UE_harq_t *harq = &sched_ctrl->harq_processes[current_harq_pid];
+    NR_sched_pucch_t *pucch = NULL;
     DevAssert(!harq->is_waiting);
-    add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
-    harq->is_waiting = true;
+    if (alloc < 0) {
+      finish_nr_dl_harq(sched_ctrl, current_harq_pid);
+    } else {
+      pucch = &sched_ctrl->sched_pucch[alloc];
+      add_tail_nr_list(&sched_ctrl->feedback_dl_harq, current_harq_pid);
+      harq->feedback_slot = pucch->ul_slot;
+      harq->feedback_frame = pucch->frame;
+      harq->is_waiting = true;
+    }
     ra->harq_pid = current_harq_pid;
     UE->mac_stats.dl.rounds[harq->round]++;
 
-    NR_sched_pucch_t *pucch = &sched_ctrl->sched_pucch[alloc];
-    harq->feedback_slot = pucch->ul_slot;
-    harq->feedback_frame = pucch->frame;
     harq->tb_size = tb_size;
 
     uint8_t *buf = (uint8_t *) harq->transportBlock;
@@ -1967,8 +1977,22 @@ static void nr_generate_Msg4(module_id_t module_idP,
       vrb_map[BWPStart + rb + rbStart] |= SL_to_bitmap(msg4_tda.startSymbolIndex, msg4_tda.nrOfSymbols);
     }
 
-    ra->ra_state = nrRA_WAIT_Msg4_ACK;
-    LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes, next state WAIT_Msg4_ACK\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
+    if (pucch == NULL) {
+      LOG_A(NR_MAC, "(UE RNTI 0x%04x) Skipping Ack of RA-Msg4. CBRA procedure succeeded!\n", ra->rnti);
+      UE->Msg4_ACKed = true;
+
+      // Pause scheduling according to:
+      // 3GPP TS 38.331 Section 12 Table 12.1-1: UE performance requirements for RRC procedures for UEs
+      // Msg4 may transmit a RRCReconfiguration, for example when UE sends RRCReestablishmentComplete and MAC CE for C-RNTI in Msg3.
+      // In that case, gNB will generate a RRCReconfiguration that will be transmitted in Msg4, so we need to apply CellGroup after the Ack,
+      // UE->apply_cellgroup was already set when processing RRCReestablishment message
+      nr_mac_enable_ue_rrc_processing_timer(nr_mac, UE, UE->apply_cellgroup);
+
+      nr_clear_ra_proc(ra);
+    } else {
+      ra->ra_state = nrRA_WAIT_Msg4_ACK;
+      LOG_I(NR_MAC,"UE %04x Generate msg4: feedback at %4d.%2d, payload %d bytes, next state WAIT_Msg4_ACK\n", ra->rnti, pucch->frame, pucch->ul_slot, harq->tb_size);
+    }
   }
 }
 
@@ -2017,11 +2041,12 @@ void nr_clear_ra_proc(NR_RA_t *ra)
 {
   /* we assume that this function is mutex-protected from outside */
   NR_SCHED_ENSURE_LOCKED(&RC.nrmac[0]->sched_lock);
+  memset(ra, 0, sizeof(*ra));
   ra->ra_state = nrRA_gNB_IDLE;
-  ra->timing_offset = 0;
-  ra->msg3_round = 0;
-  if(ra->cfra == false) {
-    ra->rnti = 0;
+  if (get_softmodem_params()->sa) { // in SA, prefill with allowed preambles
+    ra->preambles.num_preambles = MAX_NUM_NR_PRACH_PREAMBLES;
+    for (int i = 0; i < MAX_NUM_NR_PRACH_PREAMBLES; i++)
+      ra->preambles.preamble_list[i] = i;
   }
 }
 

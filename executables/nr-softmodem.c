@@ -79,6 +79,7 @@ unsigned short config_frames[4] = {2,9,11,13};
 #include "nfapi/oai_integration/vendor_ext.h"
 #include "gnb_config.h"
 #include "openair2/E1AP/e1ap_common.h"
+#include "LAYER2/NR_MAC_gNB/nr_mac_gNB.h"
 #ifdef ENABLE_AERIAL
 #include "nfapi/oai_integration/aerial/fapi_nvIPC.h"
 #endif
@@ -106,7 +107,6 @@ int NB_UE_INST = 0;
 static int wait_for_sync = 0;
 
 unsigned int mmapped_dma=0;
-int single_thread_flag=1;
 
 uint64_t downlink_frequency[MAX_NUM_CCs][4];
 int32_t uplink_frequency_offset[MAX_NUM_CCs][4];
@@ -138,11 +138,7 @@ uint8_t dci_Format = 0;
 uint8_t nb_antenna_tx = 1;
 uint8_t nb_antenna_rx = 1;
 
-int rx_input_level_dBm;
-
 int otg_enabled;
-
-uint64_t num_missed_slots=0; // counter for the number of missed slots
 
 #include <SIMULATION/ETH_TRANSPORT/proto.h>
 
@@ -697,8 +693,8 @@ int main( int argc, char **argv ) {
   printf("RC.nb_nr_L1_inst:%d\n", RC.nb_nr_L1_inst);
 
   if (RC.nb_nr_L1_inst > 0) {
-    printf("Initializing gNB threads single_thread_flag:%d wait_for_sync:%d\n", single_thread_flag,wait_for_sync);
-    init_gNB(single_thread_flag,wait_for_sync);
+    printf("Initializing gNB threads wait_for_sync:%d\n", wait_for_sync);
+    init_gNB(wait_for_sync);
   }
 
   printf("wait_gNBs()\n");
@@ -748,7 +744,8 @@ int main( int argc, char **argv ) {
   if (RC.nb_RU > 0)
     start_NR_RU();
 #ifdef ENABLE_AERIAL
-  nvIPC_Init();
+  gNB_MAC_INST *nrmac = RC.nrmac[0];
+  nvIPC_Init(nrmac->nvipc_params_s);
 #endif
   if (RC.nb_nr_L1_inst > 0) {
     printf("wait RUs\n");

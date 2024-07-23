@@ -52,6 +52,7 @@ There is some general information in the [OpenAirInterface Gitlab Wiki](https://
 - [How to use device-to-device communication (D2D, 4G)](./d2d_emulator_setup.txt)
 - [How to run with E2 agent](../openair2/E2AP/README.md)
 - [How to run the physical simulators](./physical-simulators.md)
+- [How to setup OAI with Nvidia Aerial and Foxconn](./Aerial_FAPI_Split_Tutorial.md)
 
 Legacy unmaintained files:
 - [`L2NFAPI_NOS1.md`](./L2NFAPI_NOS1.md), [`L2NFAPI_S1.md`](./L2NFAPI_S1.md):

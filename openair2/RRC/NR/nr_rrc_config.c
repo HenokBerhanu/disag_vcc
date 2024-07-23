@@ -2685,6 +2685,18 @@ static NR_SpCellConfig_t *get_initial_SpCellConfig(int uid,
   *pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH = NR_PDSCH_ServingCellConfig__nrofHARQ_ProcessesForPDSCH_n16;
   pdsch_servingcellconfig->pucch_Cell = NULL;
   set_dl_maxmimolayers(pdsch_servingcellconfig, scc, NULL, configuration->maxMIMO_layers);
+  if (configuration->disable_harq) {
+    pdsch_servingcellconfig->ext3 = calloc(1, sizeof(*pdsch_servingcellconfig->ext3));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17 = calloc(1, sizeof(*pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->present = NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_setup;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf = calloc(4, sizeof(uint8_t));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.size = 4;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.bits_unused = 0;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[0] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[1] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[2] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[3] = 0xFF;
+  }
 
   // Downlink BWPs
   int n_dl_bwp = 0;
@@ -3025,40 +3037,22 @@ NR_CellGroupConfig_t *decode_cellGroupConfig(const uint8_t *buffer, int buffer_s
   return cellGroupConfig;
 }
 
-/* TODO: this should disappear */
-static void fix_servingcellconfigdedicated(NR_ServingCellConfig_t *scd)
+static NR_ServingCellConfigCommon_t *clone_ServingCellConfigCommon(const NR_ServingCellConfigCommon_t *scc)
 {
-  int b = 0;
-  while (b < scd->downlinkBWP_ToAddModList->list.count) {
-    if (scd->downlinkBWP_ToAddModList->list.array[b]->bwp_Common->genericParameters.locationAndBandwidth == 0) {
-      asn_sequence_del(&scd->downlinkBWP_ToAddModList->list, b, 1);
-    } else {
-      b++;
-    }
-  }
+  if (scc == NULL)
+    return NULL;
 
-  if (scd->downlinkBWP_ToAddModList->list.count == 0) {
-    free(scd->downlinkBWP_ToAddModList);
-    scd->downlinkBWP_ToAddModList = NULL;
-  }
-
-  b = 0;
-  while (b < scd->uplinkConfig->uplinkBWP_ToAddModList->list.count) {
-    if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.array[b]->bwp_Common->genericParameters.locationAndBandwidth == 0) {
-      asn_sequence_del(&scd->uplinkConfig->uplinkBWP_ToAddModList->list, b, 1);
-    } else {
-      b++;
-    }
-  }
-
-  if (scd->uplinkConfig->uplinkBWP_ToAddModList->list.count == 0) {
-    free(scd->uplinkConfig->uplinkBWP_ToAddModList);
-    scd->uplinkConfig->uplinkBWP_ToAddModList = NULL;
-  }
+  uint8_t buf[16384];
+  asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_ServingCellConfigCommon, NULL, scc, buf, sizeof(buf));
+  AssertFatal(enc_rval.encoded > 0 && enc_rval.encoded < sizeof(buf), "could not clone NR_ServingCellConfigCommon: problem while encoding\n");
+  NR_ServingCellConfigCommon_t *clone = NULL;
+  asn_dec_rval_t dec_rval = uper_decode(NULL, &asn_DEF_NR_ServingCellConfigCommon, (void **)&clone, buf, enc_rval.encoded, 0, 0);
+  AssertFatal(dec_rval.code == RC_OK && dec_rval.consumed == enc_rval.encoded, "could not clone NR_ServingCellConfigCommon: problem while decoding\n");
+  return clone;
 }
 
 NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigCommon_t *servingcellconfigcommon,
-                                                     NR_ServingCellConfig_t *servingcellconfigdedicated,
+                                                     const NR_ServingCellConfig_t *servingcellconfigdedicated,
                                                      const NR_UE_NR_Capability_t *uecap,
                                                      int scg_id,
                                                      int servCellIndex,
@@ -3076,8 +3070,6 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
     LOG_E(RRC, "No UE Capabilities available when programming default CellGroup in NSA\n");
 
   uint64_t bitmap = get_ssb_bitmap(servingcellconfigcommon);
-  // See comment at the end of this function regarding ServingCellConfig
-  fix_servingcellconfigdedicated(servingcellconfigdedicated);
 
   NR_CellGroupConfig_t *secondaryCellGroup = calloc(1, sizeof(*secondaryCellGroup));
   secondaryCellGroup->cellGroupId = scg_id;
@@ -3097,8 +3089,7 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
       calloc(1, sizeof(*secondaryCellGroup->spCellConfig->reconfigurationWithSync));
 
   NR_ReconfigurationWithSync_t *reconfigurationWithSync = secondaryCellGroup->spCellConfig->reconfigurationWithSync;
-  reconfigurationWithSync->spCellConfigCommon =
-      (NR_ServingCellConfigCommon_t *)servingcellconfigcommon;
+  reconfigurationWithSync->spCellConfigCommon = clone_ServingCellConfigCommon(servingcellconfigcommon);
   reconfigurationWithSync->newUE_Identity =
       (get_softmodem_params()->phy_test == 1) ? 0x1234 : (taus() & 0xffff);
   reconfigurationWithSync->t304 = NR_ReconfigurationWithSync__t304_ms2000;
@@ -3289,6 +3280,18 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
   pdsch_servingcellconfig->pucch_Cell = NULL;
   set_dl_maxmimolayers(pdsch_servingcellconfig, servingcellconfigcommon, uecap, configuration->maxMIMO_layers);
   pdsch_servingcellconfig->ext1->processingType2Enabled = NULL;
+  if (configuration->disable_harq) {
+    pdsch_servingcellconfig->ext3 = calloc(1, sizeof(*pdsch_servingcellconfig->ext3));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17 = calloc(1, sizeof(*pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->present = NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_setup;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf = calloc(4, sizeof(uint8_t));
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.size = 4;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.bits_unused = 0;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[0] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[1] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[2] = 0xFF;
+    pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->choice.setup.buf[3] = 0xFF;
+  }
 
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->csi_MeasConfig = NULL;
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->csi_MeasConfig =
@@ -3381,11 +3384,6 @@ NR_CellGroupConfig_t *get_default_secondaryCellGroup(const NR_ServingCellConfigC
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->dummy1 = NULL;
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->pathlossReferenceLinking = NULL;
   secondaryCellGroup->spCellConfig->spCellConfigDedicated->servingCellMO = NULL;
-
-  // this is pure evil: We should only pass in a ServingCellConfig, without
-  // modifying it! TODO: make a separate function that creates a
-  // ServingCellConfig, and reuse it here
-  *servingcellconfigdedicated = *secondaryCellGroup->spCellConfig->spCellConfigDedicated;
 
   if (LOG_DEBUGFLAG(DEBUG_ASN1)) {
     xer_fprint(stdout, &asn_DEF_NR_SpCellConfig, (void *)secondaryCellGroup->spCellConfig);

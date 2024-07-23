@@ -80,7 +80,6 @@ int8_t nr_mac_rrc_data_req_ue(const module_id_t Mod_idP,
   return 0;
 }
 
-nr_bler_struct nr_bler_data[NR_NUM_MCS];
 void get_nrUE_params(void)
 {
   return;

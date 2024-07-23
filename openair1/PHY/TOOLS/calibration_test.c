@@ -8,7 +8,6 @@
 
 int oai_exit=false;
 unsigned int mmapped_dma=0;
-int      single_thread_flag;
 uint32_t timing_advance;
 int8_t threequarter_fs;
 uint64_t downlink_frequency[MAX_NUM_CCs][4];
