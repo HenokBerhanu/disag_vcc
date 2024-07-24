@@ -97,7 +97,7 @@
         <testCase id="000022">
                 <class>Iperf</class>
                 <desc>iperf (DL/UDP/80M)(30 sec)(single-ue profile)</desc>
-                <iperf_args>-u -b 80M -t 30 -R</iperf_args>
+                <iperf_args>-u -b 150M -t 30 -R</iperf_args>
                 <svr_id>porcepix-cn5g</svr_id>
                 <id>sphex_quectel</id>
                 <iperf_packetloss_threshold>25</iperf_packetloss_threshold>
