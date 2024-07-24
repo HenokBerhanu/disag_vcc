@@ -18,14 +18,14 @@ amf: 8000
 
 # List all the slices
 slices:
-  # - sst: 1
-  #   sd: '010203'
-  #   varqi: 9
-  #   dnn: internetter
   - sst: 1
-    sd: '112233'
+    sd: '010203'
     varqi: 9
-    dnn: internetsat
+    dnn: internet
+  # - sst: 1
+  #   sd: '112233'
+  #   varqi: 9
+  #   dnn: internetsat
     # PDU Sessions Type for this slice
     # possible values are: "IPV4", "IPV6", "IPV4V6", "UNSTRUCTURED", "ETHERNET"
     # when omitted, results in "IPV4"

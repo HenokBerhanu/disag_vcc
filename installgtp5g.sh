@@ -13,7 +13,7 @@ apt-get install -qq \
 
 cd /tmp &&
     rm -rf gtp5g
-    git clone https://github.com/free5gc/gtp5g &&
+    git clone --branch v0.8.10 https://github.com/free5gc/gtp5g &&
     cd gtp5g &&
     make clean &&
     make &&
