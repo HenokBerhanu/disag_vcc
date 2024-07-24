@@ -36,7 +36,7 @@ configuration:
       mnc: "93" # Mobile Network Code (2 or 3 digits string, digit: 0~9)
   locality: area1 # Name of the location where a set of AMF, SMF and UPFs are located
   pfcp: # the IP address of N4 interface on this SMF (PFCP)
-    addr: 192.168.5.3
+    addr: 192.168.0.9 # 192.168.5.3
   userplaneInformation: # list of userplane information
     upNodes: # information of userplane node (AN or UPF)
       # gNBter: # the name of the node
@@ -63,7 +63,7 @@ configuration:
         #an_ip: 192.168.15.7
       UPF:  # the name of the node
         type: UPF # the type of the node (AN or UPF)
-        nodeID: 192.168.5.5 #192.168.5.4 the IP/FQDN of N4 interface on this UPF (PFCP)
+        nodeID: 192.168.0.12 # 192.168.5.5 192.168.5.4 the IP/FQDN of N4 interface on this UPF (PFCP)
         sNssaiUpfInfos: # S-NSSAI information list for this UPF
           - sNssai: # S-NSSAI (Single Network Slice Selection Assistance Information)
               sst: 1 # Slice/Service Type (uinteger, range: 0~255)
@@ -75,13 +75,13 @@ configuration:
         interfaces: # Interface list for this UPF
           - interfaceType: N3 # the type of the interface (N3 or N9)
             endpoints: # the IP address of this N3/N9 interface on this UPF
-              - 192.168.30.4 #192.168.15.4 192.168.20.4
+              - 192.168.0.12 #192.168.30.4 192.168.15.4 192.168.20.4
             networkInstance: internetsat # Data Network Name (DNN)
     links: # the topology graph of userplane, A and B represent the two nodes of each link
-      # - A: gNBter
-      #   B: UPFter
-      - A: gNBsat
+      - A: gNB1
         B: UPF
+      # - A: gNBsat
+      #   B: UPF
   nrfUri: http://192.168.0.4:8000 # a valid URI of NRF
 
 # the kind of log output
