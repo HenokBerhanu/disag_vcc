@@ -22,10 +22,10 @@ slices:
     sd: '010203'
     varqi: 9
     dnn: internet
-  # - sst: 1
-  #   sd: '112233'
-  #   varqi: 9
-  #   dnn: internetsat
+  - sst: 1
+    sd: '112233'
+    varqi: 9
+    dnn: internet
     # PDU Sessions Type for this slice
     # possible values are: "IPV4", "IPV6", "IPV4V6", "UNSTRUCTURED", "ETHERNET"
     # when omitted, results in "IPV4"
@@ -35,4 +35,4 @@ slices:
 imsi:
   - imsi-208930000000001
   - imsi-208930000000002
-  #- imsi-208930000000003
+  - imsi-208930000000003

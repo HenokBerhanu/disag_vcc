@@ -22,7 +22,7 @@ configuration:
     # - ifname: gtpif
 
   dnn_list:
-    - dnn: internetsat
-      cidr: 10.62.0.0/16 #192.168.50.0/24
+    - dnn: internet
+      cidr: 10.60.0.0/16 #192.168.50.0/24
       # [optional] apn_list[*].natifname
       # natifname: eth0

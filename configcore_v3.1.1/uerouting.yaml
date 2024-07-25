@@ -9,7 +9,7 @@ ueRoutingInfo: # the list of UE routing information
     topology: # Network topology for this group (Uplink: A->B, Downlink: B->A)
     # default path derived from this topology
     # node name should be consistent with smfcfg.yaml
-      - A: gNB1
+      - A: gNB
         B: UPF
     # specificPath:
     #   - dest: 10.60.0.0/16 # the destination IP address on Data Network (DN)

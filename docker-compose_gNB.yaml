@@ -18,7 +18,7 @@ services:
     image: docker.io/henok28/f5gc-nrf:v3.1.1 #nrf:v3.1.1
     command: --config nrfcfg.yaml
     volumes:
-      - ./configcore/nrfcfg.yaml:/free5gc/nrfcfg.yaml
+      - ./configcore_v3.1.1/nrfcfg.yaml:/free5gc/nrfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -31,12 +31,11 @@ services:
     container_name: amf
     image:  docker.io/henok28/f5gc-amf:v3.1.1 #amf:v3.1.1b   free5gc/amf:v3.3.0
     entrypoint: bash ./entrypoint.sh
-    #command: ./amf -c ./config/amfcfg.yaml
     expose:
       - "8000"
     volumes:
-      - ./configcore/amfcfg.yaml:/free5gc/amfcfg.yaml
-      - ./configcore/amf.sh:/free5gc/entrypoint.sh
+      - ./configcore_v3.1.1/amfcfg.yaml:/free5gc/amfcfg.yaml
+      - ./configcore_v3.1.1/amf.sh:/free5gc/entrypoint.sh
     cap_add:
       - NET_ADMIN
     environment:
@@ -44,8 +43,6 @@ services:
     networks:
       sbi:
         ipv4_address: 192.168.0.5
-      # n123-terrestrial:
-      #   ipv4_address: 192.168.15.5
     depends_on:
       - nrf
 
@@ -54,7 +51,7 @@ services:
     image: docker.io/henok28/f5gc-uereg:latest #uereg:latest
     command: --config populatecfg.yaml
     volumes:
-      - ./configcore/uereg.yaml:/populate/populatecfg.yaml
+      - ./configcore_v3.1.1/uereg.yaml:/populate/populatecfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -70,34 +67,27 @@ services:
     image: docker.io/henok28/f5gc-upf:v3.1.1 #upf:v3.1.1
     command: bash ./upf-iptables.sh
     volumes:
-      - ./configcore/upfcfg.yaml:/free5gc/upfcfg.yaml
-      - ./configcore/upf-iptables.sh:/free5gc/upf-iptables.sh
+      - ./configcore_v3.1.1/upfcfg.yaml:/free5gc/upfcfg.yaml
+      - ./configcore_v3.1.1/upf-iptables.sh:/free5gc/upf-iptables.sh
     cap_add:
       - NET_ADMIN
     networks:
       sbi:
         ipv4_address: 192.168.0.12
-      # n123-terrestrial:
-      #   ipv4_address: 192.168.15.6
-      # pfcp:
-      #   ipv4_address: 192.168.5.5
 
   smf:
     container_name: smf
     image: docker.io/henok28/f5gc-smf:v3.1.1 #smf:v3.1.1b
-    #command: --config smfcfg.yaml --uerouting uerouting.yaml
     entrypoint: bash ./entrypoint.sh
     volumes:
-      - ./configcore/smfcfg.yaml:/free5gc/smfcfg.yaml
-      - ./configcore/uerouting.yaml:/free5gc/uerouting.yaml
-      - ./configcore/smf.sh:/free5gc/entrypoint.sh
+      - ./configcore_v3.1.1/smfcfg.yaml:/free5gc/smfcfg.yaml
+      - ./configcore_v3.1.1/uerouting.yaml:/free5gc/uerouting.yaml
+      - ./configcore_v3.1.1/smf.sh:/free5gc/entrypoint.sh
     cap_add:
       - NET_ADMIN
     networks:
       sbi:
         ipv4_address: 192.168.0.9
-      # pfcp:
-      #   ipv4_address: 192.168.5.3
     depends_on:
       - nrf
       - upf
@@ -107,7 +97,7 @@ services:
     image: docker.io/henok28/f5gc-ausf:v3.1.1 #ausf:v3.1.1
     command: --config ausfcfg.yaml
     volumes:
-      - ./configcore/ausfcfg.yaml:/free5gc/ausfcfg.yaml
+      - ./configcore_v3.1.1/ausfcfg.yaml:/free5gc/ausfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -121,7 +111,7 @@ services:
     image: docker.io/henok28/f5gc-nssf:v3.1.1 #nssf:v3.1.1
     command: --config nssfcfg.yaml
     volumes:
-      - ./configcore/nssfcfg.yaml:/free5gc/nssfcfg.yaml
+      - ./configcore_v3.1.1/nssfcfg.yaml:/free5gc/nssfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -135,7 +125,7 @@ services:
     image: docker.io/henok28/f5gc-pcf:v3.1.1 #pcf:v3.1.1
     command: --config pcfcfg.yaml
     volumes:
-      - ./configcore/pcfcfg.yaml:/free5gc/pcfcfg.yaml
+      - ./configcore_v3.1.1/pcfcfg.yaml:/free5gc/pcfcfg.yaml
     cap_add:
       - NET_ADMIN
     environment:
@@ -151,7 +141,7 @@ services:
     image: docker.io/henok28/f5gc-udm:v3.1.1 #udm:v3.1.1
     command: --config udmcfg.yaml
     volumes:
-      - ./configcore/udmcfg.yaml:/free5gc/udmcfg.yaml
+      - ./configcore_v3.1.1/udmcfg.yaml:/free5gc/udmcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -165,7 +155,7 @@ services:
     image: docker.io/henok28/f5gc-udr:v3.1.1 #udr:v3.1.1
     command: --config udrcfg.yaml
     volumes:
-      - ./configcore/udrcfg.yaml:/free5gc/udrcfg.yaml
+      - ./configcore_v3.1.1/udrcfg.yaml:/free5gc/udrcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -182,29 +172,22 @@ services:
         cap_add:
             - NET_ADMIN  # for interface bringup
             - NET_RAW    # for ping
-            #- SYS_NICE
         environment:
             USE_ADDITIONAL_OPTIONS: --sa -E --rfsim --log_config.global_log_options level,nocolor,time
             ASAN_OPTIONS: detect_leaks=0
         depends_on:
             - amf
             - upf
-            #- smf
-            #- pcf
-            #- ausf
-            #- gateway
-            #- satellite1
-            #- terminal
+            - gateway
+            - satellite1
+            - terminal
         networks:
             sbi:
                 ipv4_address: 192.168.0.14
-            # n123-terrestrial:
-            #     ipv4_address: 192.168.15.7
-            # satgateway-network:
-            #     ipv4_address: 192.168.35.3
+            satgateway-network:
+                ipv4_address: 192.168.35.3
         volumes:
             - ./oai-ngran_conf/gnb/gnb.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
-            #- /home/henok/disag_vcc/scripts:/scripts
             - ./logs/gnb:/var/log/gnb
         healthcheck:
             test: /bin/bash -c "pgrep nr-softmodem"
@@ -212,96 +195,96 @@ services:
             timeout: 5s
             retries: 5
   
-  # gateway:
-  #   container_name: ${GW_CONTAINER_NAME:-gateway}
-  #   build: /home/henok/disag_vcc/build_docker_images/opensand/gateway/
-  #   entrypoint: ./opensand_config/entrypoint.sh
-  #   ports:
-  #     - "3141"
-  #     - "5358"
-  #     - "5926"
-  #   volumes:
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/gateway/config:/opensand_config
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
-  #   networks:
-  #     satgateway-network:
-  #       ipv4_address: 192.168.35.4 
-  #     emulation: #sat:
-  #       ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.3 
-  #       priority: 900
-  #     gwlan:
-  #       ipv4_address: "${GW_NETWORK_HEAD:-172.22}.0.3"
-  #       priority: 1000
-  #       ipv6_address: ${GW_IP6_HEAD:-2001:660}:6602:142:0:0:1:1
-  #   privileged: true
-  #   cap_add:
-  #     - ALL
-  #     - NET_ADMIN
-  #   devices:
-  #     - /dev/net/tun
-  #   sysctls:
-  #     - net.ipv6.conf.all.disable_ipv6=0
-  #   environment:
-  #     GOPATH: /root/go
-  #     GIN_MODE: release
+  gateway:
+    container_name: ${GW_CONTAINER_NAME:-gateway}
+    build: /home/henok/disag_vcc/build_docker_images/opensand/gateway/
+    entrypoint: ./opensand_config/entrypoint.sh
+    ports:
+      - "3141"
+      - "5358"
+      - "5926"
+    volumes:
+      - /home/henok/disag_vcc/build_docker_images/opensand/gateway/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
+    networks:
+      satgateway-network:
+        ipv4_address: 192.168.35.4 
+      emulation: #sat:
+        ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.3 
+        priority: 900
+      gwlan:
+        ipv4_address: "${GW_NETWORK_HEAD:-172.22}.0.3"
+        priority: 1000
+        ipv6_address: ${GW_IP6_HEAD:-2001:660}:6602:142:0:0:1:1
+    privileged: true
+    cap_add:
+      - ALL
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      GOPATH: /root/go
+      GIN_MODE: release
 
-  # satellite1:
-  #   container_name: ${SAT_CONTAINER_NAME:-satellite1}
-  #   build: /home/henok/disag_vcc/build_docker_images/opensand/satellite1/
-  #   entrypoint: ./opensand_config/entrypoint.sh
-  #   ports:
-  #     - "3141"
-  #     - "5358"
-  #     - "5926"
-  #     - "${SAT_PORT_NUMBER:-5656}:5656"
-  #   volumes:
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/config:/opensand_config
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/attenuation_scenario:/attenuation_scenario
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/delay_scenario:/delay_scenario
-  #     - /tmp/.X11-unix:/tmp/.X11-unix:rw
-  #   networks:
-  #     emulation:
-  #       ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.2 #192.168.40.3
-  #   privileged: true
-  #   environment:
-  #     DISPLAY: :1
-  #     GIN_MODE: release
-  #   depends_on:
-  #     - "gateway"
-  #     - "terminal"
+  satellite1:
+    container_name: ${SAT_CONTAINER_NAME:-satellite1}
+    build: /home/henok/disag_vcc/build_docker_images/opensand/satellite1/
+    entrypoint: ./opensand_config/entrypoint.sh
+    ports:
+      - "3141"
+      - "5358"
+      - "5926"
+      - "${SAT_PORT_NUMBER:-5656}:5656"
+    volumes:
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/attenuation_scenario:/attenuation_scenario
+      - /home/henok/disag_vcc/build_docker_images/opensand/satellite1/delay_scenario:/delay_scenario
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    networks:
+      emulation:
+        ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.2
+    privileged: true
+    environment:
+      DISPLAY: :1
+      GIN_MODE: release
+    depends_on:
+      - "gateway"
+      - "terminal"
 
-  # terminal:
-  #   container_name: ${ST_CONTAINER_NAME:-terminal}
-  #   build: /home/henok/disag_vcc/build_docker_images/opensand/terminal
-  #   entrypoint: ./opensand_config/entrypoint.sh
-  #   ports:
-  #     - "3141"
-  #     - "5358"
-  #     - "5926"
-  #   volumes:
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/terminal/config:/opensand_config
-  #     - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
-  #   environment:
-  #     GOPATH: /root/go
-  #     GIN_MODE: release
-  #   networks:
-  #     satterminal-network:
-  #       ipv4_address: 192.168.30.3 #172.21.0.4
-  #     emulation:
-  #       ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.4 #192.168.40.5
-  #       priority: 900
-  #     stlan:
-  #       ipv4_address: "${ST_NETWORK_HEAD:-172.21}.0.4"
-  #       priority: 1000
-  #       ipv6_address: ${ST_IP6_HEAD:-2001:661}:6602:142:0:0:1:2
-  #   privileged: true
-  #   cap_add:
-  #     - ALL
-  #     - NET_ADMIN
-  #   devices:
-  #     - /dev/net/tun
-  #   sysctls:
-  #     - net.ipv6.conf.all.disable_ipv6=0
+  terminal:
+    container_name: ${ST_CONTAINER_NAME:-terminal}
+    build: /home/henok/disag_vcc/build_docker_images/opensand/terminal
+    entrypoint: ./opensand_config/entrypoint.sh
+    ports:
+      - "3141"
+      - "5358"
+      - "5926"
+    volumes:
+      - /home/henok/disag_vcc/build_docker_images/opensand/terminal/config:/opensand_config
+      - /home/henok/disag_vcc/build_docker_images/opensand/src/:/root/go/src
+    environment:
+      GOPATH: /root/go
+      GIN_MODE: release
+    networks:
+      satterminal-network:
+        ipv4_address: 192.168.30.3 
+      emulation:
+        ipv4_address: ${EMU_NETWORK_HEAD:-172.20}.0.4 
+        priority: 900
+      stlan:
+        ipv4_address: "${ST_NETWORK_HEAD:-172.21}.0.4"
+        priority: 1000
+        ipv6_address: ${ST_IP6_HEAD:-2001:661}:6602:142:0:0:1:2
+    privileged: true
+    cap_add:
+      - ALL
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
 
   oai-nr-ue:
         image: oaisoftwarealliance/oai-nr-ue:develop
@@ -315,14 +298,12 @@ services:
             USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1 --uicc0.imsi 208930000000001 -C 3319680000 --rfsimulator.serveraddr 192.168.0.14 --log_config.global_log_options level,nocolor,time
         depends_on:
             - oai-gnb
-            #- terminal
+            - terminal
         networks:
             sbi:
                 ipv4_address: 192.168.0.15
-            # satterminal-network:
-            #     ipv4_address: 192.168.30.5
-            # n123-terrestrial:
-            #    ipv4_address: 192.168.15.8
+            satterminal-network:
+                ipv4_address: 192.168.30.5
         devices:
              - /dev/net/tun:/dev/net/tun
         volumes:
@@ -335,15 +316,6 @@ services:
 
 
 networks:
-  # pfcp:
-  #   name: pfcp
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: 192.168.5.0/24
-  #   driver_opts:
-  #     com.docker.network.bridge.name: pfcp-network
   sbi:
     name: sbi
     driver: bridge
@@ -353,68 +325,59 @@ networks:
         - subnet: 192.168.0.0/24
     driver_opts:
       com.docker.network.bridge.name: sbi-network
-  # n123-terrestrial:
-  #   name: n123-terrestrial
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: 192.168.15.0/24
-  #   driver_opts:
-  #     com.docker.network.bridge.name: ter-network
-  # satterminal-network:
-  #   name: satterminal-network
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: 192.168.30.0/24 #172.21.0.0/24
-  #   driver_opts:
-  #     com.docker.network.bridge.name: sat-ter-net
-  # satgateway-network:
-  #   name: satgateway-network
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: 192.168.35.0/24 #172.22.0.0/24
-  #   driver_opts:
-  #     com.docker.network.bridge.name: sat-gate-net
-  # emulation:
-  #   name: ${EMU_NETWORK_NAME:-emulation}
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: "${EMU_NETWORK_HEAD:-172.20}.0.0/24" #192.168.40.0/24
-  #   driver_opts:
-  #     com.docker.network.bridge.name: emu-net
-  # gwlan:
-  #   name: ${GW_NETWORK_NAME:-gwlan}
-  #   driver: bridge
-  #   enable_ipv6: true
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: "${GW_NETWORK_HEAD:-172.22}.0.0/24"
-  #       - subnet: "${GW_IP6_HEAD:-2001:660}:6602:142::/64"
-  # stlan:
-  #   name: ${ST_NETWORK_NAME:-stlan}
-  #   driver: bridge
-  #   enable_ipv6: true
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: "${ST_NETWORK_HEAD:-172.21}.0.0/24"
-  #       - subnet: "${ST_IP6_HEAD:-2001:661}:6602:142::/64"
-  # gui:
-  #   name: ${GUI_NETWORK_NAME:-gui}
-  #   driver: bridge
-  #   ipam:
-  #     driver: default
-  #     config:
-  #       - subnet: "${GUI_NETWORK_HEAD:-172.25}.0.0/24"
-  #         gateway: "${GUI_NETWORK_HEAD:-172.25}.0.1"
+  satterminal-network:
+    name: satterminal-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.30.0/24 #172.21.0.0/24
+    driver_opts:
+      com.docker.network.bridge.name: sat-ter-net
+  satgateway-network:
+    name: satgateway-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.35.0/24 #172.22.0.0/24
+    driver_opts:
+      com.docker.network.bridge.name: sat-gate-net
+  emulation:
+    name: ${EMU_NETWORK_NAME:-emulation}
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "${EMU_NETWORK_HEAD:-172.20}.0.0/24" #192.168.40.0/24
+    driver_opts:
+      com.docker.network.bridge.name: emu-net
+  gwlan:
+    name: ${GW_NETWORK_NAME:-gwlan}
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "${GW_NETWORK_HEAD:-172.22}.0.0/24"
+        - subnet: "${GW_IP6_HEAD:-2001:660}:6602:142::/64"
+  stlan:
+    name: ${ST_NETWORK_NAME:-stlan}
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "${ST_NETWORK_HEAD:-172.21}.0.0/24"
+        - subnet: "${ST_IP6_HEAD:-2001:661}:6602:142::/64"
+  gui:
+    name: ${GUI_NETWORK_NAME:-gui}
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "${GUI_NETWORK_HEAD:-172.25}.0.0/24"
+          gateway: "${GUI_NETWORK_HEAD:-172.25}.0.1"
 
 volumes:
   dbdata:

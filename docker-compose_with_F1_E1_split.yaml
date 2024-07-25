@@ -18,7 +18,7 @@ services:
     image: docker.io/henok28/f5gc-nrf:v3.1.1 #nrf:v3.1.1
     command: --config nrfcfg.yaml
     volumes:
-      - ./configcore/nrfcfg.yaml:/free5gc/nrfcfg.yaml
+      - ./configcore_v3.1.1/nrfcfg.yaml:/free5gc/nrfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -29,11 +29,13 @@ services:
 
   amf:
     container_name: amf
-    image: docker.io/henok28/f5gc-amf:v3.1.1 #amf:v3.1.1b
+    image:  docker.io/henok28/f5gc-amf:v3.1.1 #amf:v3.1.1b   free5gc/amf:v3.3.0
     entrypoint: bash ./entrypoint.sh
+    expose:
+      - "8000"
     volumes:
-      - ./configcore/amfcfg.yaml:/free5gc/amfcfg.yaml
-      - ./configcore/amf.sh:/free5gc/entrypoint.sh
+      - ./configcore_v3.1.1/amfcfg.yaml:/free5gc/amfcfg.yaml
+      - ./configcore_v3.1.1/amf.sh:/free5gc/entrypoint.sh
     cap_add:
       - NET_ADMIN
     environment:
@@ -41,8 +43,6 @@ services:
     networks:
       sbi:
         ipv4_address: 192.168.0.5
-      n123-terrestrial:
-        ipv4_address: 192.168.15.5
     depends_on:
       - nrf
 
@@ -51,7 +51,7 @@ services:
     image: docker.io/henok28/f5gc-uereg:latest #uereg:latest
     command: --config populatecfg.yaml
     volumes:
-      - ./configcore/uereg.yaml:/populate/populatecfg.yaml
+      - ./configcore_v3.1.1/uereg.yaml:/populate/populatecfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -67,32 +67,27 @@ services:
     image: docker.io/henok28/f5gc-upf:v3.1.1 #upf:v3.1.1
     command: bash ./upf-iptables.sh
     volumes:
-      - ./configcore/upfcfg.yaml:/free5gc/upfcfg.yaml
-      - ./configcore/upf-iptables.sh:/free5gc/upf-iptables.sh
+      - ./configcore_v3.1.1/upfcfg.yaml:/free5gc/upfcfg.yaml
+      - ./configcore_v3.1.1/upf-iptables.sh:/free5gc/upf-iptables.sh
     cap_add:
       - NET_ADMIN
     networks:
-      n123-terrestrial:
-        ipv4_address: 192.168.15.6
-      pfcp:
-        ipv4_address: 192.168.5.5
+      sbi:
+        ipv4_address: 192.168.0.12
 
   smf:
     container_name: smf
     image: docker.io/henok28/f5gc-smf:v3.1.1 #smf:v3.1.1b
-    #command: --config smfcfg.yaml --uerouting uerouting.yaml
     entrypoint: bash ./entrypoint.sh
     volumes:
-      - ./configcore/smfcfg.yaml:/free5gc/smfcfg.yaml
-      - ./configcore/uerouting.yaml:/free5gc/uerouting.yaml
-      - ./configcore/smf.sh:/free5gc/entrypoint.sh
+      - ./configcore_v3.1.1/smfcfg.yaml:/free5gc/smfcfg.yaml
+      - ./configcore_v3.1.1/uerouting.yaml:/free5gc/uerouting.yaml
+      - ./configcore_v3.1.1/smf.sh:/free5gc/entrypoint.sh
     cap_add:
       - NET_ADMIN
     networks:
       sbi:
         ipv4_address: 192.168.0.9
-      pfcp:
-        ipv4_address: 192.168.5.3
     depends_on:
       - nrf
       - upf
@@ -102,7 +97,7 @@ services:
     image: docker.io/henok28/f5gc-ausf:v3.1.1 #ausf:v3.1.1
     command: --config ausfcfg.yaml
     volumes:
-      - ./configcore/ausfcfg.yaml:/free5gc/ausfcfg.yaml
+      - ./configcore_v3.1.1/ausfcfg.yaml:/free5gc/ausfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -116,7 +111,7 @@ services:
     image: docker.io/henok28/f5gc-nssf:v3.1.1 #nssf:v3.1.1
     command: --config nssfcfg.yaml
     volumes:
-      - ./configcore/nssfcfg.yaml:/free5gc/nssfcfg.yaml
+      - ./configcore_v3.1.1/nssfcfg.yaml:/free5gc/nssfcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -130,7 +125,7 @@ services:
     image: docker.io/henok28/f5gc-pcf:v3.1.1 #pcf:v3.1.1
     command: --config pcfcfg.yaml
     volumes:
-      - ./configcore/pcfcfg.yaml:/free5gc/pcfcfg.yaml
+      - ./configcore_v3.1.1/pcfcfg.yaml:/free5gc/pcfcfg.yaml
     cap_add:
       - NET_ADMIN
     environment:
@@ -146,7 +141,7 @@ services:
     image: docker.io/henok28/f5gc-udm:v3.1.1 #udm:v3.1.1
     command: --config udmcfg.yaml
     volumes:
-      - ./configcore/udmcfg.yaml:/free5gc/udmcfg.yaml
+      - ./configcore_v3.1.1/udmcfg.yaml:/free5gc/udmcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -160,7 +155,7 @@ services:
     image: docker.io/henok28/f5gc-udr:v3.1.1 #udr:v3.1.1
     command: --config udrcfg.yaml
     volumes:
-      - ./configcore/udrcfg.yaml:/free5gc/udrcfg.yaml
+      - ./configcore_v3.1.1/udrcfg.yaml:/free5gc/udrcfg.yaml
     environment:
       GIN_MODE: release
     networks:
@@ -168,6 +163,7 @@ services:
         ipv4_address: 192.168.0.11
     depends_on:
       - nrf
+
 
   oai-cucp:
         image: oaisoftwarealliance/oai-gnb:develop
