@@ -176,47 +176,22 @@ services:
                                     --gNBs.[0].local_s_address 192.168.72.2
             ASAN_OPTIONS: detect_leaks=0
         depends_on:
-            - oai-upf
+            - upf
         networks:
-            core_net:
-                ipv4_address: 192.168.71.150
+            # core_net:
+            #     ipv4_address: 192.168.71.150
+            sbi:
+                ipv4_address: 192.168.0.14
             f1c_net:
                 ipv4_address: 192.168.72.2
             e1_net:
                 ipv4_address: 192.168.77.2
+            satgateway-network:
+                ipv4_address: 192.168.35.5
         volumes:
-            - ../../conf_files/gnb-cucp.sa.f1.conf:/opt/oai-gnb/etc/gnb.conf
+            - ./oai-ngran_conf/gnb-cu/cucp/gnb-cucp.sa.f1.conf:/opt/oai-gnb/etc/gnb.conf
         healthcheck:
             test: /bin/bash -c "pgrep nr-softmodem"
-            interval: 10s
-            timeout: 5s
-            retries: 5
-
-  oai-cuup:
-        image: oaisoftwarealliance/oai-nr-cuup:develop
-        container_name: rfsim5g-oai-cuup
-        cap_drop:
-            - ALL
-        environment:
-            USE_ADDITIONAL_OPTIONS: --sa --log_config.global_log_options level,nocolor,time
-                                    --gNBs.[0].E1_INTERFACE.[0].ipv4_cucp 192.168.77.2
-                                    --gNBs.[0].E1_INTERFACE.[0].ipv4_cuup 192.168.77.3
-                                    --gNBs.[0].local_s_address 192.168.73.2
-                                    --gNBs.[0].remote_s_address 127.0.0.1
-            ASAN_OPTIONS: detect_leaks=0
-        depends_on:
-            - oai-cucp
-        networks:
-            core_net:
-                ipv4_address: 192.168.71.161
-            f1u_1_net:
-                ipv4_address: 192.168.73.2
-            e1_net:
-                ipv4_address: 192.168.77.3
-        volumes:
-            - ../../conf_files/gnb-cuup.sa.f1.conf:/opt/oai-gnb/etc/gnb.conf
-        healthcheck:
-            test: /bin/bash -c "pgrep nr-cuup"
             interval: 10s
             timeout: 5s
             retries: 5
@@ -279,6 +254,39 @@ services:
       - "gateway"
       - "terminal"
 
+  oai-cuup:
+        image: oaisoftwarealliance/oai-nr-cuup:develop
+        container_name: rfsim5g-oai-cuup
+        cap_drop:
+            - ALL
+        environment:
+            USE_ADDITIONAL_OPTIONS: --sa --log_config.global_log_options level,nocolor,time
+                                    --gNBs.[0].E1_INTERFACE.[0].ipv4_cucp 192.168.77.2
+                                    --gNBs.[0].E1_INTERFACE.[0].ipv4_cuup 192.168.77.3
+                                    --gNBs.[0].local_s_address 192.168.73.2
+                                    --gNBs.[0].remote_s_address 127.0.0.1
+            ASAN_OPTIONS: detect_leaks=0
+        depends_on:
+            - oai-cucp
+        networks:
+            sbi:
+                ipv4_address: 192.168.0.15
+            # core_net:
+            #     ipv4_address: 192.168.71.161
+            f1u_1_net:
+                ipv4_address: 192.168.73.2
+            e1_net:
+                ipv4_address: 192.168.77.3
+            emulation:
+                ipv4_address: 172.20.0.5
+        volumes:
+            - ./oai-ngran_conf/gnb-cu/cuup/gnb-cuup.sa.f1.conf:/opt/oai-gnb/etc/gnb.conf
+        healthcheck:
+            test: /bin/bash -c "pgrep nr-cuup"
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
   terminal:
     container_name: ${ST_CONTAINER_NAME:-terminal}
     build: /home/henok/disag_vcc/build_docker_images/opensand/terminal
@@ -321,18 +329,19 @@ services:
             USE_ADDITIONAL_OPTIONS: --sa --rfsim
                                     --log_config.global_log_options level,nocolor,time
                                     --rfsimulator.options chanmod
-                                    --telnetsrv --telnetsrv.listenaddr 192.168.15.8 #192.168.71.171
+                                    --telnetsrv --telnetsrv.listenaddr 192.168.0.16 #192.168.71.171
             ASAN_OPTIONS: detect_leaks=0:detect_odr_violation=0
         depends_on:
-            - oai-cu
+            - oai-cucp
+            - oai-cuup
             - terminal
         networks:
             # public_net:
             #     ipv4_address: 192.168.71.171
+            sbi:
+                ipv4_address: 192.168.0.16
             satterminal-network:
                 ipv4_address: 192.168.30.5
-            n123-terrestrial:
-                ipv4_address: 192.168.15.8
         volumes:
             - /home/henok/disag_vcc/oai-ngran_conf/gnb-du/gnb-du.sa.band78.106prb.rfsim.conf:/opt/oai-gnb/etc/gnb.conf
             - /home/henok/disag_vcc/oai-ngran_conf/gnb-du/rfsim_channel_ci.conf:/opt/oai-gnb/etc/rfsim_channel_ci.conf
@@ -353,26 +362,27 @@ services:
         environment:
             USE_ADDITIONAL_OPTIONS: --sa --rfsim --log_config.global_log_options level,nocolor,time
                                     -r 106 --numerology 1 -C 3619200000
-                                    --uicc0.imsi 208990100001100
-                                    --rfsimulator.serveraddr 192.168.15.8
+                                    --uicc0.imsi 208930000000001
+                                    --rfsimulator.serveraddr 192.168.0.16
                                     --rfsimulator.options chanmod
-                                    --telnetsrv --telnetsrv.shrmod ciUE --telnetsrv.listenaddr 192.168.15.9 --telnetsrv.listenport 8091
+                                    --telnetsrv --telnetsrv.shrmod ciUE --telnetsrv.listenaddr 192.168.0.17 --telnetsrv.listenport 8091
             ASAN_OPTIONS: detect_odr_violation=0
         depends_on:
             - oai-du
-            - terminal
         networks:
             # public_net:
             #     ipv4_address: 192.168.71.181
-            satterminal-network:
-                ipv4_address: 192.168.30.6
-            n123-terrestrial:
-                ipv4_address: 192.168.15.9
+            sbi:
+                ipv4_address: 192.168.0.17
+            # satterminal-network:
+            #     ipv4_address: 192.168.30.6
+            # n123-terrestrial:
+            #     ipv4_address: 192.168.15.9
         devices:
              - /dev/net/tun:/dev/net/tun
         volumes:
-            - /home/henok/disag_vcc/oai-ngran_conf/nr-ue/nrue.uicc.conf:/opt/oai-nr-ue/etc/nr-ue.conf
-            - /home/henok/disag_vcc/oai-ngran_conf/nr-ue/rfsim_channel_ci.conf:/opt/oai-nr-ue/etc/rfsim_channel_ci.conf
+            - ./oai-ngran_conf/nr-ue/nrue.uicc.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+            - ./oai-ngran_conf/nr-ue/rfsim_channel_ci.conf:/opt/oai-nr-ue/etc/rfsim_channel_ci.conf
         healthcheck:
             test: /bin/bash -c "pgrep nr-uesoftmodem"
             interval: 10s
@@ -381,15 +391,6 @@ services:
 
 
 networks:
-  pfcp:
-    name: pfcp
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 192.168.5.0/24
-    driver_opts:
-      com.docker.network.bridge.name: pfcp-network
   sbi:
     name: sbi
     driver: bridge
@@ -399,15 +400,46 @@ networks:
         - subnet: 192.168.0.0/24
     driver_opts:
       com.docker.network.bridge.name: sbi-network
-  n123-terrestrial:
-    name: n123-terrestrial
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 192.168.15.0/24
-    driver_opts:
-      com.docker.network.bridge.name: ter-network
+  f1c_net:
+        driver: bridge
+        name: rfsim5g-oai-f1c-net
+        ipam:
+            config:
+                - subnet: 192.168.72.0/28
+        driver_opts:
+            com.docker.network.bridge.name: "rfsim5g-f1c"
+  f1u_1_net:
+        driver: bridge
+        name: rfsim5g-oai-f1u-1-net
+        ipam:
+            config:
+                - subnet: 192.168.73.0/28
+        driver_opts:
+            com.docker.network.bridge.name: "rfsim5g-f1u_1"
+  f1u_2_net:
+        driver: bridge
+        name: rfsim5g-oai-f1u-2-net
+        ipam:
+            config:
+                - subnet: 192.168.74.0/28
+        driver_opts:
+            com.docker.network.bridge.name: "rfsim5g-f1u_2"
+  f1u_3_net:
+        driver: bridge
+        name: rfsim5g-oai-f1u-3-net
+        ipam:
+            config:
+                - subnet: 192.168.76.0/28
+        driver_opts:
+            com.docker.network.bridge.name: "rfsim5g-f1u_3"
+  e1_net:
+        driver: bridge
+        name: rfsim5g-oai-e1-net
+        ipam:
+            config:
+                - subnet: 192.168.77.0/28
+        driver_opts:
+            com.docker.network.bridge.name: "rfsim5g-e1"
   satterminal-network:
     name: satterminal-network
     driver: bridge
