@@ -7,3 +7,4 @@ build_core.sh
 build_ran.sh
 docker-composeSat.yaml
 Vagrantfile
+docker-compose_with_F1_splitOriginal.yaml

@@ -1,4 +1,5 @@
 version: '3.7'
+# docker compose -f docker-composeMonitoring.yml up -d
 
 services:
   prometheus:
@@ -6,10 +7,10 @@ services:
       context: ./prometheus
       dockerfile: Dockerfile
     container_name: prometheus
-    ports:
-      - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
 
   grafana:
     build:
