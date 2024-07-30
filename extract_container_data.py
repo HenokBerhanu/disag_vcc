@@ -1,5 +1,4 @@
 import csv
-
 def extract_container_data(input_csv, container_name):
     with open(input_csv, 'r') as csvfile:
         reader = csv.reader(csvfile)
@@ -20,14 +19,14 @@ def save_extracted_data(data, output_csv):
 
 # Specify the container name and input/output CSV file paths
 container_name = "rfsim5g-oai-du"
-# cpu_input_csv = "/home/henok/disag_vcc/LSTM_data/cpu_usage_gNBDU.csv"
+#cpu_input_csv = "/home/henok/disag_vcc/LSTM_data/cpu_usage_gNBDU.csv"
 memory_input_csv = "/home/henok/disag_vcc/LSTM_data/memory_usagegNBDU.csv"
-# cpu_output_csv = "/home/henok/disag_vcc/LSTM_data/rfsim5g-oai-du_cpu_usage.csv"
-memory_output_csv = "/home/henok/disag_vcc/LSTM_data/rfsim5g-oai-du_memory_usage.csv"
+#cpu_output_csv = "/home/henok/disag_vcc/LSTM_data/gNBDU_cpu_usage.csv"
+memory_output_csv = "/home/henok/disag_vcc/LSTM_data/gNBDU_memory_usage.csv"
 
 # Extract and save CPU data
-# cpu_data = extract_container_data(cpu_input_csv, container_name)
-# save_extracted_data(cpu_data, cpu_output_csv)
+#cpu_data = extract_container_data(cpu_input_csv, container_name)
+#save_extracted_data(cpu_data, cpu_output_csv)
 
 # Extract and save memory data
 memory_data = extract_container_data(memory_input_csv, container_name)
