@@ -18,11 +18,11 @@ def save_extracted_data(data, output_csv):
             writer.writerow(row)
 
 # Specify the container name and input/output CSV file paths
-container_name = "rfsim5g-oai-du"
+container_name = "rfsim5g-oai-cuup"
 #cpu_input_csv = "/home/henok/disag_vcc/LSTM_data/cpu_usage_gNBDU.csv"
-memory_input_csv = "/home/henok/disag_vcc/LSTM_data/memory_usagegNBDU.csv"
+memory_input_csv = "/home/henok/disag_vcc/LSTM_data/f1_e1/memory_usage_f1_e1.csv"
 #cpu_output_csv = "/home/henok/disag_vcc/LSTM_data/gNBDU_cpu_usage.csv"
-memory_output_csv = "/home/henok/disag_vcc/LSTM_data/gNBDU_memory_usage.csv"
+memory_output_csv = "/home/henok/disag_vcc/LSTM_data/f1_e1/gNBCUUP_memory_usage.csv"
 
 # Extract and save CPU data
 #cpu_data = extract_container_data(cpu_input_csv, container_name)

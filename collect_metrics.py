@@ -3,8 +3,8 @@ import csv
 import time
 import os
 
-PROMETHEUS_URL = 'http://10.88.135.21:9090'
-OUTPUT_DIR = '/home/henok/disag_vcc/LSTM_data'  # Change this to your desired directory
+PROMETHEUS_URL = 'http://192.168.12.202:9090'
+OUTPUT_DIR = '/home/henok/disag_vcc/LSTM_data/f1_e1'  # Change this to your desired directory
 
 def query_prometheus(query):
     response = requests.get(f'{PROMETHEUS_URL}/api/v1/query', params={'query': query})
@@ -28,8 +28,8 @@ while time.time() < end_time:
     cpu_data = query_prometheus(cpu_query)
     memory_data = query_prometheus(memory_query)
     
-    write_to_csv(cpu_data, 'cpu_usage_gNBCUUP.csv')
-    write_to_csv(memory_data, 'memory_usagegNBCUUP.csv')
+    write_to_csv(cpu_data, 'cpu_usage_f1_e1.csv')
+    write_to_csv(memory_data, 'memory_usage_f1_e1.csv')
     
     time.sleep(60)  # Query every 60 seconds
 
