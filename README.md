@@ -98,40 +98,16 @@ docker compose -f docker-compose_with_F1_split.yaml up -d
 The code for the LSTM model taining and validation are: 
 
 ##### f1.ipynb for the first architecture
+
+<div align="center">
+  <img src="./figs/gNBDU2.png" title="Training Vs validation accuracy for the first architecture" width="500px">
+  <p style="font-size:14px; color:gray;">Figure 1: Training Vs validation accuracy for the first architecture</p>
+</div>
+
 ##### f1_e1.ipynb for the second architecture
 
-<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBDU1.png" title="Emulated F1 Split" width="250px">
-    <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
-  </div>
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBDU2.png" title="Emulated E1 Split" width="250px">
-    <p style="font-size:14px; color:gray;">Figure 2: Emulated E1 Split</p>
-  </div>
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBDU3.png" title="Emulated F1 and E1 Split" width="250px">
-    <p style="font-size:14px; color:gray;">Figure 3: Emulated F1 and E1 Split</p>
-  </div>
+<div align="center">
+  <img src="./figs/gNBCUUP2.png" title="Training Vs validation accuracy for the second architecture" width="500px">
+  <p style="font-size:14px; color:gray;">Figure 1: Training Vs validation accuracy for the second architecture</p>
 </div>
-
-
-<div style="display: flex; justify-content: space-around; align-items: center;">
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBCUUP1.png" title="Emulated F1 Split" width="200px">
-    <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
-  </div>
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBCUUP2.png" title="Emulated E1 Split" width="200px">
-    <p style="font-size:14px; color:gray;">Figure 2: Emulated E1 Split</p>
-  </div>
-  <div style="text-align: center; margin: 10px;">
-    <img src="./figs/gNBCUUP3.png" title="Emulated F1 and E1 Split" width="150px">
-    <p style="font-size:14px; color:gray;">Figure 3: Emulated F1 and E1 Split</p>
-  </div>
-</div>
-
-
-
-
 
