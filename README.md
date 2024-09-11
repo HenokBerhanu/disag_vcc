@@ -43,9 +43,9 @@ docker build -t custom-grafana .
 ```
 ### There are two architectures for F1 split and F1_E1 split
 
-<img src="./figs/Emulated_F1_split.png" title="./figs/Emulated_F1_split.png" width=400px></img>
+<img src="./figs/Emulated_F1_split.png" title="./figs/Emulated_F1_split.png" width=300px></img>
 
-<img src="./figs/Emulated_F1_E1_split.png" title="./figs/Emulated_F1_E1_split.png" width=400px></img>
+<img src="./figs/Emulated_F1_E1_split.png" title="./figs/Emulated_F1_E1_split.png" width=300px></img>
 
 
 ### Build CAdvisor docker image from: ./cadvisor/Dockerfile
