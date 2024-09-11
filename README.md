@@ -41,6 +41,13 @@ docker build -t custom-prometheus .
 ```
 docker build -t custom-grafana .
 ```
+
+### Build CAdvisor docker image from: ./cadvisor/Dockerfile
+
+```
+docker build -t custom-cadvisor .
+```
+
 ### There are two architectures for F1 split and F1_E1 split
 
 <div align="center">
@@ -56,13 +63,6 @@ docker build -t custom-grafana .
 </div>
 
 #### Architecture one with F1_E1 split across the 5GNTN network
-
-
-### Build CAdvisor docker image from: ./cadvisor/Dockerfile
-
-```
-docker build -t custom-cadvisor .
-```
 
 ## Start simulating the network:
 
@@ -99,6 +99,39 @@ The code for the LSTM model taining and validation are:
 
 ##### f1.ipynb for the first architecture
 ##### f1_e1.ipynb for the second architecture
+
+<div style="display: flex; justify-content: space-around; align-items: center;">
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBDU1.png" title="Emulated F1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
+  </div>
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBDU2.png" title="Emulated E1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 2: Emulated E1 Split</p>
+  </div>
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBDU3.png" title="Emulated F1 and E1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 3: Emulated F1 and E1 Split</p>
+  </div>
+</div>
+
+
+<div style="display: flex; justify-content: space-around; align-items: center;">
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBCUUP1.png" title="Emulated F1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
+  </div>
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBCUUP2.png" title="Emulated E1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 2: Emulated E1 Split</p>
+  </div>
+  <div style="text-align: center; margin: 10px;">
+    <img src="./figs/gNBCUUP3.png" title="Emulated F1 and E1 Split" width="250px">
+    <p style="font-size:14px; color:gray;">Figure 3: Emulated F1 and E1 Split</p>
+  </div>
+</div>
+
+
 
 
 
