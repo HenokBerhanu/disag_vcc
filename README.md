@@ -100,7 +100,7 @@ The code for the LSTM model taining and validation are:
 ##### f1.ipynb for the first architecture
 ##### f1_e1.ipynb for the second architecture
 
-<div style="display: flex; justify-content: space-around; align-items: center;">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
   <div style="text-align: center; margin: 10px;">
     <img src="./figs/gNBDU1.png" title="Emulated F1 Split" width="250px">
     <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
