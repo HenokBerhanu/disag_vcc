@@ -36,19 +36,19 @@ docker pull oaisoftwarealliance/oai-nr-ue:develop
 docker build -t custom-prometheus .
 ```
 
-## Built Grafana docker image from: ./grafana/Dockerfile
+## Build Grafana docker image from: ./grafana/Dockerfile
 
 ```
 docker build -t custom-grafana .
 ```
-## There are two architectures for F1 split and F1_E1 split
+### There are two architectures for F1 split and F1_E1 split
 
 <img src="./figs/Emulated_F1_split.pdf" title="./figs/Emulated_F1_split.pdf" width=400px></img>
 
 <img src="./figs/Emulated_F1_E1_split.pdf" title="./figs/Emulated_F1_E1_split.pdf" width=400px></img>
 
 
-## Built CAdvisor docker image from: ./cadvisor/Dockerfile
+### Build CAdvisor docker image from: ./cadvisor/Dockerfile
 
 ```
 docker build -t custom-cadvisor .
