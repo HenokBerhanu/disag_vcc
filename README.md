@@ -43,6 +43,12 @@ docker build -t custom-grafana .
 ```
 ### There are two architectures for F1 split and F1_E1 split
 
+<div align="center">
+  <img src="./figs/Emulated_F1_split-1.png" title="Emulated F1 split" width="400px">
+  <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
+</div>
+
+
 <img src="./figs/Emulated_F1_split-1.png" title="./figs/Emulated_F1_split-1.png" width=400px></img>
 
 #### Architecture one with F1 split across the 5GNTN network
@@ -58,55 +64,41 @@ docker build -t custom-grafana .
 docker build -t custom-cadvisor .
 ```
 
-# Start the network:
+## Start simulating the network:
 
-## Start Ganache CLI:  Ganache starts listening at port 8545
+### Start CAdvisor container: listens at port 8080
+          http://<your-host-ip>:8080   #### url for CAdvisor
 
-```
-docker compose -f docker-compose-ganache.yml up
-```
+### Start Prometheus container: listens at port 9090
+          http://<your-host-ip>:9090      #### url for Prometheus
 
-## Compile and deploy smart contract:
+### Start Grafana container: listens at port 3000
+          http://<your-host-ip>:3000     #### url for Grafana
 
-From the directory: ./ethereum
+### make sure the three monitoring tools are configured properly with their IP
 
-```
-truffle compile
-```
-
-This will create the compiled ABI file including the bytecode in the directory: ./ethereum/build/contracts
+### Start the first network for architecture one:
 
 ```
-truffle migrate --network development
+docker compose -f docker-compose_with_F1_split.yaml up -d
 ```
 
-This will deploy the compiled smart contract into the Ethereum Virtual Machine (EVM) and contract address is returned from the lockal blockchain
+##### Generate a video traffic using iperf3 and run the network for 10 hours
 
-## Start Midleware: Listens at port 5000
+##### Collect resource consumption of gNB-DU using CAdvisor, Prometheus and visuallize using Grafana
 
-Fetch the contract address and private key of the first ethereum account to which the contract is deployed
+               The collected data is located in ./LSTM_data/f1 directory
 
-Sample account address and key pair:
+## Repeat the same procedure for the second architecture
 
-```
-0x001c62F91F80A5a0eeCc6F60B78F641911024257 : 0x5be3d9d215fc14b01f67630ff66faca9a15f27bcd5bf848f3cb4fbe95eddc7ef
-```
+### Prepare the data train, test and validate the LSTM model
 
-```
-docker compose -f docker-compose-middleware.yml up
-```
+## Results:
 
-## Deploy the 5G NTN network to interact with Ganache via the middleware
+The code for the LSTM model taining and validation are: 
 
-```
-docker compose up
-```
-
-The satellite components are configured to interact to Ganache
-
-Now an end-to-end GTP tunnel will be established if the traffic going to the satellite network is authenticated by the blockchain
-
-Sample Ethereum addresses of servers: 0x7db8a5b543406b96390a0703ce2e28bc84eb6529
+##### f1.ipynb for the first architecture
+##### f1_e1.ipynb for the second architecture
 
 
 
