@@ -9,46 +9,46 @@ Build Free5GC base image from directory: ./build_docker_images/f5gc_base
 In the directory: ./build_docker_images/f5gc_core
      BUild the docker images with the tag defined in the docker-compose.yaml file of the same directory. 
 
-## Or instead of building all the components, you can also pull from: 
+## Or instead of building all the components, you can also pull all core network functions:
+
+```
+docker pull henok28/f5gc-amf:v3.1.1
+```
 
 ## Build satellite emulator : opensand
 The satellite emulator containers will build upon runing the docker-compose.yaml file from directory: ./build_docker_images/opensand
 
 Three containers: Gateway, Satellite, and Terminal will be in runing state
 
-## Build dissagregated NGRAN images: Openairinterface5G
-
+## Pull dissagregated NGRAN images: Openairinterface5G
 
 
 ```
-docker build -t cmake:v3.2 -f ./build/ueransim_base/cmake/Dockerfile
+docker pull oaisoftwarealliance/oai-gnb:develop
 ```
 ```
-docker build -t ueransim:base -f ./build/ueransim_base/ueransim/Dockerfile
-```
-
-### Build gNB and UE from ./build/ueransim_ran
-
-```
-docker build -t gnb:master -f ./build/ueransim_ran/gnb/Dockerfile
-```
-```
-docker build -t ue:master -f ./build/ueransim_ran/ue/Dockerfile
+docker pull oaisoftwarealliance/oai-nr-ue:develop
 ```
 
-
-## Built Ganache local blockchain image
-
-Build docker image for Ethereum local blockchain:
+### Build Prometheus docker image from ./prometheus/Dockerfile
 
 ```
-docker build -t trufflesuite/ganache-cli:latest -f ./ethereum/Dockerfile
+docker build -t custom-prometheus .
 ```
 
-## Built middleware image 
+## Built Grafana docker image from: ./grafana/Dockerfile
 
 ```
-docker build -t ntn-5g-bl-middleware:latest -f ./middleware/DockerfileMiddleware
+docker build -t custom-grafana .
+```
+## There are two architectures for F1 split and F1_E1 split
+
+
+
+## Built CAdvisor docker image from: ./cadvisor/Dockerfile
+
+```
+docker build -t custom-cadvisor .
 ```
 
 ## The end-to-end blockchain based 5G NTN networks are shown below:
