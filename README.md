@@ -45,9 +45,11 @@ docker build -t custom-grafana .
 
 <img src="./figs/Emulated_F1_split-1.png" title="./figs/Emulated_F1_split-1.png" width=400px></img>
 
-#### Architecture one with F1 split across the NTN network
+#### Architecture one with F1 split across the 5GNTN network
 
 <img src="./figs/Emulated_F1_E1_split-1.png" title="./figs/Emulated_F1_E1_split-1.png" width=400px></img>
+
+#### Architecture one with F1_E1 split across the 5GNTN network
 
 
 ### Build CAdvisor docker image from: ./cadvisor/Dockerfile
@@ -55,14 +57,6 @@ docker build -t custom-grafana .
 ```
 docker build -t custom-cadvisor .
 ```
-
-## The end-to-end blockchain based 5G NTN networks are shown below:
-
-<img src="./Figs/network.png" title="./Figs/network.png" width=400px></img>
-
-These fugures shows the overall build network for secure blockchain based 5G NTN network
-
-<img src="./Figs/setup.png" title="./Figs/setup.png" width=500px></img>
 
 # Start the network:
 
