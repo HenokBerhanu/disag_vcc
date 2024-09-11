@@ -44,16 +44,16 @@ docker build -t custom-grafana .
 ### There are two architectures for F1 split and F1_E1 split
 
 <div align="center">
-  <img src="./figs/Emulated_F1_split-1.png" title="Emulated F1 split" width="400px">
-  <p style="font-size:14px; color:gray;">Figure 1: Emulated F1 Split</p>
+  <img src="./figs/Emulated_F1_split-1.png" title="Emulated 5G NTN with F1 split" width="500px">
+  <p style="font-size:14px; color:gray;">Figure 1: Emulated 5G NTN with F1 split</p>
 </div>
-
-
-<img src="./figs/Emulated_F1_split-1.png" title="./figs/Emulated_F1_split-1.png" width=400px></img>
 
 #### Architecture one with F1 split across the 5GNTN network
 
-<img src="./figs/Emulated_F1_E1_split-1.png" title="./figs/Emulated_F1_E1_split-1.png" width=400px></img>
+<div align="center">
+  <img src="./figs/Emulated_F1_E1_split-1.png" title="Emulated 5G NTN with F1_E1 split" width="500px">
+  <p style="font-size:14px; color:gray;">Figure 1: Emulated 5G NTN with F1_E1 split</p>
+</div>
 
 #### Architecture one with F1_E1 split across the 5GNTN network
 
