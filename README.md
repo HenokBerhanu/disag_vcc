@@ -45,6 +45,8 @@ docker build -t custom-grafana .
 
 <img src="./figs/Emulated_F1_split-1.png" title="./figs/Emulated_F1_split-1.png" width=400px></img>
 
+#### Architecture one with F1 split across the NTN network
+
 <img src="./figs/Emulated_F1_E1_split-1.png" title="./figs/Emulated_F1_E1_split-1.png" width=400px></img>
 
 
